@@ -1,0 +1,164 @@
+import java.awt.SystemColor
+
+//resolutionStrategy {
+//    libraries.each {
+//        libraryName, libraryList ->
+//            libraryList.each {
+//                library -> force library        // 👈 this line
+//            }
+//    }
+
+//    failOnVersionConflict()
+//}
+
+task hello1 << {
+    println("tutorialspoin")
+}
+
+task upper << {
+    String expString = "TURORIALS point"
+    println "Original: " + expString
+    println "Upper case: " + expString.toUpperCase()
+}
+
+task count << {
+    5.times {
+        print " $it"
+    }
+}
+
+task groovyJDK << {
+    String myName = "Alexander"
+    myName.each {
+        println "${it}"
+    }
+
+    println project.buildDir
+    println getProject().getBuildDir()
+
+    project.buildDir = 'target'
+    println project.buildDir
+    getProject().setBuildDir "target_1"
+    println project.buildDir
+}
+
+/*
+repositories {
+    println "in a closure 1"
+}
+
+repositories() {
+    println "in a closure 2"
+}
+
+repositories({println "in a closure"})
+*/
+
+String getValue() {
+    return "This is value"
+}
+
+task 'getValueTask' << {
+    println getValue()
+}
+
+
+task taskX << {
+    println 'taskX'
+}
+
+
+taskX.dependsOn {
+    tasks.findAll {
+        task -> task.name.startsWith('lib')
+    }
+}
+
+task lib1 << {
+    println 'lib1'
+}
+task lib2 << {
+    println 'lib2'
+}
+task notALib {
+    doLast {
+        println 'notALib'
+    }
+}
+
+task copy(type: Copy) << {
+    description 'Ccpies the resource directory to the target directory.'
+    from 'resources'
+    into 'target'
+    include('**/*.txt', '**/*.xml', '**/*.properties')
+    println("description applied")
+}
+
+task eclipse_1 << {
+    println 'Hello Eclipse'
+}
+
+eclipse_1.onlyIf {
+    project.hasProperty('usingEclipse')
+}
+
+eclipse_1.doFirst {
+    if (!usingEclipse) {
+        throw  new StopExecutionException()
+    }
+}
+
+4.times { cnt ->
+    task "task$cnt" << {
+        println "I'm task number $cnt";
+    }
+}
+
+task0 {}.dependsOn task2, task3
+
+
+task hello << {
+    println 'Hello Earth'
+}
+hello.doFirst {
+    println 'Hello Venus'
+}
+hello.doLast {
+    println 'Hello Mars'
+}
+hello << {
+    println 'Hello Jupiter'
+}
+
+task hello2 << {
+    println 'Hello world!'
+}
+hello2.doLast {
+    println "Greetings from the $hello.name task."
+}
+
+task doSomething << {
+    println '\t\t\t do something....'
+}
+
+
+def count = 0
+new groovy.swing.SwingBuilder().frame(title: 'Frame', size: [300,300], show: true) {
+    borderLayout()
+    textLabel = label(text: "Click the button!", constraints: java.awt.BorderLayout.NORTH)
+    button(text: 'Click Me',
+        actionPerformed: {count++; textLabel.text = "Clicked ${count} time(s)."; println 'clicked'},
+        constraints: java.awt.BorderLayout.SOUTH
+    )
+}
+
+task hello10 << {
+        println 'Hello again'
+}
+
+hello10.doLast {
+    println 'New hello'
+}
+
+println '#: ' + hello10.temporaryDir
+

@@ -3,44 +3,93 @@ version '1.0-SNAPSHOT'
 
 apply plugin: 'java'
 
-sourceCompatibility = 1.5
+sourceCompatibility = 1.8
 
-repositories {
+/*repositories {
+    mavenLocal()
     mavenCentral()
-}
+}*/
 
-dependencies {
-    testCompile group: 'junit', name: 'junit', version: '4.11'
-}
+/*dependencies {
+    compile 'org.apache.poi:poi:3.9'
+    compile 'org.apache.poi:poi-ooxml:3.9'
+}*/
 
-task hello << {
-    println("tutorialspoin")
-}
-
-task upper << {
-    String expString = "TURORIALS point"
-    println "Original: " + expString
-    println "Upper case: " + expString.toUpperCase()
-}
-
-task count << {
-    5.times {
-        print " $it"
+buildscript {
+    repositories {
+        mavenLocal()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'org.apache.poi:poi:3.9'
+        classpath 'org.apache.poi:poi-ooxml:3.9'
     }
 }
 
-task groovyJDK << {
-    String myName = "Alexander"
-    myName.each {
-        println "${it}"
-    }
+import groovy.io.FileType
+import org.apache.poi.hssf.usermodel.HSSFWorkbook
+import org.apache.poi.ss.usermodel.Cell
+import org.apache.poi.ss.usermodel.Row
+import org.apache.poi.ss.usermodel.Sheet
+import org.apache.poi.ss.usermodel.Workbook
 
-    println project.buildDir
-    println getProject().getBuildDir()
 
-    project.buildDir = 'target'
-    println project.buildDir
-    getProject().setBuildDir "target_1"
-    println project.buildDir
+/***
+ * Vocabulary update
+ * Version 0.0.2
+ */
+
+task runSqlScript() {
+
 }
 
+task xls2Csv << {
+    FileInputStream fis = new FileInputStream(filename);
+    Workbook wb = new HSSFWorkbook(fis);
+    Sheet sheet = wb.getSheetAt(0);
+    for (Row row : sheet) {
+        for (Cell cell : row) {
+            doSomething(cell.toString())
+        }
+
+    }
+}
+
+task downloadUpdatePack(type: String) << {
+    println '!!!!!: ' + url
+}
+
+task getFile << {
+
+    /* Downloading file */
+    def timeStart = System.currentTimeMillis()
+    println '\tDownloading file'
+    def fileUrl = 'https://www.cms.gov/Medicare/Coding/HCPCSReleaseCodeSets/Downloads/2017-Alpha-Numeric-HCPCS-File.zip'
+    def tempDir = File.createTempDir()
+    tempDir.deleteOnExit()
+    println '\t\tStored to: ' + tempDir.getPath()
+    ant.get(src: fileUrl, dest:tempDir, verbose: true)
+
+    println '\tDownload completed...'
+
+    def timeFinish = System.currentTimeMillis()
+    def timeElapsed = timeFinish - timeStart
+    println '\tTime elapsed: ' + timeElapsed/1000 + ' in seconds.'
+
+    /* Extracting file */
+    def fileList = []
+    def dir = tempDir
+    dir.eachFile(FileType.FILES) { file ->
+        fileList << file
+        if (file.getPath().endsWith('zip')) {
+            ant.unzip(src: file.getPath(), dest: tempDir, overwrite: false)
+            println ('\t\tunzipped...')
+        }
+    }
+}
+
+
+task doVocabularyUpdate << {
+    downloadUpdatePack('http://localhost')
+
+}

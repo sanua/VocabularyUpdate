@@ -19,8 +19,8 @@
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
-      <module name="GradleProject_main" target="1.5" />
-      <module name="GradleProject_test" target="1.5" />
+      <module name="GradleProject_main" target="1.8" />
+      <module name="GradleProject_test" target="1.8" />
     </bytecodeTargetLevel>
   </component>
 </project>
