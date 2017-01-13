@@ -1,0 +1,275 @@
+group 'com.sci.vocabulary'
+group 'com.sci.vocabulary'
+version '1.0-SNAPSHOT'
+
+apply plugin: 'java'
+
+sourceCompatibility = 1.8
+
+/*repositories {
+    mavenLocal()
+    mavenCentral()
+}*/
+
+/*dependencies {
+    compile 'org.apache.poi:poi:3.9'
+    compile 'org.apache.poi:poi-ooxml:3.9'
+}*/
+
+buildscript {
+    repositories {
+        mavenLocal()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'org.apache.poi:poi:3.9'
+        classpath 'org.apache.poi:poi-ooxml:3.9'
+    }
+}
+
+import groovy.io.FileType
+import org.apache.poi.ss.usermodel.Cell
+import org.apache.poi.ss.usermodel.Row
+import org.apache.poi.ss.usermodel.Workbook
+import org.apache.poi.ss.usermodel.WorkbookFactory
+import org.apache.poi.ss.usermodel.Sheet
+
+/***
+ * Vocabulary update
+ * Version 0.0.2
+ */
+
+def fileUrl = 'https://www.cms.gov/Medicare/Coding/HCPCSReleaseCodeSets/Downloads/2017-Alpha-Numeric-HCPCS-File.zip'
+def tempDir = File.createTempDir()
+def inputFile = tempDir.getPath() + "\\" + "HCPC17_CONTR_ANWEB.xlsx"
+def outputFile = tempDir.getPath() + "\\" + "ANWEB_V2.csv"
+
+task downloadUpdatePack() << {
+    println '*** Download action ***'
+    println "4) !!!!!!!!!!!!!" + Thread.currentThread().getId()
+
+    /* Downloading file */
+    def timeStart = System.currentTimeMillis()
+    println '\tDownloading file'
+    println '\t\tStored to: ' + tempDir.getPath()
+    ant.get(src: fileUrl, dest: tempDir, verbose: true)
+    println '\tDownload completed...'
+
+    def timeFinish = System.currentTimeMillis()
+    def timeElapsed = timeFinish - timeStart
+    println '\tTime elapsed: ' + timeElapsed / 1000 + ' in seconds.'
+}
+
+task extractFiles() << {
+    println '*** Extract action ***'
+    println "3) !!!!!!!!!!!!!" + Thread.currentThread().getId()
+
+    /* Extracting file */
+    def fileList = []
+    def dir = tempDir
+    dir.eachFile(FileType.FILES) { file ->
+        fileList << file
+        if (file.getPath().endsWith('zip')) {
+            ant.unzip(src: file.getPath(), dest: tempDir, overwrite: false)
+            println('\t\tunzipped...')
+        }
+    }
+}
+
+task xls2Csv << {
+    println '*** Convert action ***'
+
+    println "1) !!!!!!!!!!!!!" + Thread.currentThread().getId()
+    // For storing data into CSV files
+    StringBuffer data = new StringBuffer();
+    try {
+        FileOutputStream fos = new FileOutputStream(outputFile);
+
+        // Get the workbook object for XLS file
+        Workbook workbook = WorkbookFactory.create(new FileInputStream(inputFile));
+        // Get first sheet from the workbook
+        Sheet sheet = workbook.getSheetAt(0);
+//        Cell cell;
+//        Row row;
+
+        for (int i = 0; i < sheet.getLastRowNum(); i++){
+            Row row = sheet.getRow(i);
+
+            if (row!= null){
+                for (int j = 0; j < row.getLastCellNum(); j++){
+                    Cell cell = row.getCell(j);
+                    if (cell == null){
+                        data.append(";");
+                    } else {
+                        cell.setCellType(Cell.CELL_TYPE_STRING)
+                        data.append("\"" + cell. toString().trim().replaceAll("\"", "'") + "\"" + ";");
+//                        switch (cell.getCellType()) {
+//                            case Cell.CELL_TYPE_BOOLEAN:
+//                                data.append("\"" + cell.getBooleanCellValue() + "\"" + ";");
+//                                break;
+//
+//                            case Cell.CELL_TYPE_NUMERIC:
+//                                data.append("\"" + cell.cgetNumericCellValue() + "\"" + ";");
+//                                break;
+//
+//                            case Cell.CELL_TYPE_STRING:
+////                                if (!cell.getStringCellValue().contains("\"")){
+//                                println cell.toString()
+//                                    data.append("\"" + cell.getStringCellValue().trim().replaceAll("\"", "'") + "\"" + ";");
+////                                } else {
+////                                    data.append(";");
+////                                }
+//                                break;
+//
+//                            case Cell.CELL_TYPE_BLANK:
+//                                data.append("" + ";");
+//                                break;
+//
+//                            default:
+//                                data.append(cell + ";");
+//                        }
+
+
+
+                    }
+                }
+                data.append('\n');
+            } else {
+
+            }
+        }
+
+        // Iterate through each rows from first sheet
+//        Iterator<Row> rowIterator = sheet.iterator();
+//        while (rowIterator.hasNext()) {
+//            row = rowIterator.next();
+//            // For each row, iterate through each columns
+//            Iterator<Cell> cellIterator = row.cellIterator();
+//            while (cellIterator.hasNext()) {
+//                cell = cellIterator.next();
+//
+//                switch (cell.getCellType()) {
+//                    case Cell.CELL_TYPE_BOOLEAN:
+//                        data.append("\"" + cell.getBooleanCellValue() + "\"" + ";");
+//                        break;
+//
+//                    case Cell.CELL_TYPE_NUMERIC:
+//                        data.append("\"" + cell.getNumericCellValue() + "\"" + ";");
+//                        break;
+//
+//                    case Cell.CELL_TYPE_STRING:
+//                        data.append("\"" + cell.getStringCellValue().trim() + "\"" + ";");
+//                        break;
+//
+//                    case Cell.CELL_TYPE_BLANK:
+//                        data.append("" + ";");
+//                        break;
+//
+//                    default:
+//                        data.append(cell + ";");
+//                }
+//
+//            }
+//
+//        }
+
+        fos.write(data.toString().getBytes());
+        fos.close();
+    }
+    catch (FileNotFoundException e) {
+        e.printStackTrace();
+    }
+    catch (IOException e) {
+        e.printStackTrace();
+    }
+}
+
+task task1(type:Exec) {
+    commandLine 'sqlldr.exe'
+}
+
+task importData << {
+    println '*** Import action ***'
+
+    def path = tempDir.getPath()
+    def userName = 'DEV_HCPCS'
+    def password = 'DEV_HCPCS'
+    def controlFile = 'E:\\Vocabulary_Data\\DEV_HCPCS\\update\\2016-Alpha-Numeric-HCPCS-File\\ANWEB_V2.ctl'
+    def dataFile = path + "\\" + "ANWEB_V2.csv"
+    println '!!!!' + dataFile
+    println '!!!!' + new File(dataFile).exists()
+    def logFile = path + "\\" + "ANWEB_V2.log"
+    def discardFile = path + "\\" + "ANWEB_V2.dsc"
+
+    exec {
+        println "2) !!!!!!!!!!!!!" + Thread.currentThread().getId()
+        executable "sqlldr.exe"
+        args "USERID=$userName/$password CONTROL=$controlFile DATA=$dataFile LOG=$logFile DISCARD=$discardFile"
+    }
+
+
+    //commandLine "sqlldr.exe"
+
+//    args "USERID=$userName/$password CONTROL=$controlFile DATA=$dataFile LOG=$logFile DISCARD=$discardFile"
+
+/*    standardOutput = new ByteArrayOutputStream()
+
+    ext.output = {
+        return standardOutput.toString()
+    }
+*/
+}
+
+/*task runLoadStageScript(type: Exec) {
+    def path = tempDir.getPath()
+    def userName = 'DEV_HCPCS'
+    def password = 'DEV_HCPCS'
+    def loadStageFile = 'E:\\Vocabulary_Data\\DEV_HCPCS\\update\\02.load_stage.sql'
+    def logFile = path + "load_stage.log"
+
+    workDir = tempDir
+
+    commandLine = "sqlplus /nolog $userName/$password @$loadStageFile > $logFile"
+
+    standardOutput = new ByteArrayOutputStream()
+
+    ext.output = {
+        return standardOutput.toString()
+    }
+}
+
+task runGenericUpdate(type: Exec) {
+    def path = tempDir.getPath()
+    def userName = 'DEV_HCPCS'
+    def password = 'DEV_HCPCS'
+    def genericUpdateFile = 'E:\\Vocabulary_Data\\DEV_HCPCS\\update\\02.load_stage.sql'
+    def logFile = path + "generic_update.log"
+
+    workDir = tempDir
+
+    commandLine = "sqlplus /nolog $userName/$password @$genericUpdateFile > $logFile"
+
+    standardOutput = new ByteArrayOutputStream()
+
+    ext.output = {
+        return standardOutput.toString()
+    }
+}*/
+
+
+
+
+extractFiles.dependsOn(downloadUpdatePack)
+xls2Csv.dependsOn(extractFiles)
+importData.dependsOn(xls2Csv)
+/*
+    FileInputStream fis = new FileInputStream(filename);
+    Workbook wb = new XSSFWorkbook(fis);
+    Sheet sheet = wb.getSheetAt(0);
+    for (Row row : sheet) {
+        for (Cell cell : row) {
+            doSomething(cell.toString())
+        }
+
+    }
+*/

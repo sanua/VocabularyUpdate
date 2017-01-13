@@ -90,7 +90,7 @@ task copy(type: Copy) << {
     description 'Ccpies the resource directory to the target directory.'
     from 'resources'
     into 'target'
-    include('**/*.txt', '**/*.xml', '**/*.properties')
+    include('**/*.txt', '**/*.xml', '**/*.gradle')
     println("description applied")
 }
 

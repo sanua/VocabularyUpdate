@@ -1,4 +1,5 @@
 group 'com.sci.vocabulary'
+group 'com.sci.vocabulary'
 version '1.0-SNAPSHOT'
 
 apply plugin: 'java'
@@ -27,25 +28,371 @@ buildscript {
 }
 
 import groovy.io.FileType
-import org.apache.poi.hssf.usermodel.HSSFWorkbook
 import org.apache.poi.ss.usermodel.Cell
 import org.apache.poi.ss.usermodel.Row
-import org.apache.poi.ss.usermodel.Sheet
 import org.apache.poi.ss.usermodel.Workbook
-
+import org.apache.poi.ss.usermodel.WorkbookFactory
+import org.apache.poi.ss.usermodel.Sheet
 
 /***
- * Vocabulary update
+ * HCPCS vocabulary update
  * Version 0.0.2
  */
+def tempDir = File.createTempDir()
+tempDir.deleteOnExit()
 
-task runSqlScript() {
+/**
+ * Just bootstrap task
+ */
+task startUpdate
 
+/**
+ * Prepare vocabulary update by creating source table
+ */
+task createSourceTable << {
+    println '/**                               ' +
+            '*  "Create source table" Action   ' +
+            '**/                               '
+
+    def log_file = "$tempDir.path\\${project.properties['hcpcs.createSourceTable.logFileName']}"
+    def error_file = "$tempDir.path\\${project.properties['hcpcs.createSourceTable.errFileName']}"
+
+    def db = [un: project.properties['hcpcs.db.userName'], pw: project.properties['hcpcs.db.password'], tns: project.properties['hcpcs.db.tnsName'], sqlfile: project.properties['hcpcs.createSourceTable.sqlFileName']]
+    println "100) *** $log_file $error_file".toString()
+
+    def sout = new StringBuilder(), serr = new StringBuilder()
+    def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} >${db.logfile}""".execute()
+    sqlplus.consumeProcessOutput(sout, serr)
+    sqlplus.waitFor()
+
+    println "1) ### $sqlplus.exitValue"
+    println "out> $sout err> $serr"
+
+    File f = new File(log_file)
+    f.write(sout.toString())
+
+    f = new File(error_file)
+    f.write(sout.toString())
+
+    if (serr != null && serr.toString().length() > 0) {
+        throw new GradleException(String.format(hcpcs.hcpcs.error.message, "prepareUpdate"))
+    }
 }
 
+/**
+ * Download vocabulary update pack
+ */
+task downloadUpdatePack() << {
+    println '/**                  ' +
+            '*  "Download" Action   ' +
+            '**/                  '
+
+    /* Downloading file */
+    def timeStart = System.currentTimeMillis()
+    println '\tDownloading file...'
+    println "\t\tStored to: $tempDir.path"
+    ant.get(src: project.properties['hcpcs.downloadUpdatePack.fileUrl'], dest: tempDir, verbose: true)
+    println '\tDownload completed...'
+
+    def timeFinish = System.currentTimeMillis()
+    def timeElapsed = (timeFinish - timeStart)/1000
+    println "\tTime elapsed: $timeElapsed in seconds."
+}
+
+task extractFiles() << {
+    println '/**                  ' +
+            '*  "Extract" Action   ' +
+            '**/                  '
+
+    /* Extracting file */
+    def fileList = []
+    tempDir.eachFile(FileType.FILES) { file ->
+        fileList << file
+        if (file.getPath().endsWith('zip')) {
+            ant.unzip(src: file.getPath(), dest: tempDir, overwrite: false)
+            println('\t\tunzipped...')
+        }
+    }
+}
+
+/**
+ * Convert from Microsoft Excel to CSV
+ */
 task xls2Csv << {
+    println '/**                  ' +
+            '*  "Convert" Action   ' +
+            '**/                  '
+
+    def inputFile = "$tempDir.path\\$project.properties['hcpcs.xls2Csv.srcFileName']"
+    def outputFile = "$tempDir.path\\$project.properties['hcpcs.xls2Csv.destFileName']"
+
+    // For storing data into CSV files
+    StringBuffer data = new StringBuffer();
+    try {
+        FileOutputStream fos = new FileOutputStream(outputFile);
+
+        // Get the workbook object for XLS file
+        Workbook workbook = WorkbookFactory.create(new FileInputStream(inputFile));
+        // Get first sheet from the workbook
+        Sheet sheet = workbook.getSheetAt(0);
+//        Cell cell;
+//        Row row;
+
+        for (int i = 0; i < sheet.getLastRowNum(); i++){
+            Row row = sheet.getRow(i);
+
+            if (row!= null){
+                for (int j = 0; j < row.getLastCellNum(); j++){
+                    Cell cell = row.getCell(j);
+                    if (cell == null){
+                        data.append(";");
+                    } else {
+                        cell.setCellType(Cell.CELL_TYPE_STRING)
+                        data.append("\"" + cell. toString().trim().replaceAll("\"", "'") + "\"" + ";");
+//                        switch (cell.getCellType()) {
+//                            case Cell.CELL_TYPE_BOOLEAN:
+//                                data.append("\"" + cell.getBooleanCellValue() + "\"" + ";");
+//                                break;
+//
+//                            case Cell.CELL_TYPE_NUMERIC:
+//                                data.append("\"" + cell.cgetNumericCellValue() + "\"" + ";");
+//                                break;
+//
+//                            case Cell.CELL_TYPE_STRING:
+////                                if (!cell.getStringCellValue().contains("\"")){
+//                                println cell.toString()
+//                                    data.append("\"" + cell.getStringCellValue().trim().replaceAll("\"", "'") + "\"" + ";");
+////                                } else {
+////                                    data.append(";");
+////                                }
+//                                break;
+//
+//                            case Cell.CELL_TYPE_BLANK:
+//                                data.append("" + ";");
+//                                break;
+//
+//                            default:
+//                                data.append(cell + ";");
+//                        }
+
+
+
+                    }
+                }
+                data.append('\n');
+            } else {
+
+            }
+        }
+
+        // Iterate through each rows from first sheet
+//        Iterator<Row> rowIterator = sheet.iterator();
+//        while (rowIterator.hasNext()) {
+//            row = rowIterator.next();
+//            // For each row, iterate through each columns
+//            Iterator<Cell> cellIterator = row.cellIterator();
+//            while (cellIterator.hasNext()) {
+//                cell = cellIterator.next();
+//
+//                switch (cell.getCellType()) {
+//                    case Cell.CELL_TYPE_BOOLEAN:
+//                        data.append("\"" + cell.getBooleanCellValue() + "\"" + ";");
+//                        break;
+//
+//                    case Cell.CELL_TYPE_NUMERIC:
+//                        data.append("\"" + cell.getNumericCellValue() + "\"" + ";");
+//                        break;
+//
+//                    case Cell.CELL_TYPE_STRING:
+//                        data.append("\"" + cell.getStringCellValue().trim() + "\"" + ";");
+//                        break;
+//
+//                    case Cell.CELL_TYPE_BLANK:
+//                        data.append("" + ";");
+//                        break;
+//
+//                    default:
+//                        data.append(cell + ";");
+//                }
+//
+//            }
+//
+//        }
+
+        fos.write(data.toString().getBytes());
+        fos.close();
+    }
+    catch (FileNotFoundException e) {
+        e.printStackTrace();
+    }
+    catch (IOException e) {
+        e.printStackTrace();
+    }
+}
+
+/**
+ * Import downloaded and converted data
+ */
+task importData << {
+    println '/**                  ' +
+            '*  "Import" Action   ' +
+            '**/                  '
+
+    def dataFile = "$tempDir.path\\$project.properties['hcpcs.importData.dataFileName']"
+    println '!!!!' + dataFile
+    println '!!!!' + new File(dataFile).exists()
+    def logFile = "$tempDir.path\\$project.properties['hcpcs.importData.logFileName']"
+    def discardFile = "$tempDir.path\\$project.properties['hcpcs.importData.discardFileName']"
+
+    exec {
+        println "2) !!!!!!!!!!!!!" + Thread.currentThread().getId()
+        executable "sqlldr.exe"
+        args "USERID=$project.properties['hcpcs.db.userName']/$project.properties['hcpcs.db.password']@$project.properties['hcpcs.db.tnsName'] CONTROL=$project.properties['hcpcs.db.controlFilePath'] DATA=$dataFile LOG=$logFile DISCARD=$discardFile"
+    }
+/*
+    commandLine "sqlldr.exe"
+    args "USERID=$userName/$password CONTROL=$controlFile DATA=$dataFile LOG=$logFile DISCARD=$discardFile"
+    standardOutput = new ByteArrayOutputStream()
+    ext.output = {
+        return standardOutput.toString()
+    }
+*/
+}
+
+/**
+ * Load stage
+ */
+task runLoadStageScript << {
+    println '/**                     ' +
+            '*  "LoadStage" Action   ' +
+            '**/                     '
+
+    def log_file = "$tempDir.path\\$project.properties['hcpcs.loadStage.logFileName']"
+    def error_file = "$tempDir.path\\$project.properties['hcpcs.loadStage.errFileName']"
+
+    def db = [un: project.properties['hcpcs.db.userName'], pw: project.properties['hcpcs.db.password'], tns: project.properties['hcpcs.db.tnsName'], sqlfile: project.properties['hcpcs.loadStage.sqlFileName'], logfile: log_file]
+    println "200) *** $log_file $error_file"
+
+    def sout = new StringBuilder(), serr = new StringBuilder()
+    def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} >${db.logfile}""".execute()
+    sqlplus.consumeProcessOutput(sout, serr)
+    sqlplus.waitFor()
+
+    println "2) ###" + sqlplus.exitValue()
+    println "out> $sout err> $serr"
+
+    File f = new File(log_file)
+    f.write(sout.toString())
+
+    f = new File(error_file)
+    f.write(sout.toString())
+
+    if (serr != null && serr.toString().length() > 0) {
+        throw new GradleException(String.format(project.properties['hcpcs.hcpcs.error.message'], "loadStage"))
+    }
+/*
+    def userName = 'DEV_HCPCS'
+    def password = 'DEV_HCPCS'
+    def logFile = path + "\\load_stage.log"
+    println "1) ###" + logFile
+    def loadStageFile = 'E:\\Vocabulary_Data\\DEV_HCPCS\\update\\test1.sql'
+
+    exec {
+        println "5) !!!!!!!!!!!!!" + Thread.currentThread().getId()
+        executable "sqlplus.exe"
+        args "$userName/$password@orcl @$loadStageFile"
+        println "1) %%%" + args
+    }
+*/
+}
+
+/**
+ * Run Generic Update
+ */
+task runGenericUpdate << {
+    println '/**                         ' +
+            '*  "GenericUpdate" Action   ' +
+            '**/                         '
+
+    def log_file = "$tempDir.getPath\\$project.properties['hcpcs.genericUpdate.logFileName']"
+    def error_file = "$tempDir.getPath\\$project.properties['hcpcs.genericUpdate.errFileName']"
+
+    def db = [un: project.properties['hcpcs.db.userName'], pw: project.properties['hcpcs.db.password'], tns: project.properties['hcpcs.db.tnsName'], sqlfile: project.properties['hcpcs.genericUpdate.sqlFileName'], logfile: log_file]
+    println "300) *** $log_file $error_file"
+
+    def sout = new StringBuilder(), serr = new StringBuilder()
+    def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} >${db.logfile}""".execute()
+    sqlplus.consumeProcessOutput(sout, serr)
+    sqlplus.waitFor()
+
+    println "3) ### $sqlplus.exitValue"
+    println "out> $sout err> $serr"
+
+    File f = new File(log_file)
+    f.write(sout.toString())
+
+    f = new File(error_file)
+    f.write(sout.toString())
+
+    if (serr != null && serr.toString().length() > 0) {
+        throw new GradleException(String.format(project.properties['hcpcs.hcpcs.error.message'], "genericUpdate"))
+    }
+/*
+    def path = tempDir.getPath()
+    def userName = 'DEV_HCPCS'
+    def password = 'DEV_HCPCS'
+    def logFile = path + "\\generic_update.log"
+    println "2) ###" + logFile
+    def $genericUpdateFile = "E:\\Vocabulary_Data\\DEV_HCPCS\\update\\test2.sql"
+
+    exec {
+        println "6) !!!!!!!!!!!!!" + Thread.currentThread().getId()
+        executable "sqlplus.exe"
+        args "$userName/$password@orcl @$genericUpdateFile"
+        println "2) %%%" + args
+    }
+*/
+}
+
+/*
+task runLoadStageScript(type: Exec) {
+    def path = tempDir.getPath()
+    def userName = 'DEV_HCPCS'
+    def password = 'DEV_HCPCS'
+    def loadStageFile = 'E:\\Vocabulary_Data\\DEV_HCPCS\\update\\02.load_stage.sql'
+    def logFile = path + "load_stage.log"
+
+    workDir = tempDir
+
+    commandLine = "sqlplus /nolog $userName/$password @$loadStageFile > $logFile"
+
+    standardOutput = new ByteArrayOutputStream()
+
+    ext.output = {
+        return standardOutput.toString()
+    }
+}
+
+task runGenericUpdate(type: Exec) {
+    def path = tempDir.getPath()
+    def userName = 'DEV_HCPCS'
+    def password = 'DEV_HCPCS'
+    def genericUpdateFile = 'E:\\Vocabulary_Data\\DEV_HCPCS\\update\\02.load_stage.sql'
+    def logFile = path + "generic_update.log"
+
+    workDir = tempDir
+
+    commandLine = "sqlplus /nolog $userName/$password @$genericUpdateFile > $logFile"
+
+    standardOutput = new ByteArrayOutputStream()
+
+    ext.output = {
+        return standardOutput.toString()
+    }
+}
+
     FileInputStream fis = new FileInputStream(filename);
-    Workbook wb = new HSSFWorkbook(fis);
+    Workbook wb = new XSSFWorkbook(fis);
     Sheet sheet = wb.getSheetAt(0);
     for (Row row : sheet) {
         for (Cell cell : row) {
@@ -53,43 +400,15 @@ task xls2Csv << {
         }
 
     }
-}
+*/
 
-task downloadUpdatePack(type: String) << {
-    println '!!!!!: ' + url
-}
-
-task getFile << {
-
-    /* Downloading file */
-    def timeStart = System.currentTimeMillis()
-    println '\tDownloading file'
-    def fileUrl = 'https://www.cms.gov/Medicare/Coding/HCPCSReleaseCodeSets/Downloads/2017-Alpha-Numeric-HCPCS-File.zip'
-    def tempDir = File.createTempDir()
-    tempDir.deleteOnExit()
-    println '\t\tStored to: ' + tempDir.getPath()
-    ant.get(src: fileUrl, dest:tempDir, verbose: true)
-
-    println '\tDownload completed...'
-
-    def timeFinish = System.currentTimeMillis()
-    def timeElapsed = timeFinish - timeStart
-    println '\tTime elapsed: ' + timeElapsed/1000 + ' in seconds.'
-
-    /* Extracting file */
-    def fileList = []
-    def dir = tempDir
-    dir.eachFile(FileType.FILES) { file ->
-        fileList << file
-        if (file.getPath().endsWith('zip')) {
-            ant.unzip(src: file.getPath(), dest: tempDir, overwrite: false)
-            println ('\t\tunzipped...')
-        }
-    }
-}
-
-
-task doVocabularyUpdate << {
-    downloadUpdatePack('http://localhost')
-
-}
+/**
+ * Dependencies between tasks
+ */
+downloadUpdatePack.dependsOn(createSourceTable)
+extractFiles.dependsOn(downloadUpdatePack)
+xls2Csv.dependsOn(extractFiles)
+importData.dependsOn(xls2Csv)
+runLoadStageScript.dependsOn(importData)
+runGenericUpdate.dependsOn(runLoadStageScript)
+startUpdate.dependsOn(runGenericUpdate)
