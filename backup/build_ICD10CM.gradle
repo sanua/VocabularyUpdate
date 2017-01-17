@@ -376,8 +376,8 @@ task checkUpdateResults << {
     def timeStart = System.currentTimeMillis()
 
     def path = tempDir.getPath()
-    def _log_file = path + '\\update_result.log'
-    def _error_file = path + '\\update_result.err'
+    def _log_file = path + '\\update_results.log'
+    def _error_file = path + '\\update_results.err'
 
     def db = [un : 'DEV_ICD10CM', pw :'DEV_ICD10CM',tns :'ORCL', sqlfile: 'E:\\Vocabulary_Data\\DEV_HCPCS\\update\\04.update_results.sql', logfile: _log_file]
     def sout = new StringBuilder(), serr = new StringBuilder()
