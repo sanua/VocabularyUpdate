@@ -61,7 +61,7 @@ task fastRecreateSchema << {
     def _log_file = path + '\\fast_recreate.log'
     def _error_file = path + '\\fast_recreate.err'
 
-    def db = [un : 'DEV_HCPCS_TEMP', pw :'DEV_HCPCS_TEMP',tns :'ORCL', sqlfile: 'E:\\Vocabulary-v5.0\\working\\fast_recreate_schema.sql', logfile: _log_file]
+    def db = [un : 'DEV_HCPCS_TEMP', pw :'DEV_HCPCS_TEMP',tns :'ORCL', sqlfile: 'E:\\Vocabulary_Data\\DEV_HCPCS\\update\\fast_recreate_schema.sql', logfile: _log_file]
     def sout = new StringBuilder(), serr = new StringBuilder()
     def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} >${db.logfile}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)
@@ -135,10 +135,10 @@ task createSourceTable << {
  * Task which will download vocabulary update package from source host.
  * This one - 'http://www.cms.gov/Medicare/Coding/HCPCSReleaseCodeSets/' is our case.
  */
-task downloadUpdatePack() << {
+task downloadUpdatePack << {
     println '\n***********************************************'
     println '*                                             *'
-    println '*        'Download' action started...         *'
+    println '*        \'Download\' action started...         *'
     println '*                                             *'
     println '***********************************************'
 
@@ -159,7 +159,7 @@ task downloadUpdatePack() << {
     println '*** \'Download\' action done ***'
 }
 
-task extractFiles() << {
+task extractFiles << {
     println '\n***********************************************'
     println '*                                             *'
     println '*        \'Extract\' action started...          *'
@@ -388,7 +388,7 @@ task runLoadStage << {
     def _log_file = path + '\\load_stage.log'
     def _error_file = path + '\\load_stage.err'
 
-    def db = [un : 'DEV_HCPCS_TEMP', pw :'DEV_HCPCS_TEMP',tns :'ORCL', sqlfile: 'E:\\Vocabulary_Data\\DEV_HCPCS\\update\\02.load_stage.sql ', logfile: _log_file]
+    def db = [un : 'DEV_HCPCS_TEMP', pw :'DEV_HCPCS_TEMP',tns :'ORCL', sqlfile: 'E:\\Vocabulary_Data\\DEV_HCPCS\\update\\02.load_stage.sql', logfile: _log_file]
     def sout = new StringBuilder(), serr = new StringBuilder()
     def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} >${db.logfile}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)

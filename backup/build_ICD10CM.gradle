@@ -61,7 +61,7 @@ task fastRecreateSchema << {
     def _log_file = path + '\\fast_recreate.log'
     def _error_file = path + '\\fast_recreate.err'
 
-    def db = [un : 'DEV_ICD10CM', pw :'DEV_ICD10CM',tns :'ORCL', sqlfile: 'E:\\Vocabulary-v5.0\\working\\fast_recreate_schema.sql', logfile: _log_file]
+    def db = [un : 'DEV_ICD10CM', pw :'DEV_ICD10CM',tns :'ORCL', sqlfile: 'E:\\Vocabulary_Data\\DEV_HCPCS\\update\\fast_recreate_schema.sql', logfile: _log_file]
     def sout = new StringBuilder(), serr = new StringBuilder()
     def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} >${db.logfile}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)
@@ -135,7 +135,7 @@ task createSourceTable << {
  * Task which will download vocabulary update package from source host.
  * This one - 'ftp://ftp.cdc.gov/pub/Health_Statistics/NCHS/Publications/ICD10CM' is our case.
  */
-task downloadUpdatePack() << {
+task downloadUpdatePack << {
     println '\n***********************************************'
     println '*                                             *'
     println '*       \'Download\' action started...          *'
@@ -160,7 +160,7 @@ task downloadUpdatePack() << {
 /**
  * Task will rename the file 'icd10cm_order_20xx.txt' to the 'icd10cm.txt'.
  */
-task renameFile() << {
+task renameFile << {
     println '\n***********************************************'
     println '*                                             *'
     println '*       \'Rename file\' action started...       *'
