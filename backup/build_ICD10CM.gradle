@@ -205,7 +205,7 @@ task renameFile() << {
 task importData << {
     println '\n\'***********************************************\''
     println '\'*                                             *\''
-    println '\'*        \'Import\' action started...           *\'''
+    println '\'*        \'Import\' action started...           *\''
     println '\'*                                             *\''
     println '\'***********************************************\''
 
