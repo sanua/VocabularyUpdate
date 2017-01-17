@@ -48,11 +48,11 @@ def newFileName = 'icd10cm.txt'
  * This is an auxiliary task. It just renew user schema and prepare it for further vocabulary update
  */
 task fastRecreateSchema << {
-    println '\n\'***********************************************\''
-    println '\'*                                             *\''
-    println '\'*       \'Fast recreate\' action started...     *\''
-    println '\'*                                             *\''
-    println '\'***********************************************\''
+    println '\n***********************************************'
+    println '*                                             *'
+    println '*       \'Fast recreate\' action started...     *'
+    println '*                                             *'
+    println '***********************************************'
 
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()
@@ -92,11 +92,11 @@ task fastRecreateSchema << {
  * It will create auxiliary table - the "ICD10CM_TABLE" in our case, for example.
  */
 task createSourceTable << {
-    println '\n\'***********************************************\''
-    println '\'*                                             *\''
-    println '\'*   \'Create source table\' action started...   *\''
-    println '\'*                                             *\''
-    println '\'***********************************************\''
+    println '\n***********************************************'
+    println '*                                             *'
+    println '*   \'Create source table\' action started...   *'
+    println '*                                             *'
+    println '***********************************************'
 
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()
@@ -136,11 +136,11 @@ task createSourceTable << {
  * This one - 'ftp://ftp.cdc.gov/pub/Health_Statistics/NCHS/Publications/ICD10CM' is our case.
  */
 task downloadUpdatePack() << {
-    println '\n\'***********************************************\''
-    println '\'*                                             *\''
-    println '\'*       \'Download\' action started...          *\''
-    println '\'*                                             *\''
-    println '\'***********************************************\''
+    println '\n***********************************************'
+    println '*                                             *'
+    println '*       \'Download\' action started...          *'
+    println '*                                             *'
+    println '***********************************************'
 
     /* Downloading file */
     // Start action checkpoint
@@ -161,11 +161,11 @@ task downloadUpdatePack() << {
  * Task will rename the file 'icd10cm_order_20xx.txt' to the 'icd10cm.txt'.
  */
 task renameFile() << {
-    println '\n\'***********************************************\''
-    println '\'*                                             *\''
-    println '\'*       \'Rename file\' action started...       *\''
-    println '\'*                                             *\''
-    println '\'***********************************************\''
+    println '\n***********************************************'
+    println '*                                             *'
+    println '*       \'Rename file\' action started...       *'
+    println '*                                             *'
+    println '***********************************************'
 
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()
@@ -203,11 +203,11 @@ task renameFile() << {
  * Task performed import CSV data to database
  */
 task importData << {
-    println '\n\'***********************************************\''
-    println '\'*                                             *\''
-    println '\'*        \'Import\' action started...           *\''
-    println '\'*                                             *\''
-    println '\'***********************************************\''
+    println '\n***********************************************'
+    println '*                                             *'
+    println '*        \'Import\' action started...           *'
+    println '*                                             *'
+    println '***********************************************'
 
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()
@@ -250,11 +250,11 @@ task importData << {
  * Seems it's is specific for each vocabulary.
  */
 task runLoadStage << {
-    println '\n\'***********************************************\''
-    println '\'*                                             *\''
-    println '\'*        \'Load stage\' action started...       *\''
-    println '\'*                                             *\''
-    println '\'***********************************************\''
+    println '\n***********************************************'
+    println '*                                             *'
+    println '*        \'Load stage\' action started...       *'
+    println '*                                             *'
+    println '***********************************************'
 
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()
@@ -308,11 +308,11 @@ task runLoadStage << {
  * It's common for all updated vocabularies and located in '\Vocabulary-v5.0\working\generic_update.sql' file.
  */
 task runGenericUpdate << {
-    println '\n\'***********************************************\''
-    println '\'*                                             *\''
-    println '\'*      \'Generic update\' action started...     *\''
-    println '\'*                                             *\''
-    println '\'***********************************************\''
+    println '\n***********************************************'
+    println '*                                             *'
+    println '*      \'Generic update\' action started...     *'
+    println '*                                             *'
+    println '***********************************************'
 
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()
@@ -366,11 +366,11 @@ task runGenericUpdate << {
  * This task will run scripts which allows to see the vocabulary update results
  */
 task checkUpdateResults << {
-    println '\n\'***********************************************\''
-    println '\'*                                             *\''
-    println '\'*   \'Check update results\' action started...  *\''
-    println '\'*                                             *\''
-    println '\'***********************************************\''
+    println '\n***********************************************'
+    println '*                                             *'
+    println '*   \'Check update results\' action started...  *'
+    println '*                                             *'
+    println '***********************************************'
 
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()
