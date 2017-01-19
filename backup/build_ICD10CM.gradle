@@ -45,6 +45,23 @@ def oldFileName = 'icd10cm_order_2017.txt'
 def newFileName = 'icd10cm.txt'
 
 /**
+ * Bootstrap action
+ */
+task startUpdate {
+    // Start action checkpoint
+    def timeStart, timeElapsed
+
+    doFirst {
+        timeStart = System.currentTimeMillis()
+    }
+    doLast {
+        // Measure time execution
+        timeElapsed = timeFinish - timeStart
+        println 'Total time elapsed: ' + timeElapsed / 1000 + ' in seconds.'
+    }
+}
+
+/**
  * This is an auxiliary task. It just renew user schema and prepare it for further vocabulary update
  */
 task fastRecreateSchema << {
@@ -63,12 +80,16 @@ task fastRecreateSchema << {
 
     def db = [un : 'DEV_ICD10CM', pw :'DEV_ICD10CM',tns :'ORCL', sqlfile: 'E:\\Vocabulary_Data\\DEV_HCPCS\\update\\fast_recreate_schema.sql', logfile: _log_file]
     def sout = new StringBuilder(), serr = new StringBuilder()
-    def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} >${db.logfile}""".execute()
+    def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)
     sqlplus.waitFor()
+    println '!!!! ERROR CODE !!! ' + sqlplus.exitValue()
 
+    // Write to logfile
     File f = new File(_log_file)
     f.write(sout.toString())
+    // Write to console
+    System.out.println(sout.toString())
 
     f = new File(_error_file)
     f.write(sout.toString())
@@ -107,12 +128,16 @@ task createSourceTable << {
 
     def db = [un : 'DEV_ICD10CM', pw :'DEV_ICD10CM',tns :'ORCL', sqlfile: 'E:\\Vocabulary_Data\\DEV_ICD10CM\\update\\create_source_tables.sql', logfile: _log_file]
     def sout = new StringBuilder(), serr = new StringBuilder()
-    def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} >${db.logfile}""".execute()
+    def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)
     sqlplus.waitFor()
+    println '!!!! ERROR CODE !!! ' + sqlplus.exitValue()
 
+    // Write to logfile
     File f = new File(_log_file)
     f.write(sout.toString())
+    // Write to console
+    System.out.println(sout.toString())
 
     f = new File(_error_file)
     f.write(sout.toString())
@@ -265,12 +290,16 @@ task runLoadStage << {
 
     def db = [un : 'DEV_ICD10CM', pw :'DEV_ICD10CM',tns :'ORCL', sqlfile: 'E:\\Vocabulary_Data\\DEV_ICD10CM\\update\\load_stage.sql', logfile: _log_file]
     def sout = new StringBuilder(), serr = new StringBuilder()
-    def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} >${db.logfile}""".execute()
+    def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)
     sqlplus.waitFor()
+    println '!!!! ERROR CODE !!! ' + sqlplus.exitValue()
 
+    // Write to logfile
     File f = new File(_log_file)
     f.write(sout.toString())
+    // Write to console
+    System.out.println(sout.toString())
 
     f = new File(_error_file)
     f.write(sout.toString())
@@ -323,12 +352,16 @@ task runGenericUpdate << {
 
     def db = [un : 'DEV_ICD10CM', pw :'DEV_ICD10CM',tns :'ORCL', sqlfile: 'E:\\Vocabulary_Data\\DEV_ICD10CM\\update\\generic_update.sql', logfile: _log_file]
     def sout = new StringBuilder(), serr = new StringBuilder()
-    def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} >${db.logfile}""".execute()
+    def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)
     sqlplus.waitFor()
+    println '!!!! ERROR CODE !!! ' + sqlplus.exitValue()
 
+    // Write to logfile
     File f = new File(_log_file)
     f.write(sout.toString())
+    // Write to console
+    System.out.println(sout.toString())
 
     f = new File(_error_file)
     f.write(sout.toString())
@@ -381,12 +414,16 @@ task checkUpdateResults << {
 
     def db = [un : 'DEV_ICD10CM', pw :'DEV_ICD10CM',tns :'ORCL', sqlfile: 'E:\\Vocabulary_Data\\DEV_HCPCS\\update\\04.update_results.sql', logfile: _log_file]
     def sout = new StringBuilder(), serr = new StringBuilder()
-    def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} >${db.logfile}""".execute()
+    def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)
     sqlplus.waitFor()
+    println '!!!! ERROR CODE !!! ' + sqlplus.exitValue()
 
+    // Write to logfile
     File f = new File(_log_file)
     f.write(sout.toString())
+    // Write to console
+    System.out.println(sout.toString())
 
     f = new File(_error_file)
     f.write(sout.toString())
@@ -404,58 +441,6 @@ task checkUpdateResults << {
 
     println '*** \'Check update results\' action done ***'
 }
-/**
- * Bootstrap action
- */
-task startUpdate
-
-/*task runLoadStageScript(type: Exec) {
-    def path = tempDir.getPath()
-    def userName = 'DEV_ICD10CM'
-    def password = 'DEV_ICD10CM'
-    def loadStageFile = 'E:\\Vocabulary_Data\\DEV_ICD10CM\\update\\02.load_stage.sql'
-    def logFile = path + "load_stage.log"
-
-    workDir = tempDir
-
-    commandLine = "sqlplus /nolog $userName/$password @$loadStageFile > $logFile"
-
-    standardOutput = new ByteArrayOutputStream()
-
-    ext.output = {
-        return standardOutput.toString()
-    }
-}
-
-task runGenericUpdate(type: Exec) {
-    def path = tempDir.getPath()
-    def userName = 'DEV_ICD10CM'
-    def password = 'DEV_ICD10CM'
-    def genericUpdateFile = 'E:\\Vocabulary_Data\\DEV_ICD10CM\\update\\02.load_stage.sql'
-    def logFile = path + "generic_update.log"
-
-    workDir = tempDir
-
-    commandLine = "sqlplus /nolog $userName/$password @$genericUpdateFile > $logFile"
-
-    standardOutput = new ByteArrayOutputStream()
-
-    ext.output = {
-        return standardOutput.toString()
-    }
-}*/
-
-/*
-    FileInputStream fis = new FileInputStream(filename);
-    Workbook wb = new XSSFWorkbook(fis);
-    Sheet sheet = wb.getSheetAt(0);
-    for (Row row : sheet) {
-        for (Cell cell : row) {
-            doSomething(cell.toString())
-        }
-
-    }
-*/
 
 /**
  * Defines action order
