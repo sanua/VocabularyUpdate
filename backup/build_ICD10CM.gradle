@@ -49,14 +49,14 @@ def newFileName = 'icd10cm.txt'
  */
 task startUpdate {
     // Start action checkpoint
-    def timeStart, timeElapsed
+    def timeStart, timeFinish
 
     doFirst {
         timeStart = System.currentTimeMillis()
     }
     doLast {
         // Measure time execution
-        timeElapsed = timeFinish - timeStart
+        def timeElapsed = timeFinish - timeStart
         println 'Total time elapsed: ' + timeElapsed / 1000 + ' in seconds.'
     }
 }
@@ -78,7 +78,7 @@ task fastRecreateSchema << {
     def _log_file = path + '\\fast_recreate.log'
     def _error_file = path + '\\fast_recreate.err'
 
-    def db = [un : 'DEV_ICD10CM', pw :'DEV_ICD10CM',tns :'ORCL', sqlfile: 'E:\\Vocabulary_Data\\DEV_HCPCS\\update\\fast_recreate_schema.sql', logfile: _log_file]
+    def db = [un : 'DEV_ICD10CM', pw :'DEV_ICD10CM',tns :'ORCL', sqlfile: 'E:\\Vocabulary_Data\\DEV_ICD10CM\\update\\00.fast_recreate_schema.sql', logfile: _log_file]
     def sout = new StringBuilder(), serr = new StringBuilder()
     def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)
@@ -126,7 +126,7 @@ task createSourceTable << {
     def _log_file = path + '\\create_source_table.log'
     def _error_file = path + '\\create_source_table.err'
 
-    def db = [un : 'DEV_ICD10CM', pw :'DEV_ICD10CM',tns :'ORCL', sqlfile: 'E:\\Vocabulary_Data\\DEV_ICD10CM\\update\\create_source_tables.sql', logfile: _log_file]
+    def db = [un : 'DEV_ICD10CM', pw :'DEV_ICD10CM',tns :'ORCL', sqlfile: 'E:\\Vocabulary_Data\\DEV_ICD10CM\\update\\01.create_source_tables.sql', logfile: _log_file]
     def sout = new StringBuilder(), serr = new StringBuilder()
     def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)
@@ -288,7 +288,7 @@ task runLoadStage << {
     def _log_file = path + '\\load_stage.log'
     def _error_file = path + '\\load_stage.err'
 
-    def db = [un : 'DEV_ICD10CM', pw :'DEV_ICD10CM',tns :'ORCL', sqlfile: 'E:\\Vocabulary_Data\\DEV_ICD10CM\\update\\load_stage.sql', logfile: _log_file]
+    def db = [un : 'DEV_ICD10CM', pw :'DEV_ICD10CM',tns :'ORCL', sqlfile: 'E:\\Vocabulary_Data\\DEV_ICD10CM\\update\\03.load_stage.sql', logfile: _log_file]
     def sout = new StringBuilder(), serr = new StringBuilder()
     def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)
@@ -350,7 +350,7 @@ task runGenericUpdate << {
     def _log_file = path + '\\generic_update.log'
     def _error_file = path + '\\generic_update.err'
 
-    def db = [un : 'DEV_ICD10CM', pw :'DEV_ICD10CM',tns :'ORCL', sqlfile: 'E:\\Vocabulary_Data\\DEV_ICD10CM\\update\\generic_update.sql', logfile: _log_file]
+    def db = [un : 'DEV_ICD10CM', pw :'DEV_ICD10CM',tns :'ORCL', sqlfile: 'E:\\Vocabulary_Data\\DEV_ICD10CM\\update\\04.generic_update.sql', logfile: _log_file]
     def sout = new StringBuilder(), serr = new StringBuilder()
     def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)
@@ -412,7 +412,7 @@ task checkUpdateResults << {
     def _log_file = path + '\\update_results.log'
     def _error_file = path + '\\update_results.err'
 
-    def db = [un : 'DEV_ICD10CM', pw :'DEV_ICD10CM',tns :'ORCL', sqlfile: 'E:\\Vocabulary_Data\\DEV_HCPCS\\update\\04.update_results.sql', logfile: _log_file]
+    def db = [un : 'DEV_ICD10CM', pw :'DEV_ICD10CM',tns :'ORCL', sqlfile: 'E:\\Vocabulary_Data\\DEV_ICD10CM\\update\\05.update_results.sql', logfile: _log_file]
     def sout = new StringBuilder(), serr = new StringBuilder()
     def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)
