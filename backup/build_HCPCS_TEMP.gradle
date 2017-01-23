@@ -45,24 +45,6 @@ def inputFile = tempDir.getPath() + "\\" + "HCPC17_CONTR_ANWEB.xlsx"
 def outputFile = tempDir.getPath() + "\\" + "ANWEB_V2.csv"
 
 /**
- * Bootstrap action
- */
-task startUpdate {
-    // Start action checkpoint
-    def timeStart
-    def timeFinish
-
-    doFirst {
-        timeStart = System.currentTimeMillis()
-    }
-    doLast {
-        // Measure time execution
-        def timeElapsed = timeFinish - timeStart
-        println 'Total time elapsed: ' + timeElapsed / 1000 + ' in seconds.'
-    }
-}
-
-/**
  * This is an auxiliary task. It just renew user schema and prepare it for further vocabulary update
  */
 task fastRecreateSchema << {
@@ -85,20 +67,23 @@ task fastRecreateSchema << {
     sqlplus.consumeProcessOutput(sout, serr)
     sqlplus.waitFor()
 
-    // Write to logfile
-    File f = new File(_log_file)
-    f.write(sout.toString())
-    // Write to console
-    System.out.println(sout.toString())
-
-    f = new File(_error_file)
-    f.write(sout.toString())
-
     // Finish action checkpoint
     def timeFinish = System.currentTimeMillis()
 
-    if (serr != null && serr.toString().length() > 0) {
-        throw new GradleException('Error occurred when \'Fast recreate\' executed...')
+    // Write to logfile
+    File f = new File(_log_file)
+    f.write(sout.toString())
+
+    // Write to console
+    System.out.println(sout.toString())
+
+    // Write to error file
+    f = new File(_error_file)
+    f.write(sout.toString())
+
+    /* Check for errors */
+    if (sqlplus.exitValue() != 0 || (serr != null && serr.toString().length() > 0)) {
+        throw new GradleException("Error with code ${sqlplus.exitValue()} occured when \'${name}\' executed...")
     }
 
     // Measure time execution
@@ -112,7 +97,7 @@ task fastRecreateSchema << {
  * This task will prepare user schema for vocabulary update routine.
  * It will create auxiliary table - the "ANWEB_V2" in our case, for example.
  */
-task createSourceTable << {
+task createSourceTable(dependsOn: fastRecreateSchema) << {
     println '\n***********************************************'
     println '*                                             *'
     println '*   \'Create source table\' action started...   *'
@@ -132,20 +117,23 @@ task createSourceTable << {
     sqlplus.consumeProcessOutput(sout, serr)
     sqlplus.waitFor()
 
-    // Write to logfile
-    File f = new File(_log_file)
-    f.write(sout.toString())
-    // Write to console
-    System.out.println(sout.toString())
-
-    f = new File(_error_file)
-    f.write(sout.toString())
-
     // Finish action checkpoint
     def timeFinish = System.currentTimeMillis()
 
-    if (serr != null && serr.toString().length() > 0) {
-        throw new GradleException('Error occurred when \'Create source table\' executed...')
+    // Write to logfile
+    File f = new File(_log_file)
+    f.write(sout.toString())
+
+    // Write to console
+    System.out.println(sout.toString())
+
+    // Write to error file
+    f = new File(_error_file)
+    f.write(sout.toString())
+
+    /* Check for errors */
+    if (sqlplus.exitValue() != 0 || (serr != null && serr.toString().length() > 0)) {
+        throw new GradleException("Error with code ${sqlplus.exitValue()} occured when \'${name}\' executed...")
     }
 
     // Measure time execution
@@ -159,7 +147,7 @@ task createSourceTable << {
  * Task which will download vocabulary update package from source host.
  * This one - 'http://www.cms.gov/Medicare/Coding/HCPCSReleaseCodeSets/' is our case.
  */
-task downloadUpdatePack << {
+task downloadUpdatePack(dependsOn: createSourceTable) << {
     println '\n***********************************************'
     println '*                                             *'
     println '*        \'Download\' action started...         *'
@@ -183,7 +171,7 @@ task downloadUpdatePack << {
     println '*** \'Download\' action done ***'
 }
 
-task extractFiles << {
+task extractFiles(dependsOn: downloadUpdatePack) << {
     println '\n***********************************************'
     println '*                                             *'
     println '*        \'Extract\' action started...          *'
@@ -217,7 +205,7 @@ task extractFiles << {
 /**
  * This task will convert a XLS data file to CSV format.
  */
-task xls2Csv << {
+task xls2Csv(dependsOn: extractFiles) << {
     println '\n***********************************************'
     println '*                                             *'
     println '*        \'Convert\' action started...          *'
@@ -351,7 +339,7 @@ task task1(type:Exec) {
 /**
  * Task performed import CSV data to database
  */
-task importData << {
+task importData(dependsOn: xls2Csv) << {
     println '\n***********************************************'
     println '*                                             *'
     println '*         \'Import\' action started...          *'
@@ -377,16 +365,6 @@ task importData << {
     // Finish action checkpoint
     def timeFinish = System.currentTimeMillis()
 
-    //commandLine "sqlldr.exe"
-
-//    args "USERID=$userName/$password CONTROL=$controlFile DATA=$dataFile LOG=$logFile DISCARD=$discardFile"
-
-/*    standardOutput = new ByteArrayOutputStream()
-
-    ext.output = {
-        return standardOutput.toString()
-    }
-*/
     // Measure time execution
     def timeElapsed = timeFinish - timeStart
     println '\tTime elapsed: ' + timeElapsed / 1000 + ' in seconds.'
@@ -398,7 +376,7 @@ task importData << {
  * This task will run 'Load stage' script.
  * Seems it's is specific for each vocabulary.
  */
-task runLoadStage << {
+task runLoadStage(dependsOn: importData) << {
     println '\n***********************************************'
     println '*                                             *'
     println '*        \'Load stage\' action started...       *'
@@ -418,40 +396,29 @@ task runLoadStage << {
     sqlplus.consumeProcessOutput(sout, serr)
     sqlplus.waitFor()
 
-    // Write to logfile
-    File f = new File(_log_file)
-    f.write(sout.toString())
-    // Write to console
-    System.out.println(sout.toString())
-
-    f = new File(_error_file)
-    f.write(sout.toString())
-
     // Finish action checkpoint
     def timeFinish = System.currentTimeMillis()
 
-    if (serr != null && serr.toString().length() > 0) {
-        throw new GradleException('Error occurred when \'Load stage\' executed...')
+    // Write to logfile
+    File f = new File(_log_file)
+    f.write(sout.toString())
+
+    // Write to console
+    System.out.println(sout.toString())
+
+    // Write to error file
+    f = new File(_error_file)
+    f.write(sout.toString())
+
+    /* Check for errors */
+    if (sqlplus.exitValue() != 0 || (serr != null && serr.toString().length() > 0)) {
+        throw new GradleException("Error with code ${sqlplus.exitValue()} occured when \'${name}\' executed...")
     }
 
     // Measure time execution
     def timeElapsed = timeFinish - timeStart
     println '\tTime elapsed: ' + timeElapsed / 1000 + ' in seconds.'
 
-/*
-    def userName = 'DEV_HCPCS_TEMP'
-    def password = 'DEV_HCPCS_TEMP'
-    def logFile = path + "\\load_stage.log"
-    println "1) ###" + logFile
-    def loadStageFile = 'E:\\Vocabulary_Data\\DEV_HCPCS\\update\\test1.sql'
-
-    exec {
-        println "5) !!!!!!!!!!!!!" + Thread.currentThread().getId()
-        executable "sqlplus.exe"
-        args "$userName/$password@orcl @$loadStageFile"
-        println "1) %%%" + args
-    }
-*/
     println '*** \'Load stage\' action done ***'
 }
 
@@ -459,7 +426,7 @@ task runLoadStage << {
  * This task will run 'Genetic update' script.
  * It's common for all updated vocabularies and located in '\Vocabulary-v5.0\working\generic_update.sql' file.
  */
-task runGenericUpdate << {
+task runGenericUpdate(dependsOn: runLoadStage) << {
     println '\n***********************************************'
     println '*                                             *'
     println '*     \'Generic update\' action started...      *'
@@ -479,37 +446,25 @@ task runGenericUpdate << {
     sqlplus.consumeProcessOutput(sout, serr)
     sqlplus.waitFor()
 
-    // Write to logfile
-    File f = new File(_log_file)
-    f.write(sout.toString())
-    // Write to console
-    System.out.println(sout.toString())
-
-    f = new File(_error_file)
-    f.write(sout.toString())
-
     // Finish action checkpoint
     def timeFinish = System.currentTimeMillis()
 
-    if (serr != null && serr.toString().length() > 0) {
-        throw new GradleException('Error occurred when \'Generic update\' executed...')
+    // Write to logfile
+    File f = new File(_log_file)
+    f.write(sout.toString())
+
+    // Write to console
+    System.out.println(sout.toString())
+
+    // Write to error file
+    f = new File(_error_file)
+    f.write(sout.toString())
+
+    /* Check for errors */
+    if (sqlplus.exitValue() != 0 || (serr != null && serr.toString().length() > 0)) {
+        throw new GradleException("Error with code ${sqlplus.exitValue()} occured when \'${name}\' executed...")
     }
 
-/*
-    def path = tempDir.getPath()
-    def userName = 'DEV_HCPCS_TEMP'
-    def password = 'DEV_HCPCS_TEMP'
-    def logFile = path + "\\generic_update.log"
-    println "2) ###" + logFile
-    def $genericUpdateFile = "E:\\Vocabulary_Data\\DEV_HCPCS\\update\\test2.sql"
-
-    exec {
-        println "6) !!!!!!!!!!!!!" + Thread.currentThread().getId()
-        executable "sqlplus.exe"
-        args "$userName/$password@orcl @$genericUpdateFile"
-        println "2) %%%" + args
-    }
-*/
     // Measure time execution
     def timeElapsed = timeFinish - timeStart
     println '\tTime elapsed: ' + timeElapsed / 1000 + ' in seconds.'
@@ -520,7 +475,7 @@ task runGenericUpdate << {
 /**
  * This task will run scripts which allows to see the vocabulary update results
  */
-task checkUpdateResults << {
+task checkUpdateResults(dependsOn: runGenericUpdate) << {
     println '\n***********************************************'
     println '*                                             *'
     println '*  \'Check update results\' action started...   *'
@@ -540,20 +495,23 @@ task checkUpdateResults << {
     sqlplus.consumeProcessOutput(sout, serr)
     sqlplus.waitFor()
 
-    // Write to logfile
-    File f = new File(_log_file)
-    f.write(sout.toString())
-    // Write to console
-    System.out.println(sout.toString())
-
-    f = new File(_error_file)
-    f.write(sout.toString())
-
     // Finish action checkpoint
     def timeFinish = System.currentTimeMillis()
 
-    if (serr != null && serr.toString().length() > 0) {
-        throw new GradleException('Error occurred when \'Check update results\' executed...')
+    // Write to log file
+    File f = new File(_log_file)
+    f.write(sout.toString())
+
+    // Write to console
+    System.out.println(sout.toString())
+
+    // Write to error file
+    f = new File(_error_file)
+    f.write(sout.toString())
+
+    /* Check for errors */
+    if (sqlplus.exitValue() != 0 || (serr != null && serr.toString().length() > 0)) {
+        throw new GradleException("Error with code ${sqlplus.exitValue()} occured when \'${name}\' executed...")
     }
 
     // Measure time execution
@@ -564,14 +522,21 @@ task checkUpdateResults << {
 }
 
 /**
- * Defines action order
+ * Bootstrap action
  */
-createSourceTable.dependsOn fastRecreateSchema
-downloadUpdatePack.dependsOn createSourceTable
-extractFiles.dependsOn downloadUpdatePack
-xls2Csv.dependsOn extractFiles
-importData.dependsOn xls2Csv
-runLoadStage.dependsOn importData
-runGenericUpdate.dependsOn runLoadStage
-checkUpdateResults.dependsOn runGenericUpdate
-startUpdate.dependsOn checkUpdateResults
+task startUpdate(dependsOn: checkUpdateResults) {
+    // Start action checkpoint
+    def timeStart
+
+    doFirst {
+        timeStart = System.currentTimeMillis()
+    }
+    doLast {
+        // Finish action checkpoint
+        def timeFinish = System.currentTimeMillis()
+
+        // Measure time execution
+        def timeElapsed = timeFinish - timeStart
+        println 'Total time elapsed: ' + timeElapsed / 1000 + ' in seconds.'
+    }
+}
