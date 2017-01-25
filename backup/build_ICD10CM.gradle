@@ -82,7 +82,7 @@ task fastRecreateSchema(description: project.properties['icd10cm.fastRecreate.de
     f.write(sout.toString())
 
     /* Check for errors */
-    if (project.properties['stop.on.error'] && (sqlplus.exitValue() != 0 || (serr != null && serr.toString().length() > 0))) {
+    if (project.properties['stop.on.error'].toBoolean() && (sqlplus.exitValue() != 0 || (serr != null && serr.toString().length() > 0))) {
         throw new GradleException(String.format(project.properties['error.message.with.code'], sqlplus.exitValue(), name))
     }
 
@@ -136,7 +136,7 @@ task createSourceTable(dependsOn: fastRecreateSchema, description: project.prope
     f.write(sout.toString())
 
     /* Check for errors */
-    if (project.properties['stop.on.error'] && (sqlplus.exitValue() != 0 || (serr != null && serr.toString().length() > 0))) {
+    if (project.properties['stop.on.error'].toBoolean() && (sqlplus.exitValue() != 0 || (serr != null && serr.toString().length() > 0))) {
         throw new GradleException(String.format(project.properties['error.message.with.code'], sqlplus.exitValue(), name))
     }
 
@@ -294,7 +294,7 @@ task runLoadStage(dependsOn: importData, description: project.properties['icd10c
     f.write(sout.toString())
 
     /* Check for errors */
-    if (project.properties['stop.on.error'] && (sqlplus.exitValue() != 0 || (serr != null && serr.toString().length() > 0))) {
+    if (project.properties['stop.on.error'].toBoolean() && (sqlplus.exitValue() != 0 || (serr != null && serr.toString().length() > 0))) {
         throw new GradleException(String.format(project.properties['error.message.with.code'], sqlplus.exitValue(), name))
     }
 
@@ -348,7 +348,7 @@ task runGenericUpdate(dependsOn: runLoadStage, description: project.properties['
     f.write(sout.toString())
 
     /* Check for errors */
-    if (project.properties['stop.on.error'] && (sqlplus.exitValue() != 0 || (serr != null && serr.toString().length() > 0))) {
+    if (project.properties['stop.on.error'].toBoolean() && (sqlplus.exitValue() != 0 || (serr != null && serr.toString().length() > 0))) {
         throw new GradleException(String.format(project.properties['error.message.with.code'], sqlplus.exitValue(), name))
     }
 
@@ -401,7 +401,7 @@ task checkUpdateResults(dependsOn: runGenericUpdate, description: project.proper
     f.write(sout.toString())
 
     /* Check for errors */
-    if (project.properties['stop.on.error'] && (sqlplus.exitValue() != 0 || (serr != null && serr.toString().length() > 0))) {
+    if (project.properties['stop.on.error'].toBoolean() && (sqlplus.exitValue() != 0 || (serr != null && serr.toString().length() > 0))) {
         throw new GradleException(String.format(project.properties['error.message.with.code'], sqlplus.exitValue(), name))
     }
 
