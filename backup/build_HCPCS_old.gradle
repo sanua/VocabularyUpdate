@@ -14,9 +14,6 @@ sourceCompatibility = 1.8
 /*dependencies {
     compile 'org.apache.poi:poi:3.9'
     compile 'org.apache.poi:poi-ooxml:3.9'
-
-	compile fileTree(dir: 'libs', include: ['*.jar'])
-    compile project(':material-intro') // add this line to compile some project (for multi-project config)
 }*/
 
 buildscript {
@@ -37,122 +34,70 @@ import org.apache.poi.ss.usermodel.Workbook
 import org.apache.poi.ss.usermodel.WorkbookFactory
 import org.apache.poi.ss.usermodel.Sheet
 
-
 /***
- * HCPCS vocabulary update
- * Version 0.0.3
+ * Vocabulary update
+ * Version 0.0.2
  */
+
+def fileUrl = 'https://www.cms.gov/Medicare/Coding/HCPCSReleaseCodeSets/Downloads/2017-Alpha-Numeric-HCPCS-File.zip'
 def tempDir = File.createTempDir()
-tempDir.deleteOnExit()
+def inputFile = tempDir.getPath() + "\\" + "HCPC17_CONTR_ANWEB.xlsx"
+def outputFile = tempDir.getPath() + "\\" + "ANWEB_V2.csv"
 
-/**
- * It just renew user schema and prepare it for further vocabulary update
- */
-task fastRecreate << {
-    println '/**                               '
-    println '*  "Fast Recreate" Action   '
-    println '**/                               '
+task prepareUpdate << {
+    println '*** Create source table action ***'
 
-    def log_file = "$tempDir.path\\${project.properties['hcpcs.fastRecreate.logFileName']}"
-    def error_file = "$tempDir.path\\${project.properties['hcpcs.fastRecreate.errFileName']}"
+    def path = tempDir.getPath()
+    def _log_file = path + '\\create_source_table.log'
+    def _error_file = path + '\\create_source_table.err'
 
-    def db = [un: project.properties['hcpcs.db.userName'], pw: project.properties['hcpcs.db.password'], tns: project.properties['hcpcs.db.tnsName'],
-              sqlfile: project.properties['hcpcs.fastRecreate.sqlFilePath']]
-    println "100) *** $log_file $error_file".toString()
+    def db = [un : 'DEV_HCPCS1', pw :'DEV_HCPCS1',tns :'ORCL', sqlfile: 'E:\\Vocabulary_Data\\DEV_HCPCS\\update\\00.create_source_tables.sql']
+    println '100) *** ' + _log_file + ' ' + _error_file
 
     def sout = new StringBuilder(), serr = new StringBuilder()
-    def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
+    def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} >${db.logfile}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)
     sqlplus.waitFor()
 
-    println "1) ### ${sqlplus.exitValue()}"
+    println "1) ###" + sqlplus.exitValue()
     println "out> $sout err> $serr"
 
-    // Write to console
-    System.out.println(sout.toString())
-
-    // Write to logfile
-    File f = new File(log_file)
+    File f = new File(_log_file)
     f.write(sout.toString())
 
-    // Write to error file
-    f = new File(error_file)
+    f = new File(_error_file)
     f.write(sout.toString())
 
-    /* Check for errors */
-    if (sqlplus.exitValue() != 0 || (serr != null && serr.toString().length() > 0)) {
-        throw new GradleException(String.format(project.properties['error.message'], sqlplus.exitValue(), name))
+    if (serr != null && serr.toString().length() > 0) {
+        throw new GradleException('Error occurred when "prepareUpdate" executed...')
     }
+
 }
 
-/**
- * Prepare vocabulary update by creating source table
- */
-task createSourceTable(dependsOn: fastRecreate) << {
-    println '/**                               '
-    println '*  "Create source table" Action   '
-    println '**/                               '
-
-    def log_file = "$tempDir.path\\${project.properties['hcpcs.createSourceTable.logFileName']}"
-    def error_file = "$tempDir.path\\${project.properties['hcpcs.createSourceTable.errFileName']}"
-
-    def db = [un: project.properties['hcpcs.db.userName'], pw: project.properties['hcpcs.db.password'], tns: project.properties['hcpcs.db.tnsName'],
-              sqlfile: project.properties['hcpcs.createSourceTable.sqlFilePath']]
-    println "100) *** $log_file $error_file".toString()
-
-    def sout = new StringBuilder(), serr = new StringBuilder()
-    def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
-    sqlplus.consumeProcessOutput(sout, serr)
-    sqlplus.waitFor()
-
-    println "1) ### ${sqlplus.exitValue()}"
-    println "out> $sout err> $serr"
-
-    // Write to console
-    System.out.println(sout.toString())
-
-    // Write to logfile
-    File f = new File(log_file)
-    f.write(sout.toString())
-
-    // Write to error file
-    f = new File(error_file)
-    f.write(sout.toString())
-
-    /* Check for errors */
-    if (sqlplus.exitValue() != 0 || (serr != null && serr.toString().length() > 0)) {
-        throw new GradleException(String.format($project.properties['error.message'], sqlplus.exitValue(), name))
-    }
-}
-
-/**
- * Download vocabulary update pack
- */
-task downloadUpdatePack(dependsOn: createSourceTable) << {
-    println '/**                  '
-    println '*  "Download" Action   '
-    println '**/                  '
+task downloadUpdatePack() << {
+    println '*** Download action ***'
+    println "4) !!!!!!!!!!!!!" + Thread.currentThread().getId()
 
     /* Downloading file */
     def timeStart = System.currentTimeMillis()
-    println '\tDownloading file...'
-    println "\t\tStored to: $tempDir.path"
-    ant.get(src: project.properties['hcpcs.downloadUpdatePack.fileUrl'], dest: tempDir, verbose: true)
+    println '\tDownloading file'
+    println '\t\tStored to: ' + tempDir.getPath()
+    ant.get(src: fileUrl, dest: tempDir, verbose: true)
     println '\tDownload completed...'
 
     def timeFinish = System.currentTimeMillis()
-    def timeElapsed = (timeFinish - timeStart)/1000
-    println "\tTime elapsed: $timeElapsed in seconds."
+    def timeElapsed = timeFinish - timeStart
+    println '\tTime elapsed: ' + timeElapsed / 1000 + ' in seconds.'
 }
 
-task extractFiles(dependsOn: downloadUpdatePack) << {
-    println '/**                  ' +
-            '*  "Extract" Action   ' +
-            '**/                  '
+task extractFiles() << {
+    println '*** Extract action ***'
+    println "3) !!!!!!!!!!!!!" + Thread.currentThread().getId()
 
     /* Extracting file */
     def fileList = []
-    tempDir.eachFile(FileType.FILES) { file ->
+    def dir = tempDir
+    dir.eachFile(FileType.FILES) { file ->
         fileList << file
         if (file.getPath().endsWith('zip')) {
             ant.unzip(src: file.getPath(), dest: tempDir, overwrite: false)
@@ -161,17 +106,10 @@ task extractFiles(dependsOn: downloadUpdatePack) << {
     }
 }
 
-/**
- * Convert from Microsoft Excel to CSV
- */
-task xls2Csv(dependsOn: extractFiles) << {
-    println '/**                  '
-    println '*  "Convert" Action   '
-    println '**/                  '
+task xls2Csv << {
+    println '*** Convert action ***'
 
-    def inputFile = "$tempDir.path\\${project.properties['hcpcs.xls2Csv.srcFileName']}"
-    def outputFile = "$tempDir.path\\${project.properties['hcpcs.xls2Csv.destFileName']}"
-
+    println "1) !!!!!!!!!!!!!" + Thread.currentThread().getId()
     // For storing data into CSV files
     StringBuffer data = new StringBuffer();
     try {
@@ -276,75 +214,70 @@ task xls2Csv(dependsOn: extractFiles) << {
     }
 }
 
-/**
- * Import downloaded and converted data
- */
-task importData(dependsOn: xls2Csv) << {
-    println '/**                  '
-    println '*  "Import" Action   '
-    println '**/                  '
+task task1(type:Exec) {
+    commandLine 'sqlldr.exe'
+}
 
-    def dataFile = "$tempDir.path\\${project.properties['hcpcs.importData.dataFileName']}"
+task importData << {
+    println '*** Import action ***'
+
+    def path = tempDir.getPath()
+    def userName = 'DEV_HCPCS1'
+    def password = 'DEV_HCPCS1'
+    def controlFile = 'E:\\Vocabulary_Data\\DEV_HCPCS\\update\\2016-Alpha-Numeric-HCPCS-File\\ANWEB_V2.ctl'
+    def dataFile = path + "\\" + "ANWEB_V2.csv"
     println '!!!!' + dataFile
     println '!!!!' + new File(dataFile).exists()
-    def logFile = "$tempDir.path\\${project.properties['hcpcs.importData.logFileName']}"
-    def discardFile = "$tempDir.path\\${project.properties['hcpcs.importData.discardFileName']}"
-    def badFile = "$tempDir.path\\${project.properties['hcpcs.importData.badFileName']}"
+    def logFile = path + "\\" + "ANWEB_V2.log"
+    def discardFile = path + "\\" + "ANWEB_V2.dsc"
 
     exec {
         println "2) !!!!!!!!!!!!!" + Thread.currentThread().getId()
         executable "sqlldr.exe"
-        args "USERID=${project.properties['hcpcs.db.userName']}/${project.properties['hcpcs.db.password']}@${project.properties['hcpcs.db.tnsName']} " +
-                "CONTROL=${project.properties['hcpcs.import.controlFilePath']} DATA=$dataFile LOG=$logFile DISCARD=$discardFile BAD=$badFile"
+        args "USERID=$userName/$password@ORCL CONTROL=$controlFile DATA=$dataFile LOG=$logFile DISCARD=$discardFile"
     }
-/*
-    commandLine "sqlldr.exe"
-    args "USERID=$userName/$password CONTROL=$controlFile DATA=$dataFile LOG=$logFile DISCARD=$discardFile"
-    standardOutput = new ByteArrayOutputStream()
+
+
+    //commandLine "sqlldr.exe"
+
+//    args "USERID=$userName/$password CONTROL=$controlFile DATA=$dataFile LOG=$logFile DISCARD=$discardFile"
+
+/*    standardOutput = new ByteArrayOutputStream()
+
     ext.output = {
         return standardOutput.toString()
     }
 */
 }
 
-/**
- * Load stage
- */
-task runLoadStageScript(dependsOn: importData) << {
-    println '/**                     '
-    println '*  "LoadStage" Action   '
-    println '**/                     '
+task runLoadStageScript << {
+    println '*** LoadStage action ***'
 
-    def log_file = "$tempDir.path\\${project.properties['hcpcs.loadStage.logFileName']}"
-    def error_file = "$tempDir.path\\${project.properties['hcpcs.loadStage.errFileName']}"
+    def path = tempDir.getPath()
+    def _log_file = path + '\\load_stage.log'
+    def _error_file = path + '\\load_stage.err'
 
-    def db = [un: project.properties['hcpcs.db.userName'], pw: project.properties['hcpcs.db.password'], tns: project.properties['hcpcs.db.tnsName'],
-              sqlfile: project.properties['hcpcs.loadStage.sqlFilePath'], logfile: log_file]
-    println "200) *** $log_file $error_file"
+    def db = [un : 'DEV_HCPCS1', pw :'DEV_HCPCS1',tns :'ORCL', sqlfile: 'E:\\Vocabulary_Data\\DEV_HCPCS\\update\\02.load_stage.sql ', logfile: _log_file]
+    println '200) *** ' + _log_file + ' ' + _error_file
 
     def sout = new StringBuilder(), serr = new StringBuilder()
-    def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
+    def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} >${db.logfile}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)
     sqlplus.waitFor()
 
     println "2) ###" + sqlplus.exitValue()
     println "out> $sout err> $serr"
 
-    // Write to console
-    System.out.println(sout.toString())
-
-    // Write to logfile
-    File f = new File(log_file)
+    File f = new File(_log_file)
     f.write(sout.toString())
 
-    // Write to error file
-    f = new File(error_file)
+    f = new File(_error_file)
     f.write(sout.toString())
 
-    /* Check for errors */
-    if (sqlplus.exitValue() != 0 || (serr != null && serr.toString().length() > 0)) {
-        throw new GradleException(String.format(project.properties['error.message'], sqlplus.exitValue(), name))
+    if (serr != null && serr.toString().length() > 0) {
+        throw new GradleException('Error occurred when "loadStage" executed...')
     }
+
 /*
     def userName = 'DEV_HCPCS'
     def password = 'DEV_HCPCS'
@@ -361,44 +294,35 @@ task runLoadStageScript(dependsOn: importData) << {
 */
 }
 
-/**
- * Run Generic Update
- */
-task runGenericUpdate(dependsOn: runLoadStageScript) << {
-    println '/**                         '
-    println '*  "GenericUpdate" Action   '
-    println '**/                         '
+task runGenericUpdate << {
+    println '*** GenericUpdate action ***'
 
-    def log_file = "${tempDir.getPath()}\\${project.properties['hcpcs.genericUpdate.logFileName']}"
-    def error_file = "${tempDir.getPath()}\\${project.properties['hcpcs.genericUpdate.errFileName']}"
+    def path = tempDir.getPath()
+    def _log_file = path + '\\generic_update.log'
+    def _error_file = path + '\\generic_update.err'
 
-    def db = [un: project.properties['hcpcs.db.userName'], pw: project.properties['hcpcs.db.password'], tns: project.properties['hcpcs.db.tnsName'],
-              sqlfile: project.properties['hcpcs.genericUpdate.sqlFilePath'], logfile: log_file]
-    println "300) *** $log_file $error_file"
+    def db = [un : 'DEV_HCPCS1', pw :'DEV_HCPCS1',tns :'ORCL', sqlfile: 'E:\\Vocabulary_Data\\DEV_HCPCS\\update\\03.generic_update.sql', logfile: _log_file]
+    println '300) *** ' + _log_file + ' ' + _error_file
 
     def sout = new StringBuilder(), serr = new StringBuilder()
-    def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
+    def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} >${db.logfile}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)
     sqlplus.waitFor()
 
-    println "3) ### ${sqlplus.exitValue()}"
+    println "3) ###" + sqlplus.exitValue()
     println "out> $sout err> $serr"
 
-    // Write to console
-    System.out.println(sout.toString())
-
-    // Write to logfile
-    File f = new File(log_file)
+    File f = new File(_log_file)
     f.write(sout.toString())
 
-    // Write to error file
-    f = new File(error_file)
+    f = new File(_error_file)
     f.write(sout.toString())
 
-    /* Check for errors */
-    if (sqlplus.exitValue() != 0 || (serr != null && serr.toString().length() > 0)) {
-        throw new GradleException(String.format(project.properties['error.message'], sqlplus.exitValue(), name))
+    if (serr != null && serr.toString().length() > 0) {
+        throw new GradleException('Error occurred when "genericUpdate" executed...')
     }
+
+
 /*
     def path = tempDir.getPath()
     def userName = 'DEV_HCPCS'
@@ -414,10 +338,12 @@ task runGenericUpdate(dependsOn: runLoadStageScript) << {
         println "2) %%%" + args
     }
 */
+
 }
 
-/*
-task runLoadStageScript(type: Exec) {
+task startUpdate
+
+/*task runLoadStageScript(type: Exec) {
     def path = tempDir.getPath()
     def userName = 'DEV_HCPCS'
     def password = 'DEV_HCPCS'
@@ -451,8 +377,18 @@ task runGenericUpdate(type: Exec) {
     ext.output = {
         return standardOutput.toString()
     }
-}
+}*/
 
+
+downloadUpdatePack.dependsOn(prepareUpdate)
+extractFiles.dependsOn(downloadUpdatePack)
+xls2Csv.dependsOn(extractFiles)
+importData.dependsOn(xls2Csv)
+runLoadStageScript.dependsOn(importData)
+runGenericUpdate.dependsOn(runLoadStageScript)
+startUpdate.dependsOn(runGenericUpdate)
+
+/*
     FileInputStream fis = new FileInputStream(filename);
     Workbook wb = new XSSFWorkbook(fis);
     Sheet sheet = wb.getSheetAt(0);
@@ -463,8 +399,3 @@ task runGenericUpdate(type: Exec) {
 
     }
 */
-
-/**
- * Just bootstrap task
- */
-task startUpdate(dependsOn: runGenericUpdate)

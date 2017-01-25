@@ -1,5 +1,4 @@
 group 'com.sci.vocabulary'
-group 'com.sci.vocabulary'
 version '1.0-SNAPSHOT'
 
 apply plugin: 'java'
@@ -36,32 +35,33 @@ import org.apache.poi.ss.usermodel.Sheet
 
 /***
  * ICD10CM vocabulary update
- * Version 0.0.2
+ * Version 0.0.3
  */
-
-def fileUrl = 'ftp://ftp.cdc.gov/pub/Health_Statistics/NCHS/Publications/ICD10CM/2017/icd10cm_order_2017.txt'
 def tempDir = File.createTempDir()
-def oldFileName = 'icd10cm_order_2017.txt'
-def newFileName = 'icd10cm.txt'
+tempDir.deleteOnExit()
 
 /**
- * This is an auxiliary task. It just renew user schema and prepare it for further vocabulary update
+ * Just renew user schema and prepare it for further vocabulary update
  */
-task fastRecreateSchema << {
+task fastRecreateSchema(description: project.properties['icd10cm.fastRecreate.description']) << {
     println '\n***********************************************'
     println '*                                             *'
-    println '*       \'Fast recreate\' action started...     *'
+    println "*       '${description}' action started...     *"
     println '*                                             *'
     println '***********************************************'
 
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()
 
-    def path = tempDir.getPath()
-    def _log_file = path + '\\fast_recreate.log'
-    def _error_file = path + '\\fast_recreate.err'
+    def log_file = "${tempDir.getPath()}\\${project.properties['icd10cm.fastRecreate.logFileName']}"
+    def stream_log_file = "${tempDir.getPath()}\\${project.properties['icd10cm.fastRecreate.streamLogFileName']}"
+    def stream_error_file = "${tempDir.getPath()}\\${project.properties['icd10cm.fastRecreate.streamErrFileName']}"
 
-    def db = [un : 'DEV_ICD10CM', pw :'DEV_ICD10CM',tns :'ORCL', sqlfile: 'E:\\Vocabulary_Data\\DEV_ICD10CM\\update\\00.fast_recreate_schema.sql', logfile: _log_file]
+    def db = [un: project.properties['icd10cm.db.userName'],
+              pw:  project.properties['icd10cm.db.password'],
+              tns: project.properties['icd10cm.db.tnsName'],
+              sqlfile: project.properties['icd10cm.fastRecreate.sqlFilePath'],
+              logfile: log_file]
     def sout = new StringBuilder(), serr = new StringBuilder()
     def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)
@@ -70,48 +70,52 @@ task fastRecreateSchema << {
     // Finish action checkpoint
     def timeFinish = System.currentTimeMillis()
 
-    // Write to logfile
-    File f = new File(_log_file)
-    f.write(sout.toString())
-
     // Write to console
     System.out.println(sout.toString())
 
+    // Write to logfile
+    File f = new File(stream_log_file)
+    f.write(sout.toString())
+
     // Write to error file
-    f = new File(_error_file)
+    f = new File(stream_error_file)
     f.write(sout.toString())
 
     /* Check for errors */
-    if (sqlplus.exitValue() != 0 || (serr != null && serr.toString().length() > 0)) {
-        throw new GradleException("Error with code ${sqlplus.exitValue()} occured when \'${name}\' executed...")
+    if (project.properties['stop.on.error'] && (sqlplus.exitValue() != 0 || (serr != null && serr.toString().length() > 0))) {
+        throw new GradleException(String.format(project.properties['error.message.with.code'], sqlplus.exitValue(), name))
     }
 
     // Measure time execution
-    def timeElapsed = timeFinish - timeStart
-    println '\tTime elapsed: ' + timeElapsed / 1000 + ' in seconds.'
+    def timeElapsed = (timeFinish - timeStart) / 1000
+    println "\tTime elapsed: ${timeElapsed} seconds."
 
-    println '*** \'Fast recreate\' action done ***'
+    println "*** '${description}' action done ***"
 }
 
 /**
  * This task will prepare user schema for vocabulary update routine.
  * It will create auxiliary table - the "ICD10CM_TABLE" in our case, for example.
  */
-task createSourceTable(dependsOn: fastRecreateSchema) << {
+task createSourceTable(dependsOn: fastRecreateSchema, description: project.properties['icd10cm.createSourceTable.description']) << {
     println '\n***********************************************'
     println '*                                             *'
-    println '*   \'Create source table\' action started...   *'
+    println "*   '${description}' action started...   *"
     println '*                                             *'
     println '***********************************************'
 
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()
 
-    def path = tempDir.getPath()
-    def _log_file = path + '\\create_source_table.log'
-    def _error_file = path + '\\create_source_table.err'
+    def log_file = "${tempDir.getPath()}\\${project.properties['icd10cm.createSourceTable.logFileName']}"
+    def stream_log_file = "${tempDir.getPath()}\\${project.properties['icd10cm.createSourceTable.streamLogFileName']}"
+    def stream_error_file = "${tempDir.getPath()}\\${project.properties['icd10cm.createSourceTable.streamErrFileName']}"
 
-    def db = [un : 'DEV_ICD10CM', pw :'DEV_ICD10CM',tns :'ORCL', sqlfile: 'E:\\Vocabulary_Data\\DEV_ICD10CM\\update\\01.create_source_tables.sql', logfile: _log_file]
+    def db = [un: project.properties['icd10cm.db.userName'],
+              pw: project.properties['icd10cm.db.password'],
+              tns: project.properties['icd10cm.db.tnsName'],
+              sqlfile: project.properties['icd10cm.createSourceTable.sqlFilePath'],
+              logfile: log_file]
     def sout = new StringBuilder(), serr = new StringBuilder()
     def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)
@@ -120,37 +124,37 @@ task createSourceTable(dependsOn: fastRecreateSchema) << {
     // Finish action checkpoint
     def timeFinish = System.currentTimeMillis()
 
-    // Write to logfile
-    File f = new File(_log_file)
-    f.write(sout.toString())
-
     // Write to console
     System.out.println(sout.toString())
 
+    // Write to logfile
+    File f = new File(stream_log_file)
+    f.write(sout.toString())
+
     // Write to error file
-    f = new File(_error_file)
+    f = new File(stream_error_file)
     f.write(sout.toString())
 
     /* Check for errors */
-    if (sqlplus.exitValue() != 0 || (serr != null && serr.toString().length() > 0)) {
-        throw new GradleException("Error with code ${sqlplus.exitValue()} occured when \'${name}\' executed...")
+    if (project.properties['stop.on.error'] && (sqlplus.exitValue() != 0 || (serr != null && serr.toString().length() > 0))) {
+        throw new GradleException(String.format(project.properties['error.message.with.code'], sqlplus.exitValue(), name))
     }
 
     // Measure time execution
-    def timeElapsed = timeFinish - timeStart
-    println '\tTime elapsed: ' + timeElapsed / 1000 + ' in seconds.'
+    def timeElapsed = (timeFinish - timeStart) / 1000
+    println "\tTime elapsed: ${timeElapsed} seconds."
 
-    println '*** \'Create source table\' action done ***'
+    println "*** '${description}' action done ***"
 }
 
 /**
  * Task which will download vocabulary update package from source host.
  * This one - 'ftp://ftp.cdc.gov/pub/Health_Statistics/NCHS/Publications/ICD10CM' is our case.
  */
-task downloadUpdatePack(dependsOn: createSourceTable) << {
+task downloadUpdatePack(dependsOn: createSourceTable, description: project.properties['icd10cm.downloadUpdatePack.description']) << {
     println '\n***********************************************'
     println '*                                             *'
-    println '*       \'Download\' action started...          *'
+    println "*       '${description}' action started...          *"
     println '*                                             *'
     println '***********************************************'
 
@@ -158,24 +162,24 @@ task downloadUpdatePack(dependsOn: createSourceTable) << {
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()
     println '\tDownloading file'
-    println '\t\tStored to: ' + tempDir.getPath()
-    ant.get(src: fileUrl, dest: tempDir, verbose: true)
+    println "\t\tStored to: ${tempDir.getPath()}"
+    ant.get(src: project.properties['icd10cm.downloadUpdatePack.fileUrl'], dest: tempDir, verbose: true)
     println '\tDownload completed...'
 
     // Finish action checkpoint
     def timeFinish = System.currentTimeMillis()
-    def timeElapsed = timeFinish - timeStart
-    println '\tTime elapsed: ' + timeElapsed / 1000 + ' in seconds.'
+    def timeElapsed = (timeFinish - timeStart) / 1000
+    println "\tTime elapsed: ${timeElapsed} seconds."
 
-    println '*** \'Download\' action done ***'
+    println "*** '${description}' action done ***"
 }
 /**
  * Task will rename the file 'icd10cm_order_20xx.txt' to the 'icd10cm.txt'.
  */
-task renameFile(dependsOn: downloadUpdatePack) << {
+task renameFile(dependsOn: downloadUpdatePack, description: project.properties['icd10cm.renameFile.description']) << {
     println '\n***********************************************'
     println '*                                             *'
-    println '*       \'Rename file\' action started...       *'
+    println "*       '${description}' action started...       *"
     println '*                                             *'
     println '***********************************************'
 
@@ -183,12 +187,14 @@ task renameFile(dependsOn: downloadUpdatePack) << {
     def timeStart = System.currentTimeMillis()
     def timeFinish = timeStart
 
-    def path = tempDir.getPath()
-    File fOld = new File(path + "\\" + oldFileName)
-    File fNew = new File(path + "\\" + newFileName)
+    def oldFilePath = "${tempDir.getPath()}\\${project.properties['icd10cm.renameFile.srcFileName']}"
+    def newFilePath = "${tempDir.getPath()}\\${project.properties['icd10cm.renameFile.destFileName']}"
+
+    File fOld = new File(oldFilePath)
+    File fNew = new File(newFilePath)
 
     if (fNew.exists()) {
-        throw new IOException("File '$newFileName' already exists!")
+        throw new IOException(String.format(project.properties['icd10cm.renameFile.error.already.exists'], newFilePath))
     }
 
     boolean isSuccess = fOld.renameTo(fNew);
@@ -200,72 +206,74 @@ task renameFile(dependsOn: downloadUpdatePack) << {
         timeFinish = System.currentTimeMillis()
 
     } else {
-        println 'Something going wrong, please check temporary folder'
-        throw new GradleException('Error occurred when "Renaming file" executed...')
+        println project.properties['icd10cm.renameFile.error.other']
+        throw new GradleException(String.format(project.properties['error.message'], name))
     }
 
     // Measure time execution
-    def timeElapsed = timeFinish - timeStart
-    println '\tTime elapsed: ' + timeElapsed / 1000 + ' in seconds.'
+    def timeElapsed = (timeFinish - timeStart) / 1000
+    println "\tTime elapsed: ${timeElapsed} seconds."
 
-    println '*** \'Rename file\' action done ***'
+    println "*** '${description}' action done ***"
 }
 
 /**
  * Task performed import CSV data to database
  */
-task importData(dependsOn: renameFile) << {
+task importData(dependsOn: renameFile, description: project.properties['icd10cm.import.description']) << {
     println '\n***********************************************'
     println '*                                             *'
-    println '*        \'Import\' action started...           *'
+    println "*        '${description}' action started...           *"
     println '*                                             *'
     println '***********************************************'
 
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()
 
-    def path = tempDir.getPath()
-    def userName = 'DEV_ICD10CM'
-    def password = 'DEV_ICD10CM'
-    def controlFile = 'E:\\Vocabulary_Data\\DEV_ICD10CM\\update\\icd10cm.ctl'
-    def dataFile = path + "\\" + newFileName
-    def logFile = path + "\\" + "icd10cm.log"
-    def discardFile = path + "\\" + "icd10cm.dsc"
+    def dataFile = "${tempDir.getPath()}\\${project.properties['icd10cm.importData.dataFileName']}"
+    def logFile = "${tempDir.getPath()}\\${project.properties['icd10cm.importData.logFileName']}"
+    def discardFile = "${tempDir.getPath()}\\${project.properties['icd10cm.importData.discardFileName']}"
+    def badFile = "${tempDir.getPath()}\\${project.properties['icd10cm.importData.badFileName']}"
 
     exec {
         executable "sqlldr.exe"
-        args "USERID=$userName/$password@ORCL CONTROL=$controlFile DATA=$dataFile LOG=$logFile DISCARD=$discardFile"
+        args "USERID=${project.properties['icd10cm.db.userName']}/${project.properties['icd10cm.db.password']}@${project.properties['icd10cm.db.tnsName']} " +
+                "CONTROL=${project.properties['icd10cm.import.controlFilePath']} DATA=$dataFile LOG=$logFile DISCARD=$discardFile BAD=$badFile"
     }
 
     // Finish action checkpoint
     def timeFinish = System.currentTimeMillis()
 
     // Measure time execution
-    def timeElapsed = timeFinish - timeStart
-    println '\tTime elapsed: ' + timeElapsed / 1000 + ' in seconds.'
+    def timeElapsed = (timeFinish - timeStart) / 1000
+    println "\tTime elapsed: ${timeElapsed} seconds."
 
-    println '*** \'Import\' action done ***'
+    println "*** '${description}' action done ***"
 }
 
 /**
  * This task will run 'Load stage' script.
  * Seems it's is specific for each vocabulary.
  */
-task runLoadStage(dependsOn: importData) << {
+task runLoadStage(dependsOn: importData, description: project.properties['icd10cm.loadStage.description']) << {
     println '\n***********************************************'
     println '*                                             *'
-    println '*        \'Load stage\' action started...       *'
+    println "*        '${description}' action started...       *"
     println '*                                             *'
     println '***********************************************'
 
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()
 
-    def path = tempDir.getPath()
-    def _log_file = path + '\\load_stage.log'
-    def _error_file = path + '\\load_stage.err'
+    def log_file = "${tempDir.getPath()}\\${project.properties['icd10cm.loadStage.logFileName']}"
+    def stream_log_file = "${tempDir.getPath()}\\${project.properties['icd10cm.loadStage.streamLogFileName']}"
+    def stream_error_file = "${tempDir.getPath()}\\${project.properties['icd10cm.loadStage.streamErrFileName']}"
 
-    def db = [un : 'DEV_ICD10CM', pw :'DEV_ICD10CM',tns :'ORCL', sqlfile: 'E:\\Vocabulary_Data\\DEV_ICD10CM\\update\\03.load_stage.sql', logfile: _log_file]
+    def db = [un: project.properties['icd10cm.db.userName'],
+              pw: project.properties['icd10cm.db.password'],
+              tns: project.properties['icd10cm.db.tnsName'],
+              sqlfile: project.properties['icd10cm.loadStage.sqlFilePath'],
+              logfile: log_file]
     def sout = new StringBuilder(), serr = new StringBuilder()
     def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)
@@ -274,48 +282,52 @@ task runLoadStage(dependsOn: importData) << {
     // Finish action checkpoint
     def timeFinish = System.currentTimeMillis()
 
-    // Write to logfile
-    File f = new File(_log_file)
-    f.write(sout.toString())
-
     // Write to console
     System.out.println(sout.toString())
 
+    // Write to logfile
+    File f = new File(stream_log_file)
+    f.write(sout.toString())
+
     // Write to error file
-    f = new File(_error_file)
+    f = new File(stream_error_file)
     f.write(sout.toString())
 
     /* Check for errors */
-    if (sqlplus.exitValue() != 0 || (serr != null && serr.toString().length() > 0)) {
-        throw new GradleException("Error with code ${sqlplus.exitValue()} occured when \'${name}\' executed...")
+    if (project.properties['stop.on.error'] && (sqlplus.exitValue() != 0 || (serr != null && serr.toString().length() > 0))) {
+        throw new GradleException(String.format(project.properties['error.message.with.code'], sqlplus.exitValue(), name))
     }
 
     // Measure time execution
-    def timeElapsed = timeFinish - timeStart
-    println '\tTime elapsed: ' + timeElapsed / 1000 + ' in seconds.'
+    def timeElapsed = (timeFinish - timeStart) / 1000
+    println "\tTime elapsed: ${timeElapsed} seconds."
 
-    println '*** \'Load stage\' action done ***'
+    println "*** '${description}' action done ***"
 }
 
 /**
  * This task will run 'Genetic update' script.
  * It's common for all updated vocabularies and located in '\Vocabulary-v5.0\working\generic_update.sql' file.
  */
-task runGenericUpdate(dependsOn: runLoadStage) << {
+task runGenericUpdate(dependsOn: runLoadStage, description: project.properties['icd10cm.genericUpdate.description']) << {
     println '\n***********************************************'
     println '*                                             *'
-    println '*      \'Generic update\' action started...     *'
+    println "*      '${description}' action started...     *"
     println '*                                             *'
     println '***********************************************'
 
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()
 
-    def path = tempDir.getPath()
-    def _log_file = path + '\\generic_update.log'
-    def _error_file = path + '\\generic_update.err'
+    def log_file = "${tempDir.getPath()}\\${project.properties['icd10cm.genericUpdate.logFileName']}"
+    def stream_log_file = "${tempDir.getPath()}\\${project.properties['icd10cm.genericUpdate.streamLogFileName']}"
+    def stream_error_file = "${tempDir.getPath()}\\${project.properties['icd10cm.genericUpdate.streamErrFileName']}"
 
-    def db = [un : 'DEV_ICD10CM', pw :'DEV_ICD10CM',tns :'ORCL', sqlfile: 'E:\\Vocabulary_Data\\DEV_ICD10CM\\update\\04.generic_update.sql', logfile: _log_file]
+    def db = [un: project.properties['icd10cm.db.userName'],
+              pw: project.properties['icd10cm.db.password'],
+              tns: project.properties['icd10cm.db.tnsName'],
+              sqlfile: project.properties['icd10cm.genericUpdate.sqlFilePath'],
+              logfile: log_file]
     def sout = new StringBuilder(), serr = new StringBuilder()
     def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)
@@ -324,47 +336,51 @@ task runGenericUpdate(dependsOn: runLoadStage) << {
     // Finish action checkpoint
     def timeFinish = System.currentTimeMillis()
 
-    // Write to logfile
-    File f = new File(_log_file)
-    f.write(sout.toString())
-
     // Write to console
     System.out.println(sout.toString())
 
+    // Write to logfile
+    File f = new File(stream_log_file)
+    f.write(sout.toString())
+
     // Write to error file
-    f = new File(_error_file)
+    f = new File(stream_error_file)
     f.write(sout.toString())
 
     /* Check for errors */
-    if (sqlplus.exitValue() != 0 || (serr != null && serr.toString().length() > 0)) {
-        throw new GradleException("Error with code ${sqlplus.exitValue()} occured when \'${name}\' executed...")
+    if (project.properties['stop.on.error'] && (sqlplus.exitValue() != 0 || (serr != null && serr.toString().length() > 0))) {
+        throw new GradleException(String.format(project.properties['error.message.with.code'], sqlplus.exitValue(), name))
     }
 
     // Measure time execution
-    def timeElapsed = timeFinish - timeStart
-    println '\tTime elapsed: ' + timeElapsed / 1000 + ' in seconds.'
+    def timeElapsed = (timeFinish - timeStart) / 1000
+    println "\tTime elapsed: ${timeElapsed} seconds."
 
-    println '*** \'Generic update\' action done ***'
+    println "*** '${description}' action done ***"
 }
 
 /**
  * This task will run scripts which allows to see the vocabulary update results
  */
-task checkUpdateResults(dependsOn: runGenericUpdate) << {
+task checkUpdateResults(dependsOn: runGenericUpdate, description: project.properties['icd10cm.checkUpdateResults.description']) << {
     println '\n***********************************************'
     println '*                                             *'
-    println '*   \'Check update results\' action started...  *'
+    println "*   '${description}' action started...  *"
     println '*                                             *'
     println '***********************************************'
 
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()
 
-    def path = tempDir.getPath()
-    def _log_file = path + '\\update_results.log'
-    def _error_file = path + '\\update_results.err'
+    def log_file = "${tempDir.getPath()}\\${project.properties['icd10cm.checkUpdateResults.logFileName']}"
+    def stream_log_file = "${tempDir.getPath()}\\${project.properties['icd10cm.checkUpdateResults.streamLogFileName']}"
+    def stream_error_file = "${tempDir.getPath()}\\${project.properties['icd10cm.checkUpdateResults.streamErrFileName']}"
 
-    def db = [un : 'DEV_ICD10CM', pw :'DEV_ICD10CM',tns :'ORCL', sqlfile: 'E:\\Vocabulary_Data\\DEV_ICD10CM\\update\\05.update_results.sql', logfile: _log_file]
+    def db = [un: project.properties['icd10cm.db.userName'],
+              pw: project.properties['icd10cm.db.password'],
+              tns: project.properties['icd10cm.db.tnsName'],
+              sqlfile: project.properties['icd10cm.checkUpdateResults.sqlFilePath'],
+              logfile: log_file]
     def sout = new StringBuilder(), serr = new StringBuilder()
     def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)
@@ -373,33 +389,33 @@ task checkUpdateResults(dependsOn: runGenericUpdate) << {
     // Finish action checkpoint
     def timeFinish = System.currentTimeMillis()
 
-    // Write to logfile
-    File f = new File(_log_file)
-    f.write(sout.toString())
-
     // Write to console
     System.out.println(sout.toString())
 
+    // Write to logfile
+    File f = new File(stream_log_file)
+    f.write(sout.toString())
+
     // Write to error file
-    f = new File(_error_file)
+    f = new File(stream_error_file)
     f.write(sout.toString())
 
     /* Check for errors */
-    if (sqlplus.exitValue() != 0 || (serr != null && serr.toString().length() > 0)) {
-        throw new GradleException("Error with code ${sqlplus.exitValue()} occured when \'${name}\' executed...")
+    if (project.properties['stop.on.error'] && (sqlplus.exitValue() != 0 || (serr != null && serr.toString().length() > 0))) {
+        throw new GradleException(String.format(project.properties['error.message.with.code'], sqlplus.exitValue(), name))
     }
 
     // Measure time execution
-    def timeElapsed = timeFinish - timeStart
-    println '\tTime elapsed: ' + timeElapsed / 1000 + ' in seconds.'
+    def timeElapsed = (timeFinish - timeStart) / 1000
+    println "\tTime elapsed: ${timeElapsed} seconds."
 
-    println '*** \'Check update results\' action done ***'
+    println "*** '${description}' action done ***"
 }
 
 /**
  * Bootstrap action
  */
-task startUpdate(dependsOn: checkUpdateResults) {
+task startUpdate(dependsOn: checkUpdateResults, description: project.properties['icd10cm.startUpdate.description']) {
     // Start action checkpoint
     def timeStart
 
@@ -411,7 +427,7 @@ task startUpdate(dependsOn: checkUpdateResults) {
         def timeFinish = System.currentTimeMillis()
 
         // Measure time execution
-        def timeElapsed = timeFinish - timeStart
-        println 'Total time elapsed: ' + timeElapsed / 1000 + ' in seconds.'
+        def timeElapsed = (timeFinish - timeStart) / 1000
+        println "Total time elapsed: ${timeElapsed} seconds."
     }
 }

@@ -36,7 +36,7 @@ import org.apache.poi.ss.usermodel.Sheet
 
 /***
  * ICD10CM vocabulary update
- * Version 0.0.2
+ * Version 0.0.3
  */
 
 def fileUrl = 'ftp://ftp.cdc.gov/pub/Health_Statistics/NCHS/Publications/ICD10CM/2017/icd10cm_order_2017.txt'
