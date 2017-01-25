@@ -213,11 +213,11 @@ task extractFiles(dependsOn: downloadUpdatePack, description: project.properties
  * This task will convert a XLS data file to CSV format.
  */
 task xls2Csv(dependsOn: extractFiles, description: project.properties['hcpcs.xls2Csv.description']) << {
-    println '\n\n**************************************************'
-    println '*                                                *'
+    println '\n\n*************************************************'
+    println '*                                               *'
     println "*  '${description}' action started...  *"
-    println '*                                                *'
-    println '**************************************************'
+    println '*                                               *'
+    println '*************************************************'
 
     def inputFile = "${tempDir.getPath()}\\${project.properties['hcpcs.xls2Csv.srcFileName']}"
     def outputFile = "${tempDir.getPath()}\\${project.properties['hcpcs.xls2Csv.destFileName']}"
