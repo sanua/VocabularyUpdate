@@ -1,8 +1,0 @@
-ext.libraries = [
-        poi: [
-                'poi:poi:3.9.custom.1',
-                'poi:poi-ooxml:3.9.custom.1',
-                'poi:poi-ooxml-schemas:3.9.custom.0',
-                'poi:poi-scratchpad:3.9.custom.0',
-        ]
-]
