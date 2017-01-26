@@ -1,0 +1,13 @@
+task hello
+
+
+hello << {
+    println 'Hello'
+}
+
+hello << {
+    println 'world'
+}
+
+
+
