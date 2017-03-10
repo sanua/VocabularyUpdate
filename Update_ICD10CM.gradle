@@ -44,7 +44,7 @@ tempDir.deleteOnExit()
 /**
  * Just renew user schema and prepare it for further vocabulary update
  */
-task fastRecreateSchema(description: project.properties['icd10cm.fastRecreate.description']) << {
+task fastRecreateSchema(description: project.properties['fastRecreate.description']) << {
     println '\n***********************************************'
     println '*                                             *'
     println "*       '${description}' action started...     *"
@@ -54,14 +54,14 @@ task fastRecreateSchema(description: project.properties['icd10cm.fastRecreate.de
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()
 
-    def log_file = "${tempDir.getPath()}\\${project.properties['icd10cm.fastRecreate.logFileName']}"
-    def stream_log_file = "${tempDir.getPath()}\\${project.properties['icd10cm.fastRecreate.streamLogFileName']}"
-    def stream_error_file = "${tempDir.getPath()}\\${project.properties['icd10cm.fastRecreate.streamErrFileName']}"
+    def log_file = "${tempDir.getPath()}\\${project.properties['fastRecreate.logFileName']}"
+    def stream_log_file = "${tempDir.getPath()}\\${project.properties['fastRecreate.streamLogFileName']}"
+    def stream_error_file = "${tempDir.getPath()}\\${project.properties['fastRecreate.streamErrFileName']}"
 
-    def db = [un: project.properties['icd10cm.db.userName'],
-              pw:  project.properties['icd10cm.db.password'],
-              tns: project.properties['icd10cm.db.tnsName'],
-              sqlfile: project.properties['icd10cm.fastRecreate.sqlFilePath'],
+    def db = [un: project.properties['db.userName'],
+              pw:  project.properties['db.password'],
+              tns: project.properties['db.tnsName'],
+              sqlfile: project.properties['fastRecreate.sqlFilePath'],
               logfile: log_file]
     def sout = new StringBuilder(), serr = new StringBuilder()
     def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
@@ -98,7 +98,7 @@ task fastRecreateSchema(description: project.properties['icd10cm.fastRecreate.de
  * This task will prepare user schema for vocabulary update routine.
  * It will create auxiliary table - the "ICD10CM_TABLE" in our case, for example.
  */
-task createSourceTable(dependsOn: fastRecreateSchema, description: project.properties['icd10cm.createSourceTable.description']) << {
+task createSourceTable(dependsOn: fastRecreateSchema, description: project.properties['createSourceTable.description']) << {
     println '\n***********************************************'
     println '*                                             *'
     println "*   '${description}' action started...   *"
@@ -108,14 +108,14 @@ task createSourceTable(dependsOn: fastRecreateSchema, description: project.prope
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()
 
-    def log_file = "${tempDir.getPath()}\\${project.properties['icd10cm.createSourceTable.logFileName']}"
-    def stream_log_file = "${tempDir.getPath()}\\${project.properties['icd10cm.createSourceTable.streamLogFileName']}"
-    def stream_error_file = "${tempDir.getPath()}\\${project.properties['icd10cm.createSourceTable.streamErrFileName']}"
+    def log_file = "${tempDir.getPath()}\\${project.properties['createSourceTable.logFileName']}"
+    def stream_log_file = "${tempDir.getPath()}\\${project.properties['createSourceTable.streamLogFileName']}"
+    def stream_error_file = "${tempDir.getPath()}\\${project.properties['createSourceTable.streamErrFileName']}"
 
-    def db = [un: project.properties['icd10cm.db.userName'],
-              pw: project.properties['icd10cm.db.password'],
-              tns: project.properties['icd10cm.db.tnsName'],
-              sqlfile: project.properties['icd10cm.createSourceTable.sqlFilePath'],
+    def db = [un: project.properties['db.userName'],
+              pw: project.properties['db.password'],
+              tns: project.properties['db.tnsName'],
+              sqlfile: project.properties['createSourceTable.sqlFilePath'],
               logfile: log_file]
     def sout = new StringBuilder(), serr = new StringBuilder()
     def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
@@ -152,7 +152,7 @@ task createSourceTable(dependsOn: fastRecreateSchema, description: project.prope
  * Task which will download vocabulary update package from source host.
  * This one - 'ftp://ftp.cdc.gov/pub/Health_Statistics/NCHS/Publications/ICD10CM' is our case.
  */
-task downloadUpdatePack(dependsOn: createSourceTable, description: project.properties['icd10cm.downloadUpdatePack.description']) << {
+task downloadUpdatePack(dependsOn: createSourceTable, description: project.properties['downloadUpdatePack.description']) << {
     println '\n***********************************************'
     println '*                                             *'
     println "*       '${description}' action started...          *"
@@ -164,7 +164,7 @@ task downloadUpdatePack(dependsOn: createSourceTable, description: project.prope
     def timeStart = System.currentTimeMillis()
     println '\tDownloading file'
     println "\t\tStored to: ${tempDir.getPath()}"
-    ant.get(src: project.properties['icd10cm.downloadUpdatePack.fileUrl'], dest: tempDir, verbose: true)
+    ant.get(src: project.properties['downloadUpdatePack.fileUrl'], dest: tempDir, verbose: true)
     println '\tDownload completed...'
 
     // Finish action checkpoint
@@ -177,7 +177,7 @@ task downloadUpdatePack(dependsOn: createSourceTable, description: project.prope
 /**
  * Task will rename the file 'icd10cm_order_20xx.txt' to the 'icd10cm.txt'.
  */
-task renameFile(dependsOn: downloadUpdatePack, description: project.properties['icd10cm.renameFile.description']) << {
+task renameFile(dependsOn: downloadUpdatePack, description: project.properties['renameFile.description']) << {
     println '\n***********************************************'
     println '*                                             *'
     println "*       '${description}' action started...       *"
@@ -188,14 +188,14 @@ task renameFile(dependsOn: downloadUpdatePack, description: project.properties['
     def timeStart = System.currentTimeMillis()
     def timeFinish = timeStart
 
-    def oldFilePath = "${tempDir.getPath()}\\${project.properties['icd10cm.renameFile.srcFileName']}"
-    def newFilePath = "${tempDir.getPath()}\\${project.properties['icd10cm.renameFile.destFileName']}"
+    def oldFilePath = "${tempDir.getPath()}\\${project.properties['renameFile.srcFileName']}"
+    def newFilePath = "${tempDir.getPath()}\\${project.properties['renameFile.destFileName']}"
 
     File fOld = new File(oldFilePath)
     File fNew = new File(newFilePath)
 
     if (fNew.exists()) {
-        throw new IOException(String.format(project.properties['icd10cm.renameFile.error.already.exists'], newFilePath))
+        throw new IOException(String.format(project.properties['renameFile.error.already.exists'], newFilePath))
     }
 
     boolean isSuccess = fOld.renameTo(fNew);
@@ -207,7 +207,7 @@ task renameFile(dependsOn: downloadUpdatePack, description: project.properties['
         timeFinish = System.currentTimeMillis()
 
     } else {
-        println project.properties['icd10cm.renameFile.error.other']
+        println project.properties['renameFile.error.other']
         throw new GradleException(String.format(project.properties['error.message'], name))
     }
 
@@ -221,7 +221,7 @@ task renameFile(dependsOn: downloadUpdatePack, description: project.properties['
 /**
  * Task performed import CSV data to database
  */
-task importData(dependsOn: renameFile, description: project.properties['icd10cm.import.description']) << {
+task importData(dependsOn: renameFile, description: project.properties['import.description']) << {
     println '\n***********************************************'
     println '*                                             *'
     println "*        '${description}' action started...           *"
@@ -231,15 +231,15 @@ task importData(dependsOn: renameFile, description: project.properties['icd10cm.
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()
 
-    def dataFile = "${tempDir.getPath()}\\${project.properties['icd10cm.importData.dataFileName']}"
-    def logFile = "${tempDir.getPath()}\\${project.properties['icd10cm.importData.logFileName']}"
-    def discardFile = "${tempDir.getPath()}\\${project.properties['icd10cm.importData.discardFileName']}"
-    def badFile = "${tempDir.getPath()}\\${project.properties['icd10cm.importData.badFileName']}"
+    def dataFile = "${tempDir.getPath()}\\${project.properties['importData.dataFileName']}"
+    def logFile = "${tempDir.getPath()}\\${project.properties['importData.logFileName']}"
+    def discardFile = "${tempDir.getPath()}\\${project.properties['importData.discardFileName']}"
+    def badFile = "${tempDir.getPath()}\\${project.properties['importData.badFileName']}"
 
     exec {
         executable "sqlldr.exe"
-        args "USERID=${project.properties['icd10cm.db.userName']}/${project.properties['icd10cm.db.password']}@${project.properties['icd10cm.db.tnsName']} " +
-                "CONTROL=${project.properties['icd10cm.import.controlFilePath']} DATA=$dataFile LOG=$logFile DISCARD=$discardFile BAD=$badFile"
+        args "USERID=${project.properties['db.userName']}/${project.properties['db.password']}@${project.properties['db.tnsName']} " +
+                "CONTROL=${project.properties['import.controlFilePath']} DATA=$dataFile LOG=$logFile DISCARD=$discardFile BAD=$badFile"
     }
 
     // Finish action checkpoint
@@ -256,7 +256,7 @@ task importData(dependsOn: renameFile, description: project.properties['icd10cm.
  * This task will run 'Load stage' script.
  * Seems it's is specific for each vocabulary.
  */
-task runLoadStage(dependsOn: importData, description: project.properties['icd10cm.loadStage.description']) << {
+task runLoadStage(dependsOn: importData, description: project.properties['loadStage.description']) << {
     println '\n***********************************************'
     println '*                                             *'
     println "*        '${description}' action started...       *"
@@ -266,14 +266,14 @@ task runLoadStage(dependsOn: importData, description: project.properties['icd10c
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()
 
-    def log_file = "${tempDir.getPath()}\\${project.properties['icd10cm.loadStage.logFileName']}"
-    def stream_log_file = "${tempDir.getPath()}\\${project.properties['icd10cm.loadStage.streamLogFileName']}"
-    def stream_error_file = "${tempDir.getPath()}\\${project.properties['icd10cm.loadStage.streamErrFileName']}"
+    def log_file = "${tempDir.getPath()}\\${project.properties['loadStage.logFileName']}"
+    def stream_log_file = "${tempDir.getPath()}\\${project.properties['loadStage.streamLogFileName']}"
+    def stream_error_file = "${tempDir.getPath()}\\${project.properties['loadStage.streamErrFileName']}"
 
-    def db = [un: project.properties['icd10cm.db.userName'],
-              pw: project.properties['icd10cm.db.password'],
-              tns: project.properties['icd10cm.db.tnsName'],
-              sqlfile: project.properties['icd10cm.loadStage.sqlFilePath'],
+    def db = [un: project.properties['db.userName'],
+              pw: project.properties['db.password'],
+              tns: project.properties['db.tnsName'],
+              sqlfile: project.properties['loadStage.sqlFilePath'],
               logfile: log_file]
     def sout = new StringBuilder(), serr = new StringBuilder()
     def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
@@ -310,7 +310,7 @@ task runLoadStage(dependsOn: importData, description: project.properties['icd10c
  * This task will run 'Genetic update' script.
  * It's common for all updated vocabularies and located in '\Vocabulary-v5.0\working\generic_update.sql' file.
  */
-task runGenericUpdate(dependsOn: runLoadStage, description: project.properties['icd10cm.genericUpdate.description']) << {
+task runGenericUpdate(dependsOn: runLoadStage, description: project.properties['genericUpdate.description']) << {
     println '\n***********************************************'
     println '*                                             *'
     println "*      '${description}' action started...     *"
@@ -320,14 +320,14 @@ task runGenericUpdate(dependsOn: runLoadStage, description: project.properties['
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()
 
-    def log_file = "${tempDir.getPath()}\\${project.properties['icd10cm.genericUpdate.logFileName']}"
-    def stream_log_file = "${tempDir.getPath()}\\${project.properties['icd10cm.genericUpdate.streamLogFileName']}"
-    def stream_error_file = "${tempDir.getPath()}\\${project.properties['icd10cm.genericUpdate.streamErrFileName']}"
+    def log_file = "${tempDir.getPath()}\\${project.properties['genericUpdate.logFileName']}"
+    def stream_log_file = "${tempDir.getPath()}\\${project.properties['genericUpdate.streamLogFileName']}"
+    def stream_error_file = "${tempDir.getPath()}\\${project.properties['genericUpdate.streamErrFileName']}"
 
-    def db = [un: project.properties['icd10cm.db.userName'],
-              pw: project.properties['icd10cm.db.password'],
-              tns: project.properties['icd10cm.db.tnsName'],
-              sqlfile: project.properties['icd10cm.genericUpdate.sqlFilePath'],
+    def db = [un: project.properties['db.userName'],
+              pw: project.properties['db.password'],
+              tns: project.properties['db.tnsName'],
+              sqlfile: project.properties['genericUpdate.sqlFilePath'],
               logfile: log_file]
     def sout = new StringBuilder(), serr = new StringBuilder()
     def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
@@ -363,7 +363,7 @@ task runGenericUpdate(dependsOn: runLoadStage, description: project.properties['
 /**
  * This task will run scripts which allows to see the vocabulary update results
  */
-task checkUpdateResults(dependsOn: runGenericUpdate, description: project.properties['icd10cm.checkUpdateResults.description']) << {
+task checkUpdateResults(dependsOn: runGenericUpdate, description: project.properties['checkUpdateResults.description']) << {
     println '\n***********************************************'
     println '*                                             *'
     println "*   '${description}' action started...  *"
@@ -373,14 +373,14 @@ task checkUpdateResults(dependsOn: runGenericUpdate, description: project.proper
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()
 
-    def log_file = "${tempDir.getPath()}\\${project.properties['icd10cm.checkUpdateResults.logFileName']}"
-    def stream_log_file = "${tempDir.getPath()}\\${project.properties['icd10cm.checkUpdateResults.streamLogFileName']}"
-    def stream_error_file = "${tempDir.getPath()}\\${project.properties['icd10cm.checkUpdateResults.streamErrFileName']}"
+    def log_file = "${tempDir.getPath()}\\${project.properties['checkUpdateResults.logFileName']}"
+    def stream_log_file = "${tempDir.getPath()}\\${project.properties['checkUpdateResults.streamLogFileName']}"
+    def stream_error_file = "${tempDir.getPath()}\\${project.properties['checkUpdateResults.streamErrFileName']}"
 
-    def db = [un: project.properties['icd10cm.db.userName'],
-              pw: project.properties['icd10cm.db.password'],
-              tns: project.properties['icd10cm.db.tnsName'],
-              sqlfile: project.properties['icd10cm.checkUpdateResults.sqlFilePath'],
+    def db = [un: project.properties['db.userName'],
+              pw: project.properties['db.password'],
+              tns: project.properties['db.tnsName'],
+              sqlfile: project.properties['checkUpdateResults.sqlFilePath'],
               logfile: log_file]
     def sout = new StringBuilder(), serr = new StringBuilder()
     def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
@@ -416,7 +416,7 @@ task checkUpdateResults(dependsOn: runGenericUpdate, description: project.proper
 /**
  * Bootstrap action
  */
-task startUpdate(dependsOn: checkUpdateResults, description: project.properties['icd10cm.startUpdate.description']) {
+task startUpdate(dependsOn: checkUpdateResults, description: project.properties['startUpdate.description']) {
     // Start action checkpoint
     def timeStart
 
