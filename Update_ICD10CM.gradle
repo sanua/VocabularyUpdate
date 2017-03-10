@@ -26,17 +26,18 @@ buildscript {
     }
 }
 
-import groovy.io.FileType
-import org.apache.poi.ss.usermodel.Cell
-import org.apache.poi.ss.usermodel.Row
-import org.apache.poi.ss.usermodel.Workbook
-import org.apache.poi.ss.usermodel.WorkbookFactory
-import org.apache.poi.ss.usermodel.Sheet
-
 /***
- * ICD10CM vocabulary update
- * Version 0.0.4
+ * ICD10CM Vocabulary update
+ * Version 0.0.5
  */
+
+// Load ICD10CM properties
+Properties props = new Properties()
+props.load(new FileInputStream("$project.rootDir/Update_ICD10CM.properties"))
+props.each {prop ->
+    project.ext.set(prop.key, prop.value)
+}
+
 def tempDir = File.createTempDir()
 tempDir.deleteOnExit()
 

@@ -25,8 +25,16 @@ import org.apache.poi.ss.usermodel.Sheet
 
 /***
  * HCPCS Vocabulary update
- * Version 0.0.4
+ * Version 0.0.5
  */
+
+// Load HCPCS properties
+Properties props = new Properties()
+props.load(new FileInputStream("$project.rootDir/Update_HCPCS.properties"))
+props.each {prop ->
+    project.ext.set(prop.key, prop.value)
+}
+
 def tempDir = File.createTempDir()
 tempDir.deleteOnExit()
 
@@ -378,14 +386,19 @@ task runLoadStage(dependsOn: importData, description: project.properties['hcpcs.
     def log_file = "${tempDir.getPath()}\\${project.properties['hcpcs.loadStage.logFileName']}"
     def stream_log_file = "${tempDir.getPath()}\\${project.properties['hcpcs.loadStage.streamLogFileName']}"
     def stream_error_file = "${tempDir.getPath()}\\${project.properties['hcpcs.loadStage.streamErrFileName']}"
+    def log_file_procedure_drug = "${tempDir.getPath()}\\${project.properties['hcpcs.loadStage.logProcedureDrugFileName']}"
+    def log_file_map_drug_vocabulary = "${tempDir.getPath()}\\${project.properties['hcpcs.loadStage.logMapDrugVocabularyFileName']}"
 
     def db = [un: project.properties['hcpcs.db.userName'],
               pw: project.properties['hcpcs.db.password'],
               tns: project.properties['hcpcs.db.tnsName'],
               sqlfile: "${project.properties['hcpcs.sqlPath']}//${project.properties['hcpcs.loadStage.sqlFileName']}",
-              logfile: log_file]
+              logfile: log_file,
+              contextPath: "${project.properties['hcpcs.sqlPath']}",
+              logfileProcedureDrug: log_file_procedure_drug,
+              logfileMapDrugVocabulary: log_file_map_drug_vocabulary]
     def sout = new StringBuilder(), serr = new StringBuilder()
-    def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
+    def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile} ${db.contextPath} ${db.logfileProcedureDrug} ${db.logfileMapDrugVocabulary}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)
     sqlplus.waitFor()
 
