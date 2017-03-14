@@ -61,7 +61,7 @@ task fastRecreateSchema(description: project.properties['fastRecreate.descriptio
     def db = [un: project.properties['db.userName'],
               pw:  project.properties['db.password'],
               tns: project.properties['db.tnsName'],
-              sqlfile: project.properties['fastRecreate.sqlFilePath'],
+              sqlfile: "${project.properties['basePath']}\\${project.properties['fastRecreate.sqlFileName']}",
               logfile: log_file]
     def sout = new StringBuilder(), serr = new StringBuilder()
     def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
@@ -115,7 +115,7 @@ task createSourceTable(dependsOn: fastRecreateSchema, description: project.prope
     def db = [un: project.properties['db.userName'],
               pw: project.properties['db.password'],
               tns: project.properties['db.tnsName'],
-              sqlfile: project.properties['createSourceTable.sqlFilePath'],
+              sqlfile: "${project.properties['basePath']}\\${project.properties['createSourceTable.sqlFileName']}",
               logfile: log_file]
     def sout = new StringBuilder(), serr = new StringBuilder()
     def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
@@ -239,7 +239,7 @@ task importData(dependsOn: renameFile, description: project.properties['import.d
     exec {
         executable "sqlldr.exe"
         args "USERID=${project.properties['db.userName']}/${project.properties['db.password']}@${project.properties['db.tnsName']} " +
-                "CONTROL=${project.properties['import.controlFilePath']} DATA=$dataFile LOG=$logFile DISCARD=$discardFile BAD=$badFile"
+                "CONTROL=${project.properties['basePath']}\\${project.properties['import.controlFileName']} DATA=$dataFile LOG=$logFile DISCARD=$discardFile BAD=$badFile"
     }
 
     // Finish action checkpoint
@@ -273,7 +273,7 @@ task runLoadStage(dependsOn: importData, description: project.properties['loadSt
     def db = [un: project.properties['db.userName'],
               pw: project.properties['db.password'],
               tns: project.properties['db.tnsName'],
-              sqlfile: project.properties['loadStage.sqlFilePath'],
+              sqlfile: "${project.properties['basePath']}\\${project.properties['loadStage.sqlFileName']}",
               logfile: log_file]
     def sout = new StringBuilder(), serr = new StringBuilder()
     def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
@@ -327,7 +327,7 @@ task runGenericUpdate(dependsOn: runLoadStage, description: project.properties['
     def db = [un: project.properties['db.userName'],
               pw: project.properties['db.password'],
               tns: project.properties['db.tnsName'],
-              sqlfile: project.properties['genericUpdate.sqlFilePath'],
+              sqlfile: "${project.properties['basePath']}\\${project.properties['genericUpdate.sqlFileName']}",
               logfile: log_file]
     def sout = new StringBuilder(), serr = new StringBuilder()
     def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
@@ -380,7 +380,7 @@ task checkUpdateResults(dependsOn: runGenericUpdate, description: project.proper
     def db = [un: project.properties['db.userName'],
               pw: project.properties['db.password'],
               tns: project.properties['db.tnsName'],
-              sqlfile: project.properties['checkUpdateResults.sqlFilePath'],
+              sqlfile: "${project.properties['basePath']}\\${project.properties['checkUpdateResults.sqlFileName']}",
               logfile: log_file]
     def sout = new StringBuilder(), serr = new StringBuilder()
     def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()

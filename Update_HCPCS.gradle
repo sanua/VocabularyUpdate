@@ -58,7 +58,7 @@ task fastRecreateSchema(description: project.properties['fastRecreate.descriptio
     def db = [un: project.properties['db.userName'],
               pw: project.properties['db.password'],
               tns: project.properties['db.tnsName'],
-              sqlfile: "${project.properties['sqlPath']}//${project.properties['fastRecreate.sqlFileName']}",
+              sqlfile: "${project.properties['basePath']}\\${project.properties['fastRecreate.sqlFileName']}",
               logfile: log_file]
     def sout = new StringBuilder(), serr = new StringBuilder()
     def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
@@ -112,7 +112,7 @@ task createSourceTable(dependsOn: fastRecreateSchema, description: project.prope
     def db = [un: project.properties['db.userName'],
               pw: project.properties['db.password'],
               tns: project.properties['db.tnsName'],
-              sqlfile: "${project.properties['sqlPath']}//${project.properties['createSourceTable.sqlFileName']}",
+              sqlfile: "${project.properties['basePath']}\\${project.properties['createSourceTable.sqlFileName']}",
               logfile: log_file]
     def sout = new StringBuilder(), serr = new StringBuilder()
     def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
@@ -356,7 +356,7 @@ task importData(dependsOn: xls2Csv, description: project.properties['import.desc
     exec {
         executable "sqlldr.exe"
         args "USERID=${project.properties['db.userName']}/${project.properties['db.password']}@${project.properties['db.tnsName']} " +
-                "CONTROL=${project.properties['import.controlFilePath']} DATA=$dataFile LOG=$logFile DISCARD=$discardFile BAD=$badFile"
+                "CONTROL=${project.properties['basePath']}\\${project.properties['import.controlFilePath']} DATA=$dataFile LOG=$logFile DISCARD=$discardFile BAD=$badFile"
     }
 
     // Finish action checkpoint
@@ -392,9 +392,9 @@ task runLoadStage(dependsOn: importData, description: project.properties['loadSt
     def db = [un: project.properties['db.userName'],
               pw: project.properties['db.password'],
               tns: project.properties['db.tnsName'],
-              sqlfile: "${project.properties['sqlPath']}//${project.properties['loadStage.sqlFileName']}",
+              sqlfile: "${project.properties['basePath']}\\${project.properties['loadStage.sqlFileName']}",
               logfile: log_file,
-              contextPath: "${project.properties['sqlPath']}",
+              contextPath: "${project.properties['basePath']}",
               logfileProcedureDrug: log_file_procedure_drug,
               logfileMapDrugVocabulary: log_file_map_drug_vocabulary]
     def sout = new StringBuilder(), serr = new StringBuilder()
@@ -449,7 +449,7 @@ task runGenericUpdate(dependsOn: runLoadStage, description: project.properties['
     def db = [un: project.properties['db.userName'],
               pw: project.properties['db.password'],
               tns: project.properties['db.tnsName'],
-              sqlfile: "${project.properties['sqlPath']}//${project.properties['genericUpdate.sqlFileName']}",
+              sqlfile: "${project.properties['basePath']}\\${project.properties['genericUpdate.sqlFileName']}",
               logfile: log_file]
     def sout = new StringBuilder(), serr = new StringBuilder()
     def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
@@ -502,7 +502,7 @@ task checkUpdateResults(dependsOn: runGenericUpdate, description: project.proper
     def db = [un: project.properties['db.userName'],
               pw: project.properties['db.password'],
               tns: project.properties['db.tnsName'],
-              sqlfile: "${project.properties['sqlPath']}//${project.properties['checkUpdateResults.sqlFileName']}",
+              sqlfile: "${project.properties['basePath']}\\${project.properties['checkUpdateResults.sqlFileName']}",
               logfile: log_file]
     def sout = new StringBuilder(), serr = new StringBuilder()
     def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
