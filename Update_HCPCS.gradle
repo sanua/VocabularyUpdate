@@ -356,7 +356,7 @@ task importData(dependsOn: xls2Csv, description: project.properties['import.desc
     exec {
         executable "sqlldr.exe"
         args "USERID=${project.properties['db.userName']}/${project.properties['db.password']}@${project.properties['db.tnsName']} " +
-                "CONTROL=${project.properties['basePath']}\\${project.properties['import.controlFilePath']} DATA=$dataFile LOG=$logFile DISCARD=$discardFile BAD=$badFile"
+                "CONTROL=${project.properties['basePath']}\\${project.properties['import.controlFileName']} DATA=$dataFile LOG=$logFile DISCARD=$discardFile BAD=$badFile"
     }
 
     // Finish action checkpoint
