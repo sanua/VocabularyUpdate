@@ -974,6 +974,6 @@ exec DBMS_STATS.GATHER_TABLE_STATS (ownname => USER, tabname  => 'concept_synony
 */
 
 -- QA (should return NULL)
-select * from table(DEVV5.QA_TESTS.GET_CHECKS);
+-- select * from table(DEVV5.QA_TESTS.GET_CHECKS);
 
 EXIT
