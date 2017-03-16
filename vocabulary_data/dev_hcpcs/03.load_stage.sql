@@ -738,15 +738,16 @@ INSERT /*+ APPEND */ INTO  concept_stage
     WHERE vocabulary_id = 'HCPCS' AND concept_class_id = 'HCPCS Class';
 COMMIT;	
 
-select '*** Step 7 \'procedure_drug.sql\' is started... ***' from dual;
+
+prompt *** Step 7 procedure_drug.sql is started... ***
 --7 Run HCPCS/procedure_drug.sql. This will create all the input files for MapDrugVocabulary.sql
 @&2/procedure_drug.sql '&3'
-select '*** Step 7 is done... ***' from dual;
+prompt *** Step 7 is done... ***
 
-select '*** Step 8 \'MapDrugVocabulary.sql\' id started... ***' from dual;
+prompt *** Step 8 MapDrugVocabulary.sql id started... ***
 --8 Run the generic working/MapDrugVocabulary.sql. This will produce a concept_relationship_stage with HCPCS to RxNorm relatoinships
 @&2/MapDrugVocabulary.sql '&4'
-select '*** Step 8 is done... ***' from dual;
+prompt *** Step 8 is done... ***
 
 --9 Add all other relationships from the existing one. The reason is that there is no good source for these relationships, and we have to build the ones for new codes from UMLS and manually
 INSERT /*+ APPEND */ INTO concept_relationship_stage (concept_id_1,
