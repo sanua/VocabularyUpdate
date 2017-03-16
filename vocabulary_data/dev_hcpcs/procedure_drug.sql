@@ -17,8 +17,6 @@
 * Date: 2016
 **************************************************************************/
 
-SET TERMOUT ON
-SET SERVEROUTPUT ON
 /* If any errors occurs - stop script execution and return error code */
 WHENEVER SQLERROR EXIT SQL.SQLCODE
 /*

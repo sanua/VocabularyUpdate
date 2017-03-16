@@ -11,8 +11,6 @@
 * Suppport writing amount field                   *
 **************************************************/
 
-SET TERMOUT ON
-SET SERVEROUTPUT ON
 /* If any errors occurs - stop script execution and return error code */
 WHENEVER SQLERROR EXIT SQL.SQLCODE
 /*
@@ -113,17 +111,20 @@ create index x_q_drug_ing on q_drug_ing(drug_code, ing_id) nologging;*/
 
 -- Create table that lists for each ingredient all drugs containing it from q and r
 --drop table match;
-/*create table match nologging as
+/*
+create table match nologging as
   select q.ing_id as r_iid, q.ing_code as q_icode, q.drug_code as q_dcode, r.drug_id as r_did
   from q_drug_ing q join r_drug_ing r on q.ing_id=r.ing_id -- match query and result drug on common ingredient
 ;
-create index x_match on match(q_dcode, r_did) nologging;*/
+create index x_match on match(q_dcode, r_did) nologging;
+*/
 
 --exec DBMS_STATS.GATHER_TABLE_STATS (ownname=> USER, tabname => 'match', estimate_percent => null, cascade => true);
 
 -- Create table with all drugs in q and r and the number of ingredients they share
 --drop table shared_ing;
-/*create table shared_ing nologging as
+/*
+create table shared_ing nologging as
 select r_did, q_dcode, count(*) as cnt from match group by r_did, q_dcode
 ;
 */
@@ -516,8 +517,9 @@ from drug_concept_stage
 where concept_class_id in ('Procedure Drug') -- but no Unit
   and nvl(domain_id, 'Drug')='Drug'
 ;
-*/
+
 commit;
+*/
 /*
 --uncomment when it's a part of a drug vocabulary when creating concept_stage with this script
 -- Write source devices as standard (unless deprecated)
