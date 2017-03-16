@@ -207,6 +207,9 @@ create table drug_concept_stage_tmp nologging as
 select * from drug_concept_stage where 1=0;
 */
 -- Injections
+
+/*
+
 insert /*+ APPEND */ into drug_concept_stage_tmp
 select 
   '' as concept_name, 'Drug' as domain_id, 'HCPCS' as vocabulary_id, 'Ingredient' as concept_class_id, 
@@ -329,6 +332,7 @@ commit;
 -- push distinct new ingredients
 insert /*+ APPEND */ into drug_concept_stage select distinct * from drug_concept_stage_tmp;
 commit;
+*/
 
 -- Create relationships between Procedure Drugs and its parsed ingredients
 -- Injections
