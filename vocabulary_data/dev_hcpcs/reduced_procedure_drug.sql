@@ -59,7 +59,8 @@ END;
 /
 
 -- Create products
-/*create table drug_concept_stage (
+/*
+create table drug_concept_stage (
   domain_id varchar2(20),
   concept_name varchar2(255),
   vocabulary_id varchar2(20),
@@ -71,23 +72,28 @@ END;
   invalid_reason varchar2(1),
   dose_form varchar2(20) -- temporary till we create relationships, then dropped
 )
-NOLOGGING;*/
+NOLOGGING;
+*/
 
-/*create table relationship_to_concept (
+/*
+create table relationship_to_concept (
   concept_code_1 varchar2(255),
   concept_id_2 integer,
   precedence integer,
   conversion_factor float
 )
-NOLOGGING;*/
+NOLOGGING;
+*/
 
 /*create table internal_relationship_stage (
   concept_code_1 varchar2(255),
   concept_code_2 varchar2(255)
 )
-NOLOGGING;*/
+NOLOGGING;
+*/
 
-/*create table ds_stage (
+/*
+create table ds_stage (
   drug_concept_code	varchar2(255),  --	The source code of the Drug or Drug Component, either Branded or Clinical.
   ingredient_concept_code	varchar2(255), --	The source code for one of the Ingredients.
   amount_value float,	-- The numeric value for absolute content (usually solid formulations).
@@ -98,7 +104,8 @@ NOLOGGING;*/
   denominator_unit varchar2(255), --	The verbatim denominator unit of a concentration (liquids).
   box_size integer
 )
-NOLOGGING;*/
+NOLOGGING;
+*/
 
 /************************************
 * 1. Create Procedure Drug products *
@@ -180,7 +187,8 @@ select * from (
 where dose_form is not null
 and dose_form not in ('Device', 'Procedure', 'Observation')
 ;
-commit;*/
+commit;
+*/
 
 /*******************************
 * 2. Create parsed Ingredients *
