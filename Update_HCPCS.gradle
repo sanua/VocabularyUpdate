@@ -1,3 +1,10 @@
+/*
+****************************
+* HCPCS Vocabulary update  *
+* Version 0.0.6            *
+****************************
+*/
+
 group 'com.sci.vocabulary'
 version '1.0-SNAPSHOT'
 
@@ -23,10 +30,51 @@ import org.apache.poi.ss.usermodel.Workbook
 import org.apache.poi.ss.usermodel.WorkbookFactory
 import org.apache.poi.ss.usermodel.Sheet
 
-/***
- * HCPCS Vocabulary update
- * Version 0.0.5
+/*
+task compileOne(type: JavaCompile) {
+    source = sourceSets.main.java.srcDir
+    include 'inc.odysseus.utils/StringBuilderWrapper.java'
+    classpath = sourceSets.main.output.classesDir
+    destinationDir = sourceSets.main.output.classesDir
+}
+compileOne.options.compilerArgs = ["-sourcepath", "$projectDir/src/main/java"]
+*/
+
+/**
+ * Auxiliary classes. TODO: Further should be used java-defined and compiled only
  */
+public class StringBuilderWrapper implements java.lang.Appendable {
+    private static final String IDENT_CHAR = " " *4
+    private StringBuilder wrapped
+
+    public StringBuilderWrapper() {
+        wrapped = new StringBuilder()
+    }
+    public StringBuilderWrapper(String value) {
+        this()
+        wrapped.append(IDENT_CHAR).append(value)
+    }
+
+    @Override
+    Appendable append(CharSequence csq) throws IOException {
+        wrapped.append(IDENT_CHAR).append(csq)
+        return this
+    }
+    @Override
+    Appendable append(CharSequence csq, int start, int end) throws IOException {
+        wrapped.append(IDENT_CHAR).append(csq, start, end)
+        return this
+    }
+    @Override
+    Appendable append(char c) throws IOException {
+        wrapped.append(IDENT_CHAR).append(c)
+        return this
+    }
+    @Override
+    String toString() {
+        return wrapped.toString()
+    }
+}
 
 // Load HCPCS properties
 Properties props = new Properties()
@@ -60,7 +108,7 @@ task fastRecreateSchema(description: project.properties['fastRecreate.descriptio
               tns: project.properties['db.tnsName'],
               sqlfile: "${project.properties['basePath']}\\${project.properties['fastRecreate.sqlFileName']}",
               logfile: log_file]
-    def sout = new StringBuilder(), serr = new StringBuilder()
+    def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
     def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)
     sqlplus.waitFor()
@@ -86,7 +134,7 @@ task fastRecreateSchema(description: project.properties['fastRecreate.descriptio
 
     // Measure time execution
     def timeElapsed = (timeFinish - timeStart) / 1000
-    println "\tTime elapsed: ${timeElapsed} seconds."
+    println "Time elapsed: ${timeElapsed} seconds."
 
     println "*** '${description}' action done ***"
 }
@@ -114,7 +162,7 @@ task createSourceTable(dependsOn: fastRecreateSchema, description: project.prope
               tns: project.properties['db.tnsName'],
               sqlfile: "${project.properties['basePath']}\\${project.properties['createSourceTable.sqlFileName']}",
               logfile: log_file]
-    def sout = new StringBuilder(), serr = new StringBuilder()
+    def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
     def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)
     sqlplus.waitFor()
@@ -140,7 +188,7 @@ task createSourceTable(dependsOn: fastRecreateSchema, description: project.prope
 
     // Measure time execution
     def timeElapsed = (timeFinish - timeStart) / 1000
-    println "\tTime elapsed: ${timeElapsed} seconds."
+    println "Time elapsed: ${timeElapsed} seconds."
 
     println "*** '${description}' action done ***"
 }
@@ -160,15 +208,15 @@ task downloadUpdatePack(dependsOn: createSourceTable, description: project.prope
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()
 
-    println '\tDownloading file...'
-    println "\t\tStored to: ${tempDir.getPath()}"
+    println new StringBuilderWrapper('downloading file...')
+    println new StringBuilderWrapper("stored to: ${tempDir.getPath()}")
     ant.get(src: project.properties['downloadUpdatePack.fileUrl'], dest: tempDir, verbose: true)
-    println '\tDownload completed'
+    println new StringBuilderWrapper('download completed')
 
     // Finish action checkpoint
     def timeFinish = System.currentTimeMillis()
     def timeElapsed = (timeFinish - timeStart) / 1000
-    println "\tTime elapsed: ${timeElapsed} seconds."
+    println "Time elapsed: ${timeElapsed} seconds."
 
     println "*** '${description}' action done ***"
 }
@@ -190,7 +238,7 @@ task extractFiles(dependsOn: downloadUpdatePack, description: project.properties
         fileList << file
         if (file.getPath().endsWith('zip')) {
             ant.unzip(src: file.getPath(), dest: tempDir, overwrite: false)
-            println('\t\tunzipped...')
+            println new StringBuilderWrapper('data exctracted...')
         }
     }
 
@@ -199,7 +247,7 @@ task extractFiles(dependsOn: downloadUpdatePack, description: project.properties
 
     // Measure time execution
     def timeElapsed = (timeFinish - timeStart) / 1000
-    println "\tTime elapsed: ${timeElapsed} seconds."
+    println "Time elapsed: ${timeElapsed} seconds."
 
     println "*** '${description}' action done ***"
 }
@@ -313,9 +361,9 @@ task xls2Csv(dependsOn: extractFiles, description: project.properties['xls2Csv.d
 //            }
 //
 //        }
-
+        println new StringBuilderWrapper('files converted...')
         fos.write(data.toString().getBytes());
-        fos.close();
+        fos.close()
 
         // Finish action checkpoint
         timeFinish = System.currentTimeMillis()
@@ -330,7 +378,7 @@ task xls2Csv(dependsOn: extractFiles, description: project.properties['xls2Csv.d
 
     // Measure time execution
     def timeElapsed = (timeFinish - timeStart) / 1000
-    println "\tTime elapsed: ${timeElapsed} seconds."
+    println "Time elapsed: ${timeElapsed} seconds."
 
     println "*** '${description}' action done ***"
 }
@@ -364,7 +412,7 @@ task importData(dependsOn: xls2Csv, description: project.properties['import.desc
 
     // Measure time execution
     def timeElapsed = (timeFinish - timeStart) / 1000
-    println "\tTime elapsed: ${timeElapsed} seconds."
+    println "Time elapsed: ${timeElapsed} seconds."
 
     println "*** '${description}' action done ***"
 }
@@ -397,7 +445,7 @@ task runLoadStage(dependsOn: importData, description: project.properties['loadSt
               contextPath: "${project.properties['basePath']}",
               logfileProcedureDrug: log_file_procedure_drug,
               logfileMapDrugVocabulary: log_file_map_drug_vocabulary]
-    def sout = new StringBuilder(), serr = new StringBuilder()
+    def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
     def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile} ${db.contextPath} ${db.logfileProcedureDrug} ${db.logfileMapDrugVocabulary}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)
     sqlplus.waitFor()
@@ -423,7 +471,7 @@ task runLoadStage(dependsOn: importData, description: project.properties['loadSt
 
     // Measure time execution
     def timeElapsed = (timeFinish - timeStart) / 1000
-    println "\tTime elapsed: ${timeElapsed} seconds."
+    println "Time elapsed: ${timeElapsed} seconds."
 
     println "*** '${description}' action done ***"
 }
@@ -451,7 +499,7 @@ task runGenericUpdate(dependsOn: runLoadStage, description: project.properties['
               tns: project.properties['db.tnsName'],
               sqlfile: "${project.properties['basePath']}\\${project.properties['genericUpdate.sqlFileName']}",
               logfile: log_file]
-    def sout = new StringBuilder(), serr = new StringBuilder()
+    def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
     def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)
     sqlplus.waitFor()
@@ -477,7 +525,7 @@ task runGenericUpdate(dependsOn: runLoadStage, description: project.properties['
 
     // Measure time execution
     def timeElapsed = (timeFinish - timeStart) / 1000
-    println "\tTime elapsed: ${timeElapsed} seconds."
+    println "Time elapsed: ${timeElapsed} seconds."
 
     println "*** '${description}' action done ***"
 }
@@ -504,7 +552,7 @@ task checkUpdateResults(dependsOn: runGenericUpdate, description: project.proper
               tns: project.properties['db.tnsName'],
               sqlfile: "${project.properties['basePath']}\\${project.properties['checkUpdateResults.sqlFileName']}",
               logfile: log_file]
-    def sout = new StringBuilder(), serr = new StringBuilder()
+    def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
     def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)
     sqlplus.waitFor()
@@ -530,7 +578,7 @@ task checkUpdateResults(dependsOn: runGenericUpdate, description: project.proper
 
     // Measure time execution
     def timeElapsed = (timeFinish - timeStart) / 1000
-    println "\tTime elapsed: ${timeElapsed} seconds."
+    println "Time elapsed: ${timeElapsed} seconds."
 
     println "*** '${description}' action done ***"
 }
@@ -542,13 +590,14 @@ task checkUpdateResults(dependsOn: runGenericUpdate, description: project.proper
  * TODO: This one via doFirst/doLast actions isn't working.
  */
 task startUpdate(dependsOn: checkUpdateResults, description: project.properties['startUpdate.description']) {
-    println '***********************************************'
+    println '\n\n***********************************************'
     println '*                                             *'
-    println "*  '${description}' action started...   *"
+    println "*      '${description}' action started...       *"
     println '*                                             *'
     println '***********************************************'
 
     println "Updating of '${project.properties['vocabulary.display.name']}' vocabulary..."
+
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()
 
@@ -558,14 +607,13 @@ task startUpdate(dependsOn: checkUpdateResults, description: project.properties[
 
         // Measure time execution
         def timeElapsed = (timeFinish - timeStart) / 1000
-        println "Total time elapsed: ${timeElapsed} seconds."
+        println "\n\nTotal time elapsed: ${timeElapsed} seconds."
 
-        println "Done updating of ${project.properties['vocabulary.display.name']} vocabulary..."
-
+        println "Updating of '${project.properties['vocabulary.display.name']}' vocabulary completed successfully..."
         println '***********************************************'
         println '*                                             *'
-        println "* '${description}' action finished...   *"
+        println "*      '${description}' action is done...       *"
         println '*                                             *'
-        println '***********************************************'
+        println '***********************************************\n'
     }
 }
