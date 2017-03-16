@@ -404,7 +404,7 @@ where (d.concept_id_1, d.concept_id_2, d.relationship_id) in
 --part 2 (reverse mappings)
 /*
 update concept_relationship d
- */
+
 set valid_end_date  = 
         (SELECT MAX(v.latest_update) -- one of latest_update (if we have more than one vocabulary in concept_relationship_stage) may be NULL, therefore use aggregate function MAX() to get one non-null date
              FROM concept c JOIN vocabulary v ON c.vocabulary_id = v.vocabulary_id
