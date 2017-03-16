@@ -35,15 +35,10 @@ SPOOL &1
 *********************************************/
 
 /* Clean up from last unsuccessful load stage run, to avoid build process errors */
-/*
+
 DECLARE
 	TYPE TStringArray IS TABLE OF VARCHAR2(255);
-	t_names TStringArray := TStringArray('drug_concept_stage',
-	                                     'relationship_to_concept',
-	                                     'internal_relationship_stage',
-	                                     'ds_stage',
-	                                     'drug_concept_stage_tmp',
-	                                     'brandname');
+	t_names TStringArray := TStringArray('brandname');
 	l_cnt NUMBER;
 	l_str VARCHAR2(255);
 BEGIN
@@ -55,7 +50,6 @@ BEGIN
     END IF;
 	END LOOP;
 END;
-*/
 /
 
 -- Create products
@@ -1986,4 +1980,4 @@ commit;
 -- remove dose forms from concept_stage table
 --alter table drug_concept_stage drop column dose_form;
 --drop table drug_concept_stage_tmp purge;
-drop table brandname purge;
+--drop table brandname purge;
