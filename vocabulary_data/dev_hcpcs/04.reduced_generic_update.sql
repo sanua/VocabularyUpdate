@@ -149,6 +149,7 @@ END = 1
 
 COMMIT;
 */
+
 -- 4. Add new concepts from concept_stage
 -- Create sequence after last valid one
 DECLARE
@@ -764,7 +765,6 @@ THEN
            WHERE (NVL (r.invalid_reason, 'X') <> NVL (i.invalid_reason, 'X') OR r.valid_end_date <> i.valid_end_date);
 COMMIT;		 
 END;
-/
 */
 --17. fix valid_start_date for incorrect concepts (bad data in sources)
 UPDATE concept c
@@ -964,7 +964,6 @@ BEGIN
 	  EXECUTE IMMEDIATE 'ALTER TABLE vocabulary DROP COLUMN dev_schema_name';
    END IF;
 END;
-/
 COMMIT;
 */
 -- 26. Final GATHER TABLE STATS for base tables
