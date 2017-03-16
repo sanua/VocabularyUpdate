@@ -186,16 +186,18 @@ commit;*/
 * 2. Create parsed Ingredients *
 ********************************/
 -- Fix spelling so parser will find
-/*update drug_concept_stage set concept_name = regexp_replace(lower(concept_name), 'insulin,', 'insulin') where lower(concept_name) like '%insulin%';
+/*
+update drug_concept_stage set concept_name = regexp_replace(lower(concept_name), 'insulin,', 'insulin') where lower(concept_name) like '%insulin%';
 update drug_concept_stage set concept_name = regexp_replace(lower(concept_name), 'albuterol.+?ipratropium bromide, ', 'albuterol/ipratropium bromide ') where lower(concept_name) like '%albuterol%ipratropium%';
 update drug_concept_stage set concept_name = regexp_replace(lower(concept_name), 'doxorubicin hydrochloride, liposomal', 'doxorubicin hydrochloride liposomal') where lower(concept_name) like '%doxorubicin%';
 update drug_concept_stage set concept_name = regexp_replace(lower(concept_name), 'injectin,', 'injection') where lower(concept_name) like 'injectin%';
 update drug_concept_stage set concept_name = regexp_replace(lower(concept_name), 'interferon,', 'interferon') where lower(concept_name) like '%interferon%';
 */
 -- Create temp holding table to unique the resulting 
+/*
 create table drug_concept_stage_tmp nologging as
 select * from drug_concept_stage where 1=0;
-
+*/
 -- Injections
 insert /*+ APPEND */ into drug_concept_stage_tmp
 select 
