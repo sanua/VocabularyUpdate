@@ -1,4 +1,4 @@
-options (direct=true, errors=0, SKIP=1)
+options (direct=true, errors=0, SKIP=1, columnarrayrows=3000)
 load data
 CHARACTERSET UTF8 LENGTH SEMANTICS CHAR
 infile 'ANWEB_V2.csv' 
