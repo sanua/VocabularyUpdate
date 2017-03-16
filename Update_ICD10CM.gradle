@@ -426,18 +426,25 @@ task startUpdate(dependsOn: checkUpdateResults, description: project.properties[
     println '*                                             *'
     println '***********************************************'
 
+    println "Updating of '${project.properties['vocabulary.display.name']}' vocabulary..."
+
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()
-    println "\tUpdating of ${project.properties['vocabulary.display.name']}"
 
     doLast {
-        println "\tDone updating of ${project.properties['vocabulary.display.name']}"
-
         // Finish action checkpoint
         def timeFinish = System.currentTimeMillis()
 
         // Measure time execution
         def timeElapsed = (timeFinish - timeStart) / 1000
         println "Total time elapsed: ${timeElapsed} seconds."
+
+        println "Done updating of '${project.properties['vocabulary.display.name']}' vocabulary..."
+
+        println '***********************************************'
+        println '*                                             *'
+        println "* '${description}' action finished...   *"
+        println '*                                             *'
+        println '***********************************************'
     }
 }
