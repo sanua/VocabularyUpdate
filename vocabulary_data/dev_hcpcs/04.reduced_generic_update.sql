@@ -256,7 +256,7 @@ COMMIT;
 MERGE INTO concept_relationship d
     USING (
         WITH rel_id as ( -- concept_relationship with concept_ids filled in
-            SELECT /*+ MATERIALIZE */ DISTINCT c1.concept_id AS concept_id_1, c2.concept_id AS concept_id_2, crs.relationship_id, crs.valid_end_date, crs.invalid_reason
+            SELECT /+ MATERIALIZE / DISTINCT c1.concept_id AS concept_id_1, c2.concept_id AS concept_id_2, crs.relationship_id, crs.valid_end_date, crs.invalid_reason
             FROM concept_relationship_stage crs, concept c1, concept c2 WHERE
             c1.concept_code = crs.concept_code_1 AND c1.vocabulary_id = crs.vocabulary_id_1
             AND c2.concept_code = crs.concept_code_2 AND c2.vocabulary_id = crs.vocabulary_id_2
