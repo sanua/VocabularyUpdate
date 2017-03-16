@@ -415,15 +415,24 @@ task checkUpdateResults(dependsOn: runGenericUpdate, description: project.proper
 
 /**
  * Bootstrap action
+ *
+ * TODO: Needs to find solution to measure whole task chain execution.
+ * TODO: This one via doFirst/doLast actions isn't working.
  */
 task startUpdate(dependsOn: checkUpdateResults, description: project.properties['startUpdate.description']) {
-    // Start action checkpoint
-    def timeStart
+    println '***********************************************'
+    println '*                                             *'
+    println "*  '${description}' action started...   *"
+    println '*                                             *'
+    println '***********************************************'
 
-    doFirst {
-        timeStart = System.currentTimeMillis()
-    }
+    // Start action checkpoint
+    def timeStart = System.currentTimeMillis()
+    println "\tUpdating of ${project.properties['vocabulary.display.name']}"
+
     doLast {
+        println "\tDone updating of ${project.properties['vocabulary.display.name']}"
+
         // Finish action checkpoint
         def timeFinish = System.currentTimeMillis()
 
