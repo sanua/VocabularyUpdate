@@ -125,7 +125,7 @@ task fastRecreateSchema(description: project.properties['fastRecreate.descriptio
 
     // Write to error file
     f = new File(stream_error_file)
-    f.write(sout.toString())
+    f.write(serr.toString())
 
     /* Check for errors */
     if (project.properties['stop.on.error'].toBoolean() && (sqlplus.exitValue() != 0 || (serr != null && serr.toString().length() > 0))) {
@@ -179,7 +179,7 @@ task createSourceTable(dependsOn: fastRecreateSchema, description: project.prope
 
     // Write to error file
     f = new File(stream_error_file)
-    f.write(sout.toString())
+    f.write(serr.toString())
 
     /* Check for errors */
     if (project.properties['stop.on.error'].toBoolean() && (sqlplus.exitValue() != 0 || (serr != null && serr.toString().length() > 0))) {
@@ -400,12 +400,41 @@ task importData(dependsOn: xls2Csv, description: project.properties['import.desc
     def logFile = "${tempDir.getPath()}\\${project.properties['importData.logFileName']}"
     def discardFile = "${tempDir.getPath()}\\${project.properties['importData.discardFileName']}"
     def badFile = "${tempDir.getPath()}\\${project.properties['importData.badFileName']}"
+    def stream_log_file = "${tempDir.getPath()}\\${project.properties['importData.streamLogFileName']}"
+    def stream_error_file = "${tempDir.getPath()}\\${project.properties['importData.streamErrFileName']}"
 
+    def bosOut = new ByteArrayOutputStream(), bosErr = new ByteArrayOutputStream()
+    def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
     exec {
         executable "sqlldr.exe"
         args "USERID=${project.properties['db.userName']}/${project.properties['db.password']}@${project.properties['db.tnsName']} " +
                 "CONTROL=${project.properties['basePath']}\\${project.properties['import.controlFileName']} DATA=$dataFile LOG=$logFile DISCARD=$discardFile BAD=$badFile"
+        standardOutput = bosOut
+        errorOutput = bosErr
     }
+    def bisOut = new ByteArrayInputStream(bosOut.toByteArray())
+    bisOut.withReader { out->
+        out.eachLine {
+            sout.append(it).append('\n')
+        }
+    }
+    def bisErr = new ByteArrayInputStream(bosErr.toByteArray())
+    bisErr.withReader { out ->
+        out.eachLine {
+            serr.append(it).append('\n')
+        }
+    }
+
+    // Write to console
+    System.out.println(sout.toString())
+
+    // Write to logfile
+    File f = new File(stream_log_file)
+    f.write(sout.toString())
+
+    // Write to error file
+    f = new File(stream_error_file)
+    f.write(serr.toString())
 
     // Finish action checkpoint
     def timeFinish = System.currentTimeMillis()
@@ -462,7 +491,7 @@ task runLoadStage(dependsOn: importData, description: project.properties['loadSt
 
     // Write to error file
     f = new File(stream_error_file)
-    f.write(sout.toString())
+    f.write(serr.toString())
 
     /* Check for errors */
     if (project.properties['stop.on.error'].toBoolean() && (sqlplus.exitValue() != 0 || (serr != null && serr.toString().length() > 0))) {
@@ -516,7 +545,7 @@ task runGenericUpdate(dependsOn: runLoadStage, description: project.properties['
 
     // Write to error file
     f = new File(stream_error_file)
-    f.write(sout.toString())
+    f.write(serr.toString())
 
     /* Check for errors */
     if (project.properties['stop.on.error'].toBoolean() && (sqlplus.exitValue() != 0 || (serr != null && serr.toString().length() > 0))) {
@@ -569,7 +598,7 @@ task checkUpdateResults(dependsOn: runGenericUpdate, description: project.proper
 
     // Write to error file
     f = new File(stream_error_file)
-    f.write(sout.toString())
+    f.write(serr.toString())
 
     /* Check for errors */
     if (project.properties['stop.on.error'].toBoolean() && (sqlplus.exitValue() != 0 || (serr != null && serr.toString().length() > 0))) {
