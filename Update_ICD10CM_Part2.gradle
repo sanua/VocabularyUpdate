@@ -102,7 +102,7 @@ task prepareManualTable(description: project.properties['prepareTable.descriptio
               pw: project.properties['db.password'],
               tns: project.properties['db.tnsName'],
               sqlfile: "${filesBasePath}\\${project.properties['prepareTable.sqlFileName']}",
-              tableName: "${project.properties['prepareTable.tableName']}",
+              tableName: "${project.properties['manualTableName']}",
               logfile: log_file]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
     def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile} ${db.tableName}""".execute()

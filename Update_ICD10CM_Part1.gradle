@@ -426,7 +426,7 @@ task createManualTable(dependsOn: runLoadStage, description: project.properties[
               pw: project.properties['db.password'],
               tns: project.properties['db.tnsName'],
               sqlfile: "${filesBasePath}\\${project.properties['createManual.sqlFileName']}",
-              tableName: "${project.properties['createManual.tableName']}",
+              tableName: "${project.properties['manualTableName']}",
               logfile: "${filesBasePath}\\${project.properties['createManual.logFileName']}"]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
     def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile} ${db.tableName}""".execute()
@@ -472,7 +472,7 @@ task extractManualTable(dependsOn: createManualTable, description: project.prope
               expPath: "${filesBasePath}",
               sqlfile: "${filesBasePath}\\${project.properties['extractManual.sqlFileName']}",
               expcsvfile: "${project.properties['extractManual.dataFileName']}",
-              tableName: "${project.properties['extractManual.tableName']}",
+              tableName: "${project.properties['manualTableName']}",
               logfile: "${filesBasePath}\\${project.properties['extractManual.logFileName']}"]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
     def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.expPath} ${db.expcsvfile} ${db.tableName} > ${db.logfile}""".execute()
