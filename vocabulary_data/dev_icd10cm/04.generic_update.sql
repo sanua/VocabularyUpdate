@@ -46,17 +46,19 @@ exec DBMS_STATS.GATHER_TABLE_STATS (ownname => USER, tabname  => 'concept_synony
 
 -- 1. clearing the concept_name
 
---remove spaces					 
+--remove double spaces, carriage return, newline, vertical tab and form feed
+UPDATE concept_stage
+   SET concept_name = REGEXP_REPLACE (concept_name, '[[:cntrl:]]+', ' ')
+ WHERE REGEXP_LIKE (concept_name, '[[:cntrl:]]');
+UPDATE concept_stage
+   SET concept_name = REGEXP_REPLACE (concept_name, ' {2,}', ' ')
+ WHERE REGEXP_LIKE (concept_name, ' {2,}');
+
+--remove leading and trailing spaces		 
 UPDATE concept_stage
    SET concept_name = TRIM (concept_name)
  WHERE concept_name <> TRIM (concept_name);
  
---remove double spaces, carriage return, newline, vertical tab and form feed
-UPDATE concept_stage
-   SET concept_name = REGEXP_REPLACE (concept_name, '[[:space:]]+', ' ')
- WHERE REGEXP_LIKE (concept_name, '[[:space:]]+[[:space:]]+'); 
- 
-
  --remove long dashes
 UPDATE concept_stage
    SET concept_name = REPLACE (concept_name, '–', '-')
@@ -859,7 +861,7 @@ INSERT INTO drug_strength (drug_concept_id,
     WHERE v.latest_update IS NOT NULL;
 COMMIT;	
 
--- Delete if concept is deprecated (only for 'RxNorm Extension')
+-- Delete drug if concept is deprecated (only for 'RxNorm Extension')
 DELETE FROM drug_strength ds
       WHERE EXISTS
                (SELECT 1

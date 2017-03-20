@@ -408,7 +408,7 @@ task runLoadStage(dependsOn: importData, description: project.properties['loadSt
     println "*** '${description}' action done ***"
 }
 
-task createManualTable(dependsOn: runLoadStage, description: project.properties['createManual.description']) << {
+task createManualTable(/*dependsOn: runLoadStage,*/ description: project.properties['createManual.description']) << {
     println '\n\n***********************************************'
     println '*                                             *'
     println "*   '${description}' action started...   *"
@@ -455,10 +455,10 @@ task createManualTable(dependsOn: runLoadStage, description: project.properties[
     println "*** '${description}' action done ***"
 }
 
-task extractManualTable(dependsOn: createManualTable, description: project.properties['extractManual.description']) << {
+task extractManualTable(dependsOn: runLoadStage, description: project.properties['extractManual.description']) << {
     println '\n\n***********************************************'
     println '*                                             *'
-    println "*   '${description}' action started...   *"
+    println "* '${description}' action started... *"
     println '*                                             *'
     println '***********************************************'
 
@@ -481,7 +481,7 @@ task extractManualTable(dependsOn: createManualTable, description: project.prope
     sqlplus.waitFor()
 
     // Write to console
-    System.out.println(sout.toString())
+    //System.out.println(sout.toString())
 
     // Write to logfile
     File f = new File(stream_log_file)
@@ -497,7 +497,7 @@ task extractManualTable(dependsOn: createManualTable, description: project.prope
 task sendMail(dependsOn: extractManualTable, description: project.properties['email.description']) << {
     println '\n\n***********************************************'
     println '*                                             *'
-    println "* '${description}' action started... *"
+    println "* '${description}' action started...  *"
     println '*                                             *'
     println '***********************************************'
 

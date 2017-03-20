@@ -199,7 +199,7 @@ task importTable (dependsOn: prepareManualTable, description: project.properties
 task runLoadStage(dependsOn: importTable, description: project.properties['loadStage.description']) << {
     println '\n\n***********************************************'
     println '*                                             *'
-    println "*        '${description}' action started...       *"
+    println "*    '${description}' action started...    *"
     println '*                                             *'
     println '***********************************************'
 
