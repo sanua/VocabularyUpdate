@@ -1,8 +1,8 @@
 /*
-******************************
-* ICD10CM Vocabulary update  *
-* Version 0.0.6              *
-******************************
+*************************************
+* ICD10CM Vocabulary update. Part 1 *
+* Version 0.0.6                     *
+*************************************
 */
 
 group 'com.sci.vocabulary'
@@ -30,9 +30,43 @@ buildscript {
     dependencies {
         classpath 'org.apache.poi:poi:3.9'
         classpath 'org.apache.poi:poi-ooxml:3.9'
+        classpath 'javax.mail:javax.mail-api:1.5.5'
+
+        /*classpath 'javax.mail:mail:1.4.7'
+        classpath 'org.apache.ant:ant-javamail:1.10.1'*/
+
+        /*classpath 'ant:ant-javamail:1.6.5'
+        classpath 'javax.activation:activation:1.1.1'
+        classpath 'javax.mail:mail:1.4.7'*/
     }
 }
 
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+configurations {
+    mail
+}
+
+dependencies {
+    mail 'org.apache.ant:ant-javamail:1.8.1'
+}
+
+/*
+configurations { antMail }
+dependencies {
+    antMail 'ant:ant-javamail:1.6.5'
+    antMail 'javax.activation:activation:1.1.1'
+    antMail 'javax.mail:mail:1.4.7'
+}
+ant.taskdef(
+        name: 'mail2',
+        classname: 'org.apache.tools.ant.taskdefs.email.EmailTask',
+        classpath: configurations.antMail.asPath
+)
+*/
 /**
  * Auxiliary classes. TODO: Further should be used java-defined and compiled only
  */
@@ -72,6 +106,10 @@ public class StringBuilderWrapper implements java.lang.Appendable {
 // Load ICD10CM properties
 Properties props = new Properties()
 props.load(new FileInputStream("$project.rootDir/Update_ICD10CM.properties"))
+props.each {prop ->
+    project.ext.set(prop.key, prop.value)
+}
+props.load(new FileInputStream("$project.rootDir/Update_ICD10CM_Part1.properties"))
 props.each {prop ->
     project.ext.set(prop.key, prop.value)
 }
@@ -322,7 +360,7 @@ task importData(dependsOn: renameFile, description: project.properties['import.d
 task runLoadStage(dependsOn: importData, description: project.properties['loadStage.description']) << {
     println '\n\n***********************************************'
     println '*                                             *'
-    println "*        '${description}' action started...       *"
+    println "*     '${description}' action started...   *"
     println '*                                             *'
     println '***********************************************'
 
@@ -334,7 +372,7 @@ task runLoadStage(dependsOn: importData, description: project.properties['loadSt
     def stream_error_file = "${tempDir.getPath()}\\${project.properties['loadStage.streamErrFileName']}"
 
     def db = [un: project.properties['db.userName'],
-              pw: project.properties['db.password'],
+              pw: project.properties['d4b.password'],
               tns: project.properties['db.tnsName'],
               sqlfile: "${project.properties['basePath']}\\${project.properties['loadStage.sqlFileName']}",
               logfile: log_file]
@@ -369,36 +407,31 @@ task runLoadStage(dependsOn: importData, description: project.properties['loadSt
     println "*** '${description}' action done ***"
 }
 
-/**
- * This task will run 'Genetic update' script.
- * It's common for all updated vocabularies and located in '\Vocabulary-v5.0\working\generic_update.sql' file.
- */
-task runGenericUpdate(dependsOn: runLoadStage, description: project.properties['genericUpdate.description']) << {
+task extractManualTable(description: project.properties['extract.description']) << {
     println '\n\n***********************************************'
     println '*                                             *'
-    println "*      '${description}' action started...     *"
+    println "*   '${description}' action started...   *"
     println '*                                             *'
     println '***********************************************'
 
-    // Start action checkpoint
-    def timeStart = System.currentTimeMillis()
-
-    def log_file = "${tempDir.getPath()}\\${project.properties['genericUpdate.logFileName']}"
-    def stream_log_file = "${tempDir.getPath()}\\${project.properties['genericUpdate.streamLogFileName']}"
-    def stream_error_file = "${tempDir.getPath()}\\${project.properties['genericUpdate.streamErrFileName']}"
+    def stream_log_file = "${projectDir}\\${project.properties['importData.streamLogFileName']}"
+    def stream_error_file = "${projectDir}\\${project.properties['importData.streamErrFileName']}"
+    def exportBasePath="${projectDir}\\${project.properties['extract.basePath']}"
 
     def db = [un: project.properties['db.userName'],
               pw: project.properties['db.password'],
               tns: project.properties['db.tnsName'],
-              sqlfile: "${project.properties['basePath']}\\${project.properties['genericUpdate.sqlFileName']}",
-              logfile: log_file]
+              expPath: "${exportBasePath}",
+              sqlfile: "${exportBasePath}\\${project.properties['extract.sqlFileName']}",
+              expcsvfile: "${project.properties['extract.dataFileName']}",
+              tableName: "${project.properties['extract.tableName']}",
+              logfile: "${exportBasePath}\\${project.properties['extract.logFileName']}"]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
-    def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
+    System.out.println('sqlplus: ' + "${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.expPath} ${db.expcsvfile} ${db.tableName} > ${db.logfile}")
+    def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.expPath} ${db.expcsvfile} ${db.tableName} > ${db.logfile}""".execute()
+
     sqlplus.consumeProcessOutput(sout, serr)
     sqlplus.waitFor()
-
-    // Finish action checkpoint
-    def timeFinish = System.currentTimeMillis()
 
     // Write to console
     System.out.println(sout.toString())
@@ -410,69 +443,47 @@ task runGenericUpdate(dependsOn: runLoadStage, description: project.properties['
     // Write to error file
     f = new File(stream_error_file)
     f.write(serr.toString())
-
-    /* Check for errors */
-    if (project.properties['stop.on.error'].toBoolean() && (sqlplus.exitValue() != 0 || (serr != null && serr.toString().length() > 0))) {
-        throw new GradleException(String.format(project.properties['error.message.with.code'], sqlplus.exitValue(), name))
-    }
-
-    // Measure time execution
-    def timeElapsed = (timeFinish - timeStart) / 1000
-    println "Time elapsed: ${timeElapsed} seconds."
 
     println "*** '${description}' action done ***"
 }
 
-/**
- * This task will run scripts which allows to see the vocabulary update results
- */
-task checkUpdateResults(dependsOn: runGenericUpdate, description: project.properties['checkUpdateResults.description']) << {
+task sendMail(dependsOn: extractManualTable, description: project.properties['email.description']) << {
     println '\n\n***********************************************'
     println '*                                             *'
-    println "*   '${description}' action started...  *"
+    println "* '${description}' action started... *"
     println '*                                             *'
     println '***********************************************'
 
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()
 
-    def log_file = "${tempDir.getPath()}\\${project.properties['checkUpdateResults.logFileName']}"
-    def stream_log_file = "${tempDir.getPath()}\\${project.properties['checkUpdateResults.streamLogFileName']}"
-    def stream_error_file = "${tempDir.getPath()}\\${project.properties['checkUpdateResults.streamErrFileName']}"
+    def mailParams = [
+            mailhost: project.properties['email.mailHost'],
+            subject: project.properties['email.Subject'],
+            messagemimetype: "text/plain",
+            user: project.properties['email.user'],
+            password: project.properties['email.password']
+    ]
 
-    def db = [un: project.properties['db.userName'],
-              pw: project.properties['db.password'],
-              tns: project.properties['db.tnsName'],
-              sqlfile: "${project.properties['basePath']}\\${project.properties['checkUpdateResults.sqlFileName']}",
-              logfile: log_file]
-    def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
-    def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
-    sqlplus.consumeProcessOutput(sout, serr)
-    sqlplus.waitFor()
+    println new StringBuilderWrapper('sending mail...')
+
+    configurations.mail.each {
+        org.apache.tools.ant.Project.class.classLoader.addURL(it.toURI().toURL())
+    }
+
+    ant.mail( mailParams ) {
+        from(address: project.properties['email.sentFrom'])
+        to(address: project.properties['email.sentTo'])
+        message(String.format(project.properties['email.Message'], "${projectDir}\\${project.properties['extract.basePath']}\\${project.properties['extract.csvFileName']}"))
+    }
 
     // Finish action checkpoint
     def timeFinish = System.currentTimeMillis()
 
-    // Write to console
-    System.out.println(sout.toString())
-
-    // Write to logfile
-    File f = new File(stream_log_file)
-    f.write(sout.toString())
-
-    // Write to error file
-    f = new File(stream_error_file)
-    f.write(serr.toString())
-
-    /* Check for errors */
-    if (project.properties['stop.on.error'].toBoolean() && (sqlplus.exitValue() != 0 || (serr != null && serr.toString().length() > 0))) {
-        throw new GradleException(String.format(project.properties['error.message.with.code'], sqlplus.exitValue(), name))
-    }
-
     // Measure time execution
     def timeElapsed = (timeFinish - timeStart) / 1000
-    println "Time elapsed: ${timeElapsed} seconds."
 
+    println "Time elapsed: ${timeElapsed} seconds."
     println "*** '${description}' action done ***"
 }
 
@@ -482,35 +493,7 @@ task checkUpdateResults(dependsOn: runGenericUpdate, description: project.proper
  * TODO: Needs to find solution to measure whole task chain execution.
  * TODO: This one via doFirst/doLast actions isn't working.
  */
-task startUpdate(dependsOn: checkUpdateResults, description: project.properties['startUpdate.description']) {
-    println '\n\n***********************************************'
-    println '*                                             *'
-    println "*      '${description}' action started...       *"
-    println '*                                             *'
-    println '***********************************************'
-
-    println "Updating of '${project.properties['vocabulary.display.name']}' vocabulary..."
-
-    // Start action checkpoint
-    def timeStart = System.currentTimeMillis()
-
-    doLast {
-        // Finish action checkpoint
-        def timeFinish = System.currentTimeMillis()
-
-        // Measure time execution
-        def timeElapsed = (timeFinish - timeStart) / 1000
-        println "\n\nTotal time elapsed: ${timeElapsed} seconds."
-        println "Updating of '${project.properties['vocabulary.display.name']}' vocabulary completed successfully..."
-        println '***********************************************'
-        println '*                                             *'
-        println "*      '${description}' action is done...       *"
-        println '*                                             *'
-        println '***********************************************\n'
-    }
-}
-
-task startUpdatePartOne(dependsOn: checkUpdateResults, description: project.properties['startUpdate.description']) {
+task startUpdate(dependsOn: sendMail, description: project.properties['startUpdate.description']) {
     println '\n\n***********************************************'
     println '*                                             *'
     println "*      '${description}' action started...       *"

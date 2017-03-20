@@ -8,7 +8,7 @@ WHENEVER SQLERROR EXIT SQL.SQLCODE
 SPOOL &1
 
 PROMPT
-PROMPT 'Load Stage' is starting...
+PROMPT 'Load Stage part 2' is starting...
 EXECUTE dbms_lock.sleep(1);
 
 PROMPT *** Step 'procedure_drug.sql' is started... ***
@@ -22,7 +22,7 @@ PROMPT *** Step 'MapDrugVocabulary.sql' id started... ***
 prompt *** Step 'MapDrugVocabulary.sql' is done... ***
 
 EXECUTE dbms_lock.sleep(1);
-PROMPT 'Load Stage' is done...
+PROMPT 'Load Stage part 2' is done...
 PROMPT
 
 EXIT
