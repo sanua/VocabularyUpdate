@@ -419,8 +419,8 @@ task createManualTable(dependsOn: runLoadStage, description: project.properties[
     def timeStart = System.currentTimeMillis()
 
     def filesBasePath="${projectDir}\\${project.properties['basePath']}"
-    def stream_log_file = "${projectDir}\\${project.properties['createManual.streamLogFileName']}"
-    def stream_error_file = "${projectDir}\\${project.properties['createManual.streamErrFileName']}"
+    def stream_log_file = "${filesBasePath}\\${project.properties['createManual.streamLogFileName']}"
+    def stream_error_file = "${filesBasePath}\\${project.properties['createManual.streamErrFileName']}"
 
     def db = [un: project.properties['db.userName'],
               pw: project.properties['db.password'],
@@ -462,18 +462,18 @@ task extractManualTable(dependsOn: createManualTable, description: project.prope
     println '*                                             *'
     println '***********************************************'
 
-    def stream_log_file = "${projectDir}\\${project.properties['extractManual.streamLogFileName']}"
-    def stream_error_file = "${projectDir}\\${project.properties['extractManual.streamErrFileName']}"
-    def exportBasePath="${projectDir}\\${project.properties['basePath']}"
+    def filesBasePath="${projectDir}\\${project.properties['basePath']}"
+    def stream_log_file = "${filesBasePath}\\${project.properties['extractManual.streamLogFileName']}"
+    def stream_error_file = "${filesBasePath}\\${project.properties['extractManual.streamErrFileName']}"
 
     def db = [un: project.properties['db.userName'],
               pw: project.properties['db.password'],
               tns: project.properties['db.tnsName'],
-              expPath: "${exportBasePath}",
-              sqlfile: "${exportBasePath}\\${project.properties['extractManual.sqlFileName']}",
+              expPath: "${filesBasePath}",
+              sqlfile: "${filesBasePath}\\${project.properties['extractManual.sqlFileName']}",
               expcsvfile: "${project.properties['extractManual.dataFileName']}",
               tableName: "${project.properties['extractManual.tableName']}",
-              logfile: "${exportBasePath}\\${project.properties['extractManual.logFileName']}"]
+              logfile: "${filesBasePath}\\${project.properties['extractManual.logFileName']}"]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
     def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.expPath} ${db.expcsvfile} ${db.tableName} > ${db.logfile}""".execute()
 
