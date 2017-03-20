@@ -82,6 +82,10 @@ props.load(new FileInputStream("$project.rootDir/Update_HCPCS.properties"))
 props.each {prop ->
     project.ext.set(prop.key, prop.value)
 }
+props.load(new FileInputStream("$project.rootDir/Update_HCPCS_Part2.properties"))
+props.each {prop ->
+    project.ext.set(prop.key, prop.value)
+}
 
 def tempDir = File.createTempDir()
 tempDir.deleteOnExit()

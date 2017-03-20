@@ -33,14 +33,10 @@ SPOOL &1
 *********************************************/
 
 /* Clean up from last unsuccessful load stage run, to avoid build process errors */
+
 DECLARE
 	TYPE TStringArray IS TABLE OF VARCHAR2(255);
-	t_names TStringArray := TStringArray('drug_concept_stage',
-	                                     'relationship_to_concept',
-	                                     'internal_relationship_stage',
-	                                     'ds_stage',
-	                                     'drug_concept_stage_tmp',
-	                                     'brandname');
+	t_names TStringArray := TStringArray('brandname');
 	l_cnt NUMBER;
 	l_str VARCHAR2(255);
 BEGIN
@@ -55,6 +51,7 @@ END;
 /
 
 -- Create products
+/*
 create table drug_concept_stage (
   domain_id varchar2(20),
   concept_name varchar2(255),
@@ -68,7 +65,9 @@ create table drug_concept_stage (
   dose_form varchar2(20) -- temporary till we create relationships, then dropped
 )
 NOLOGGING;
+*/
 
+/*
 create table relationship_to_concept (
   concept_code_1 varchar2(255),
   concept_id_2 integer,
@@ -76,13 +75,17 @@ create table relationship_to_concept (
   conversion_factor float
 )
 NOLOGGING;
+*/
 
+/*
 create table internal_relationship_stage (
   concept_code_1 varchar2(255),
   concept_code_2 varchar2(255)
 )
 NOLOGGING;
+*/
 
+/*
 create table ds_stage (
   drug_concept_code	varchar2(255),  --	The source code of the Drug or Drug Component, either Branded or Clinical.
   ingredient_concept_code	varchar2(255), --	The source code for one of the Ingredients.
@@ -95,11 +98,13 @@ create table ds_stage (
   box_size integer
 )
 NOLOGGING;
+*/
 
 /************************************
 * 1. Create Procedure Drug products *
 *************************************/
-insert /*+ APPEND */ into drug_concept_stage (concept_name, domain_id, vocabulary_id, concept_class_id, concept_code, possible_excipient, 
+/*
+insert /+ APPEND / into drug_concept_stage (concept_name, domain_id, vocabulary_id, concept_class_id, concept_code, possible_excipient, 
   valid_start_date, valid_end_date, invalid_reason, dose_form)
 select * from (
   select distinct concept_name, 'Drug' as domain_id, 'HCPCS' as vocabulary_id, 'Procedure Drug' as concept_class_id, concept_code, null as possible_excipient, 
@@ -176,23 +181,29 @@ where dose_form is not null
 and dose_form not in ('Device', 'Procedure', 'Observation')
 ;
 commit;
+*/
 
 /*******************************
 * 2. Create parsed Ingredients *
 ********************************/
 -- Fix spelling so parser will find
+/*
 update drug_concept_stage set concept_name = regexp_replace(lower(concept_name), 'insulin,', 'insulin') where lower(concept_name) like '%insulin%';
 update drug_concept_stage set concept_name = regexp_replace(lower(concept_name), 'albuterol.+?ipratropium bromide, ', 'albuterol/ipratropium bromide ') where lower(concept_name) like '%albuterol%ipratropium%';
 update drug_concept_stage set concept_name = regexp_replace(lower(concept_name), 'doxorubicin hydrochloride, liposomal', 'doxorubicin hydrochloride liposomal') where lower(concept_name) like '%doxorubicin%';
 update drug_concept_stage set concept_name = regexp_replace(lower(concept_name), 'injectin,', 'injection') where lower(concept_name) like 'injectin%';
 update drug_concept_stage set concept_name = regexp_replace(lower(concept_name), 'interferon,', 'interferon') where lower(concept_name) like '%interferon%';
-
+*/
 -- Create temp holding table to unique the resulting 
+/*
 create table drug_concept_stage_tmp nologging as
 select * from drug_concept_stage where 1=0;
-
+*/
 -- Injections
-insert /*+ APPEND */ into drug_concept_stage_tmp
+
+/*
+
+insert /+ APPEND / into drug_concept_stage_tmp
 select 
   '' as concept_name, 'Drug' as domain_id, 'HCPCS' as vocabulary_id, 'Ingredient' as concept_class_id, 
   regexp_replace(regexp_replace(lower(concept_name), 'injection,? (iv, )?([^,]+).*', '\1|\2'), '.*?\|(.+)', '\1') as concept_code, 
@@ -201,7 +212,7 @@ from drug_concept_stage where dose_form='Injection' -- and concept_name like '%b
 ;
 commit;
 -- Vaccines
-insert /*+ APPEND */ into drug_concept_stage_tmp
+insert /+ APPEND / into drug_concept_stage_tmp
 select 
   '' as concept_name, 'Drug' as domain_id, 'HCPCS' as vocabulary_id, 'Ingredient' as concept_class_id, 
   regexp_replace(regexp_replace(lower(concept_name), '(.+?vaccine)(.+?for intramuscular use \(.+?\))?(.+vaccine)?', '\1\2'), '.+ of ', '') as concept_code, 
@@ -210,7 +221,7 @@ from drug_concept_stage where dose_form='Vaccine'
 ;
 commit;
 -- Orals
-insert /*+ APPEND */into drug_concept_stage_tmp
+insert /+ APPEND /into drug_concept_stage_tmp
 select 
   '' as concept_name, 'Drug' as domain_id, 'HCPCS' as vocabulary_id, 'Ingredient' as concept_class_id, lower(regexp_substr(c1_cleanname, '[^,]+')) as concept_code, 
   null as possible_excipient, null as valid_start_date, null as valid_end_date, null as invalid_reason, null as dose_form
@@ -221,7 +232,7 @@ from (
 ;
 commit;
 -- Units
-insert /*+ APPEND */ into drug_concept_stage_tmp
+insert /+ APPEND / into drug_concept_stage_tmp
 select 
   '' as concept_name, 'Drug' as domain_id, 'HCPCS' as vocabulary_id, 'Ingredient' as concept_class_id, regexp_replace(lower(concept_name), '(.+?),? ?(per|each) (unit|i.u.).*', '\1') as concept_code, 
   null as possible_excipient, null as valid_start_date, null as valid_end_date, null as invalid_reason, null as dose_form
@@ -229,7 +240,7 @@ from drug_concept_stage where dose_form='Unit'
 ;
 commit;
 -- Instillations
-insert /*+ APPEND */ into drug_concept_stage_tmp
+insert /+ APPEND / into drug_concept_stage_tmp
 select 
   '' as concept_name, 'Drug' as domain_id, 'HCPCS' as vocabulary_id, 'Ingredient' as concept_class_id, regexp_replace(lower(concept_name), '(.+?),? ?per instillation.*', '\1') as concept_code, 
   null as possible_excipient, null as valid_start_date, null as valid_end_date, null as invalid_reason, null as dose_form
@@ -237,7 +248,7 @@ from drug_concept_stage where dose_form='Instillation'
 ;
 commit;
 -- Patches
-insert /*+ APPEND */ into drug_concept_stage_tmp
+insert /+ APPEND / into drug_concept_stage_tmp
 select 
   '' as concept_name, 'Drug' as domain_id, 'HCPCS' as vocabulary_id, 'Ingredient' as concept_class_id, regexp_replace(regexp_replace(lower(concept_name), '(.+?),? ?(per )?patch.*', '\1'), '\d+(%| ?mg)', '') as concept_code, 
   null as possible_excipient, null as valid_start_date, null as valid_end_date, null as invalid_reason, null as dose_form
@@ -245,7 +256,7 @@ from drug_concept_stage where dose_form='Patch'
 ;
 commit;
 -- Sprays
-insert /*+ APPEND */ into drug_concept_stage_tmp
+insert /+ APPEND / into drug_concept_stage_tmp
 select 
   '' as concept_name, 'Drug' as domain_id, 'HCPCS' as vocabulary_id, 'Ingredient' as concept_class_id, regexp_replace(lower(concept_name), '(.+?),? ?(nasal )?spray.*', '\1') as concept_code, 
   null as possible_excipient, null as valid_start_date, null as valid_end_date, null as invalid_reason, null as dose_form
@@ -253,7 +264,7 @@ from drug_concept_stage where dose_form='Spray'
 ;
 commit;
 -- Infusions
-insert /*+ APPEND */ into drug_concept_stage_tmp
+insert /+ APPEND / into drug_concept_stage_tmp
 select 
   '' as concept_name, 'Drug' as domain_id, 'HCPCS' as vocabulary_id, 'Ingredient' as concept_class_id, 
   regexp_replace(lower(concept_name), 'infusion,? (.+?) ?,.*', '\1') as concept_code, null as possible_excipient, null as valid_start_date, null as valid_end_date, null as invalid_reason, null as dose_form
@@ -261,7 +272,7 @@ from drug_concept_stage where dose_form='Infusion'
 ;
 commit;
 -- Guess Topicals
-insert /*+ APPEND */ into drug_concept_stage_tmp
+insert /+ APPEND / into drug_concept_stage_tmp
 select 
   '' as concept_name, 'Drug' as domain_id, 'HCPCS' as vocabulary_id, 'Ingredient' as concept_class_id, regexp_replace(lower(concept_name), '(.+?)(, | for )topical.*', '\1') as concept_code, 
   null as possible_excipient, null as valid_start_date, null as valid_end_date, null as invalid_reason, null as dose_form
@@ -269,7 +280,7 @@ from drug_concept_stage where dose_form='Topical'
 ;
 commit;
 -- Implants
-insert /*+ APPEND */ into drug_concept_stage_tmp
+insert /+ APPEND / into drug_concept_stage_tmp
 select 
   '' as concept_name, 'Drug' as domain_id, 'HCPCS' as vocabulary_id, 'Ingredient' as concept_class_id, regexp_replace(lower(concept_name), '(.+?), implant.*', '\1') as concept_code, 
   null as possible_excipient, null as valid_start_date, null as valid_end_date, null as invalid_reason, null as dose_form
@@ -277,7 +288,7 @@ from drug_concept_stage where dose_form='Implant'
 ;
 commit;
 -- Parenterals
-insert /*+ APPEND */ into drug_concept_stage_tmp
+insert /+ APPEND / into drug_concept_stage_tmp
 select 
   '' as concept_name, 'Drug' as domain_id, 'HCPCS' as vocabulary_id, 'Ingredient' as concept_class_id, regexp_replace(lower(concept_name), '(.+?), parenteral.*', '\1') as concept_code, 
   null as possible_excipient, null as valid_start_date, null as valid_end_date, null as invalid_reason, null as dose_form
@@ -285,7 +296,7 @@ from drug_concept_stage where dose_form='Parenteral'
 ;
 commit;
 -- Suppositories
-insert /*+ APPEND */ into drug_concept_stage_tmp
+insert /+ APPEND / into drug_concept_stage_tmp
 select 
   '' as concept_name, 'Drug' as domain_id, 'HCPCS' as vocabulary_id, 'Ingredient' as concept_class_id, regexp_replace(lower(concept_name), '(.+?),? ?(urethral )?(rectal\/)?suppository.*', '\1') as concept_code, 
   null as possible_excipient, null as valid_start_date, null as valid_end_date, null as invalid_reason, null as dose_form
@@ -293,7 +304,7 @@ from drug_concept_stage where dose_form='Suppository'
 ;
 commit;
 -- Inhalant
-insert /*+ APPEND */ into drug_concept_stage_tmp
+insert /+ APPEND / into drug_concept_stage_tmp
 select 
   '' as concept_name, 'Drug' as domain_id, 'HCPCS' as vocabulary_id, 'Ingredient' as concept_class_id, 
   regexp_replace(lower(concept_name), '(.+?),? ?(administered as )?(all formulations including separated isomers, )?inhalation solution.*', '\1') as concept_code, 
@@ -302,7 +313,7 @@ from drug_concept_stage where dose_form='Inhalant'
 ;
 commit;
 -- Unknown
-insert /*+ APPEND */ into drug_concept_stage_tmp
+insert /+ APPEND / into drug_concept_stage_tmp
 select 
   '' as concept_name, 'Drug' as domain_id, 'HCPCS' as vocabulary_id, 'Ingredient' as concept_class_id, 
   regexp_replace(regexp_replace(lower(concept_name), '(.+?)(, |; | \(?for | gel |sinus implant| implant| per).*', '\1'), '(administration and supply of )?(.+)', '\2') as concept_code, 
@@ -312,8 +323,9 @@ from drug_concept_stage where dose_form='Unknown'
 commit;
 
 -- push distinct new ingredients
-insert /*+ APPEND */ into drug_concept_stage select distinct * from drug_concept_stage_tmp;
+insert /+ APPEND / into drug_concept_stage select distinct * from drug_concept_stage_tmp;
 commit;
+*/
 
 -- Create relationships between Procedure Drugs and its parsed ingredients
 -- Injections
@@ -1964,6 +1976,6 @@ commit;
 * 6. Clean up
 *****************************/
 -- remove dose forms from concept_stage table
-alter table drug_concept_stage drop column dose_form;
-drop table drug_concept_stage_tmp purge;
-drop table brandname purge;
+--alter table drug_concept_stage drop column dose_form;
+--drop table drug_concept_stage_tmp purge;
+--drop table brandname purge;

@@ -1,0 +1,18 @@
+OPTIONS (errors=0, direct=true, skip=0)
+LOAD DATA 
+INFILE 'manual_table_data.csv' "str '\r\n'"
+APPEND
+INTO TABLE manual_table
+fields terminated by ';'
+OPTIONALLY ENCLOSED BY '"'
+trailing nullcols (
+"CONCEPT_ID",
+"CONCEPT_NAME" CHAR (255),
+"DOMAIN_ID" CHAR (20),
+"VOCABULARY_ID" CHAR (20),
+"CONCEPT_CLASS_ID" CHAR (20),
+"STANDARD_CONCEPT" CHAR (16),
+"CONCEPT_CODE" CHAR (50),
+"VALID_START_DATE" DATE "DD-MM-YY",
+"VALID_END_DATE" DATE "DD-MM-YY",
+"INVALID_REASON" CHAR (14))

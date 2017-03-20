@@ -1,8 +1,8 @@
 /*
-****************************
-* HCPCS Vocabulary update  *
-* Version 0.0.6            *
-****************************
+*************************************
+* ICD10CM Vocabulary update. Part 1 *
+* Version 0.0.6                     *
+*************************************
 */
 
 group 'com.sci.vocabulary'
@@ -12,6 +12,16 @@ apply plugin: 'java'
 
 sourceCompatibility = 1.8
 
+/*repositories {
+    mavenLocal()
+    mavenCentral()
+}*/
+
+/*dependencies {
+    compile 'org.apache.poi:poi:3.9'
+    compile 'org.apache.poi:poi-ooxml:3.9'
+}*/
+
 buildscript {
     repositories {
         mavenLocal()
@@ -20,26 +30,43 @@ buildscript {
     dependencies {
         classpath 'org.apache.poi:poi:3.9'
         classpath 'org.apache.poi:poi-ooxml:3.9'
+        classpath 'javax.mail:javax.mail-api:1.5.5'
+
+        /*classpath 'javax.mail:mail:1.4.7'
+        classpath 'org.apache.ant:ant-javamail:1.10.1'*/
+
+        /*classpath 'ant:ant-javamail:1.6.5'
+        classpath 'javax.activation:activation:1.1.1'
+        classpath 'javax.mail:mail:1.4.7'*/
     }
 }
 
-import groovy.io.FileType
-import org.apache.poi.ss.usermodel.Cell
-import org.apache.poi.ss.usermodel.Row
-import org.apache.poi.ss.usermodel.Workbook
-import org.apache.poi.ss.usermodel.WorkbookFactory
-import org.apache.poi.ss.usermodel.Sheet
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+configurations {
+    mail
+}
+
+dependencies {
+    mail 'org.apache.ant:ant-javamail:1.8.1'
+}
 
 /*
-task compileOne(type: JavaCompile) {
-    source = sourceSets.main.java.srcDir
-    include 'inc.odysseus.utils/StringBuilderWrapper.java'
-    classpath = sourceSets.main.output.classesDir
-    destinationDir = sourceSets.main.output.classesDir
+configurations { antMail }
+dependencies {
+    antMail 'ant:ant-javamail:1.6.5'
+    antMail 'javax.activation:activation:1.1.1'
+    antMail 'javax.mail:mail:1.4.7'
 }
-compileOne.options.compilerArgs = ["-sourcepath", "$projectDir/src/main/java"]
+ant.taskdef(
+        name: 'mail2',
+        classname: 'org.apache.tools.ant.taskdefs.email.EmailTask',
+        classpath: configurations.antMail.asPath
+)
 */
-
 /**
  * Auxiliary classes. TODO: Further should be used java-defined and compiled only
  */
@@ -76,9 +103,13 @@ public class StringBuilderWrapper implements java.lang.Appendable {
     }
 }
 
-// Load HCPCS properties
+// Load ICD10CM properties
 Properties props = new Properties()
-props.load(new FileInputStream("$project.rootDir/Update_HCPCS.properties"))
+props.load(new FileInputStream("$project.rootDir/Update_ICD10CM.properties"))
+props.each {prop ->
+    project.ext.set(prop.key, prop.value)
+}
+props.load(new FileInputStream("$project.rootDir/Update_ICD10CM_Part1.properties"))
 props.each {prop ->
     project.ext.set(prop.key, prop.value)
 }
@@ -104,7 +135,7 @@ task fastRecreateSchema(description: project.properties['fastRecreate.descriptio
     def stream_error_file = "${tempDir.getPath()}\\${project.properties['fastRecreate.streamErrFileName']}"
 
     def db = [un: project.properties['db.userName'],
-              pw: project.properties['db.password'],
+              pw:  project.properties['db.password'],
               tns: project.properties['db.tnsName'],
               sqlfile: "${project.properties['basePath']}\\${project.properties['fastRecreate.sqlFileName']}",
               logfile: log_file]
@@ -141,7 +172,7 @@ task fastRecreateSchema(description: project.properties['fastRecreate.descriptio
 
 /**
  * This task will prepare user schema for vocabulary update routine.
- * It will create auxiliary table - the "ANWEB_V2" in our case, for example.
+ * It will create auxiliary table - the "ICD10CM_TABLE" in our case, for example.
  */
 task createSourceTable(dependsOn: fastRecreateSchema, description: project.properties['createSourceTable.description']) << {
     println '\n\n***********************************************'
@@ -195,19 +226,18 @@ task createSourceTable(dependsOn: fastRecreateSchema, description: project.prope
 
 /**
  * Task which will download vocabulary update package from source host.
- * This one - 'http://www.cms.gov/Medicare/Coding/HCPCSReleaseCodeSets/' is our case.
+ * This one - 'ftp://ftp.cdc.gov/pub/Health_Statistics/NCHS/Publications/ICD10CM' is our case.
  */
 task downloadUpdatePack(dependsOn: createSourceTable, description: project.properties['downloadUpdatePack.description']) << {
     println '\n\n***********************************************'
     println '*                                             *'
-    println "*        '${description}' action started...         *"
+    println "*       '${description}' action started...          *"
     println '*                                             *'
     println '***********************************************'
 
     /* Downloading file */
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()
-
     println new StringBuilderWrapper('downloading file...')
     println new StringBuilderWrapper("stored to: ${tempDir.getPath()}")
     ant.get(src: project.properties['downloadUpdatePack.fileUrl'], dest: tempDir, verbose: true)
@@ -220,27 +250,35 @@ task downloadUpdatePack(dependsOn: createSourceTable, description: project.prope
 
     println "*** '${description}' action done ***"
 }
-
-task extractFiles(dependsOn: downloadUpdatePack, description: project.properties['extractFiles.description']) << {
+/**
+ * Task will rename the file 'icd10cm_order_20xx.txt' to the 'icd10cm.txt'.
+ */
+task renameFile(dependsOn: downloadUpdatePack, description: project.properties['renameFile.description']) << {
     println '\n\n***********************************************'
     println '*                                             *'
-    println "*        '${description}' action started...          *"
+    println "*       '${description}' action started...       *"
     println '*                                             *'
     println '***********************************************'
 
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()
 
-    /* Extracting file */
-    def fileList = []
-    def dir = tempDir
-    dir.eachFile(FileType.FILES) { file ->
-        fileList << file
-        if (file.getPath().endsWith('zip')) {
-            ant.unzip(src: file.getPath(), dest: tempDir, overwrite: false)
-            println new StringBuilderWrapper('data exctracted...')
-        }
+    def oldFilePath = "${tempDir.getPath()}\\${project.properties['renameFile.srcFileName']}"
+    def newFilePath = "${tempDir.getPath()}\\${project.properties['renameFile.destFileName']}"
+
+    File fOld = new File(oldFilePath)
+    File fNew = new File(newFilePath)
+
+    if (fNew.exists()) {
+        throw new IOException(String.format(project.properties['renameFile.error.already.exists'], newFilePath))
     }
+
+    boolean isSuccess = fOld.renameTo(fNew);
+    if (!isSuccess) {
+        println project.properties['renameFile.error.other']
+        throw new GradleException(String.format(project.properties['error.message'], name))
+    }
+    println new StringBuilderWrapper('renamed successfully...')
 
     // Finish action checkpoint
     def timeFinish = System.currentTimeMillis()
@@ -248,148 +286,17 @@ task extractFiles(dependsOn: downloadUpdatePack, description: project.properties
     // Measure time execution
     def timeElapsed = (timeFinish - timeStart) / 1000
     println "Time elapsed: ${timeElapsed} seconds."
-
-    println "*** '${description}' action done ***"
-}
-
-/**
- * This task will convert a XLS data file to CSV format.
- */
-task xls2Csv(dependsOn: extractFiles, description: project.properties['xls2Csv.description']) << {
-    println '\n\n*************************************************'
-    println '*                                               *'
-    println "*  '${description}' action started...  *"
-    println '*                                               *'
-    println '*************************************************'
-
-    def inputFile = "${tempDir.getPath()}\\${project.properties['xls2Csv.srcFileName']}"
-    def outputFile = "${tempDir.getPath()}\\${project.properties['xls2Csv.destFileName']}"
-
-    // Start action checkpoint
-    def timeStart = System.currentTimeMillis()
-    def timeFinish = timeStart
-
-    // For storing data into CSV files
-    StringBuffer data = new StringBuffer();
-    try {
-        FileOutputStream fos = new FileOutputStream(outputFile);
-
-        // Get the workbook object for XLS file
-        Workbook workbook = WorkbookFactory.create(new FileInputStream(inputFile));
-        // Get first sheet from the workbook
-        Sheet sheet = workbook.getSheetAt(0);
-//        Cell cell;
-//        Row row;
-
-        for (int i = 0; i < sheet.getLastRowNum(); i++){
-            Row row = sheet.getRow(i);
-
-            if (row!= null){
-                for (int j = 0; j < row.getLastCellNum(); j++){
-                    Cell cell = row.getCell(j);
-                    if (cell == null){
-                        data.append(";");
-                    } else {
-                        cell.setCellType(Cell.CELL_TYPE_STRING)
-                        data.append("\"" + cell. toString().trim().replaceAll("\"", "'") + "\"" + ";");
-//                        switch (cell.getCellType()) {
-//                            case Cell.CELL_TYPE_BOOLEAN:
-//                                data.append("\"" + cell.getBooleanCellValue() + "\"" + ";");
-//                                break;
-//
-//                            case Cell.CELL_TYPE_NUMERIC:
-//                                data.append("\"" + cell.cgetNumericCellValue() + "\"" + ";");
-//                                break;
-//
-//                            case Cell.CELL_TYPE_STRING:
-////                                if (!cell.getStringCellValue().contains("\"")){
-//                                println cell.toString()
-//                                    data.append("\"" + cell.getStringCellValue().trim().replaceAll("\"", "'") + "\"" + ";");
-////                                } else {
-////                                    data.append(";");
-////                                }
-//                                break;
-//
-//                            case Cell.CELL_TYPE_BLANK:
-//                                data.append("" + ";");
-//                                break;
-//
-//                            default:
-//                                data.append(cell + ";");
-//                        }
-
-
-
-                    }
-                }
-                data.append('\n');
-            } else {
-
-            }
-        }
-
-        // Iterate through each rows from first sheet
-//        Iterator<Row> rowIterator = sheet.iterator();
-//        while (rowIterator.hasNext()) {
-//            row = rowIterator.next();
-//            // For each row, iterate through each columns
-//            Iterator<Cell> cellIterator = row.cellIterator();
-//            while (cellIterator.hasNext()) {
-//                cell = cellIterator.next();
-//
-//                switch (cell.getCellType()) {
-//                    case Cell.CELL_TYPE_BOOLEAN:
-//                        data.append("\"" + cell.getBooleanCellValue() + "\"" + ";");
-//                        break;
-//
-//                    case Cell.CELL_TYPE_NUMERIC:
-//                        data.append("\"" + cell.getNumericCellValue() + "\"" + ";");
-//                        break;
-//
-//                    case Cell.CELL_TYPE_STRING:
-//                        data.append("\"" + cell.getStringCellValue().trim() + "\"" + ";");
-//                        break;
-//
-//                    case Cell.CELL_TYPE_BLANK:
-//                        data.append("" + ";");
-//                        break;
-//
-//                    default:
-//                        data.append(cell + ";");
-//                }
-//
-//            }
-//
-//        }
-        println new StringBuilderWrapper('files converted...')
-        fos.write(data.toString().getBytes());
-        fos.close()
-
-        // Finish action checkpoint
-        timeFinish = System.currentTimeMillis()
-
-    }
-    catch (FileNotFoundException e) {
-        e.printStackTrace();
-    }
-    catch (IOException e) {
-        e.printStackTrace();
-    }
-
-    // Measure time execution
-    def timeElapsed = (timeFinish - timeStart) / 1000
-    println "Time elapsed: ${timeElapsed} seconds."
-
+    
     println "*** '${description}' action done ***"
 }
 
 /**
  * Task performed import CSV data to database
  */
-task importData(dependsOn: xls2Csv, description: project.properties['import.description']) << {
+task importData(dependsOn: renameFile, description: project.properties['import.description']) << {
     println '\n\n***********************************************'
     println '*                                             *'
-    println "*         '${description}' action started...          *"
+    println "*        '${description}' action started...           *"
     println '*                                             *'
     println '***********************************************'
 
@@ -453,7 +360,7 @@ task importData(dependsOn: xls2Csv, description: project.properties['import.desc
 task runLoadStage(dependsOn: importData, description: project.properties['loadStage.description']) << {
     println '\n\n***********************************************'
     println '*                                             *'
-    println "*        '${description}' action started...       *"
+    println "*     '${description}' action started...   *"
     println '*                                             *'
     println '***********************************************'
 
@@ -463,70 +370,11 @@ task runLoadStage(dependsOn: importData, description: project.properties['loadSt
     def log_file = "${tempDir.getPath()}\\${project.properties['loadStage.logFileName']}"
     def stream_log_file = "${tempDir.getPath()}\\${project.properties['loadStage.streamLogFileName']}"
     def stream_error_file = "${tempDir.getPath()}\\${project.properties['loadStage.streamErrFileName']}"
-    def log_file_procedure_drug = "${tempDir.getPath()}\\${project.properties['loadStage.logProcedureDrugFileName']}"
-    def log_file_map_drug_vocabulary = "${tempDir.getPath()}\\${project.properties['loadStage.logMapDrugVocabularyFileName']}"
 
     def db = [un: project.properties['db.userName'],
-              pw: project.properties['db.password'],
+              pw: project.properties['d4b.password'],
               tns: project.properties['db.tnsName'],
               sqlfile: "${project.properties['basePath']}\\${project.properties['loadStage.sqlFileName']}",
-              logfile: log_file,
-              contextPath: "${project.properties['basePath']}",
-              logfileProcedureDrug: log_file_procedure_drug,
-              logfileMapDrugVocabulary: log_file_map_drug_vocabulary]
-    def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
-    def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile} ${db.contextPath} ${db.logfileProcedureDrug} ${db.logfileMapDrugVocabulary}""".execute()
-    sqlplus.consumeProcessOutput(sout, serr)
-    sqlplus.waitFor()
-
-    // Finish action checkpoint
-    def timeFinish = System.currentTimeMillis()
-
-    // Write to console
-    System.out.println(sout.toString())
-
-    // Write to logfile
-    File f = new File(stream_log_file)
-    f.write(sout.toString())
-
-    // Write to error file
-    f = new File(stream_error_file)
-    f.write(serr.toString())
-
-    /* Check for errors */
-    if (project.properties['stop.on.error'].toBoolean() && (sqlplus.exitValue() != 0 || (serr != null && serr.toString().length() > 0))) {
-        throw new GradleException(String.format(project.properties['error.message.with.code'], sqlplus.exitValue(), name))
-    }
-
-    // Measure time execution
-    def timeElapsed = (timeFinish - timeStart) / 1000
-    println "Time elapsed: ${timeElapsed} seconds."
-
-    println "*** '${description}' action done ***"
-}
-
-/**
- * This task will run 'Genetic update' script.
- * It's common for all updated vocabularies and located in '\Vocabulary-v5.0\working\generic_update.sql' file.
- */
-task runGenericUpdate(dependsOn: runLoadStage, description: project.properties['genericUpdate.description']) << {
-    println '\n\n***********************************************'
-    println '*                                             *'
-    println "*     '${description}' action started...      *"
-    println '*                                             *'
-    println '***********************************************'
-
-    // Start action checkpoint
-    def timeStart = System.currentTimeMillis()
-
-    def log_file = "${tempDir.getPath()}\\${project.properties['genericUpdate.logFileName']}"
-    def stream_log_file = "${tempDir.getPath()}\\${project.properties['genericUpdate.streamLogFileName']}"
-    def stream_error_file = "${tempDir.getPath()}\\${project.properties['genericUpdate.streamErrFileName']}"
-
-    def db = [un: project.properties['db.userName'],
-              pw: project.properties['db.password'],
-              tns: project.properties['db.tnsName'],
-              sqlfile: "${project.properties['basePath']}\\${project.properties['genericUpdate.sqlFileName']}",
               logfile: log_file]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
     def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
@@ -559,40 +407,36 @@ task runGenericUpdate(dependsOn: runLoadStage, description: project.properties['
     println "*** '${description}' action done ***"
 }
 
-/**
- * This task will run scripts which allows to see the vocabulary update results
- */
-task checkUpdateResults(dependsOn: runGenericUpdate, description: project.properties['checkUpdateResults.description']) << {
+task extractManualTable(description: project.properties['extract.description']) << {
     println '\n\n***********************************************'
     println '*                                             *'
-    println "*  '${description}' action started...   *"
+    println "*   '${description}' action started...   *"
     println '*                                             *'
     println '***********************************************'
 
-    // Start action checkpoint
-    def timeStart = System.currentTimeMillis()
-
-    def log_file = "${tempDir.getPath()}\\${project.properties['checkUpdateResults.logFileName']}"
-    def stream_log_file = "${tempDir.getPath()}\\${project.properties['checkUpdateResults.streamLogFileName']}"
-    def stream_error_file = "${tempDir.getPath()}\\${project.properties['checkUpdateResults.streamErrFileName']}"
+    def stream_log_file = "${projectDir}\\${project.properties['importData.streamLogFileName']}"
+    def stream_error_file = "${projectDir}\\${project.properties['importData.streamErrFileName']}"
+    def exportBasePath="${projectDir}\\${project.properties['extract.basePath']}"
 
     def db = [un: project.properties['db.userName'],
               pw: project.properties['db.password'],
               tns: project.properties['db.tnsName'],
-              sqlfile: "${project.properties['basePath']}\\${project.properties['checkUpdateResults.sqlFileName']}",
-              logfile: log_file]
+              expPath: "${exportBasePath}",
+              sqlfile: "${exportBasePath}\\${project.properties['extract.sqlFileName']}",
+              expcsvfile: "${project.properties['extract.dataFileName']}",
+              tableName: "${project.properties['extract.tableName']}",
+              logfile: "${exportBasePath}\\${project.properties['extract.logFileName']}"]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
-    def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
+    System.out.println('sqlplus: ' + "${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.expPath} ${db.expcsvfile} ${db.tableName} > ${db.logfile}")
+    def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.expPath} ${db.expcsvfile} ${db.tableName} > ${db.logfile}""".execute()
+
     sqlplus.consumeProcessOutput(sout, serr)
     sqlplus.waitFor()
-
-    // Finish action checkpoint
-    def timeFinish = System.currentTimeMillis()
 
     // Write to console
     System.out.println(sout.toString())
 
-    // Write to log file
+    // Write to logfile
     File f = new File(stream_log_file)
     f.write(sout.toString())
 
@@ -600,15 +444,46 @@ task checkUpdateResults(dependsOn: runGenericUpdate, description: project.proper
     f = new File(stream_error_file)
     f.write(serr.toString())
 
-    /* Check for errors */
-    if (project.properties['stop.on.error'].toBoolean() && (sqlplus.exitValue() != 0 || (serr != null && serr.toString().length() > 0))) {
-        throw new GradleException(String.format(project.properties['error.message.with.code'], sqlplus.exitValue(), name))
+    println "*** '${description}' action done ***"
+}
+
+task sendMail(dependsOn: extractManualTable, description: project.properties['email.description']) << {
+    println '\n\n***********************************************'
+    println '*                                             *'
+    println "* '${description}' action started... *"
+    println '*                                             *'
+    println '***********************************************'
+
+    // Start action checkpoint
+    def timeStart = System.currentTimeMillis()
+
+    def mailParams = [
+            mailhost: project.properties['email.mailHost'],
+            subject: project.properties['email.Subject'],
+            messagemimetype: "text/plain",
+            user: project.properties['email.user'],
+            password: project.properties['email.password']
+    ]
+
+    println new StringBuilderWrapper('sending mail...')
+
+    configurations.mail.each {
+        org.apache.tools.ant.Project.class.classLoader.addURL(it.toURI().toURL())
     }
+
+    ant.mail( mailParams ) {
+        from(address: project.properties['email.sentFrom'])
+        to(address: project.properties['email.sentTo'])
+        message(String.format(project.properties['email.Message'], "${projectDir}\\${project.properties['extract.basePath']}\\${project.properties['extract.csvFileName']}"))
+    }
+
+    // Finish action checkpoint
+    def timeFinish = System.currentTimeMillis()
 
     // Measure time execution
     def timeElapsed = (timeFinish - timeStart) / 1000
-    println "Time elapsed: ${timeElapsed} seconds."
 
+    println "Time elapsed: ${timeElapsed} seconds."
     println "*** '${description}' action done ***"
 }
 
@@ -618,7 +493,7 @@ task checkUpdateResults(dependsOn: runGenericUpdate, description: project.proper
  * TODO: Needs to find solution to measure whole task chain execution.
  * TODO: This one via doFirst/doLast actions isn't working.
  */
-task startUpdate(dependsOn: checkUpdateResults, description: project.properties['startUpdate.description']) {
+task startUpdate(dependsOn: sendMail, description: project.properties['startUpdate.description']) {
     println '\n\n***********************************************'
     println '*                                             *'
     println "*      '${description}' action started...       *"
@@ -637,7 +512,6 @@ task startUpdate(dependsOn: checkUpdateResults, description: project.properties[
         // Measure time execution
         def timeElapsed = (timeFinish - timeStart) / 1000
         println "\n\nTotal time elapsed: ${timeElapsed} seconds."
-
         println "Updating of '${project.properties['vocabulary.display.name']}' vocabulary completed successfully..."
         println '***********************************************'
         println '*                                             *'
