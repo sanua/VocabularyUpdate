@@ -31,7 +31,8 @@ SELECT CONCEPT_ID  || ';'
     || VALID_START_DATE || ';'
     || VALID_END_DATE || ';'
     || INVALID_REASON
-FROM &3 WHERE ROWNUM < 10;
+FROM &3
+;
 
 SPOOL OFF
 
