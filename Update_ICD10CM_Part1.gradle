@@ -367,14 +367,15 @@ task runLoadStage(dependsOn: importData, description: project.properties['loadSt
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()
 
+    def filesBasePath="${projectDir}\\${project.properties['basePath']}"
     def log_file = "${tempDir.getPath()}\\${project.properties['loadStage.logFileName']}"
     def stream_log_file = "${tempDir.getPath()}\\${project.properties['loadStage.streamLogFileName']}"
     def stream_error_file = "${tempDir.getPath()}\\${project.properties['loadStage.streamErrFileName']}"
 
     def db = [un: project.properties['db.userName'],
-              pw: project.properties['d4b.password'],
+              pw: project.properties['db.password'],
               tns: project.properties['db.tnsName'],
-              sqlfile: "${project.properties['basePath']}\\${project.properties['loadStage.sqlFileName']}",
+              sqlfile: "${filesBasePath}\\${project.properties['loadStage.sqlFileName']}",
               logfile: log_file]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
     def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
@@ -417,16 +418,16 @@ task createManualTable(dependsOn: runLoadStage, description: project.properties[
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()
 
+    def filesBasePath="${projectDir}\\${project.properties['basePath']}"
     def stream_log_file = "${projectDir}\\${project.properties['createManual.streamLogFileName']}"
     def stream_error_file = "${projectDir}\\${project.properties['createManual.streamErrFileName']}"
-    def exportBasePath="${projectDir}\\${project.properties['createManual.basePath']}"
 
     def db = [un: project.properties['db.userName'],
               pw: project.properties['db.password'],
               tns: project.properties['db.tnsName'],
-              sqlfile: "${exportBasePath}\\${project.properties['createManual.sqlFileName']}",
+              sqlfile: "${filesBasePath}\\${project.properties['createManual.sqlFileName']}",
               tableName: "${project.properties['createManual.tableName']}",
-              logfile: "${exportBasePath}\\${project.properties['createManual.logFileName']}"]
+              logfile: "${filesBasePath}\\${project.properties['createManual.logFileName']}"]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
     def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile} ${db.tableName}""".execute()
 
@@ -463,7 +464,7 @@ task extractManualTable(dependsOn: createManualTable, description: project.prope
 
     def stream_log_file = "${projectDir}\\${project.properties['extractManual.streamLogFileName']}"
     def stream_error_file = "${projectDir}\\${project.properties['extractManual.streamErrFileName']}"
-    def exportBasePath="${projectDir}\\${project.properties['extractManual.basePath']}"
+    def exportBasePath="${projectDir}\\${project.properties['basePath']}"
 
     def db = [un: project.properties['db.userName'],
               pw: project.properties['db.password'],
@@ -520,7 +521,7 @@ task sendMail(dependsOn: extractManualTable, description: project.properties['em
     ant.mail( mailParams ) {
         from(address: project.properties['email.sentFrom'])
         to(address: project.properties['email.sentTo'])
-        message(String.format(project.properties['email.Message'], "${projectDir}\\${project.properties['extractManual.basePath']}\\${project.properties['extractManual.csvFileName']}"))
+        message(String.format(project.properties['email.Message'], "${projectDir}\\${project.properties['basePath']}\\${project.properties['extractManual.csvFileName']}"))
     }
 
     // Finish action checkpoint

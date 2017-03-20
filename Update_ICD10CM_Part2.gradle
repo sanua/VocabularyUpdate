@@ -93,15 +93,15 @@ task prepareManualTable(description: project.properties['prepareTable.descriptio
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()
 
-    def exportBasePath="${projectDir}\\${project.properties['prepareTable.basePath']}"
-    def log_file = "${exportBasePath}\\${project.properties['prepareTable.logFileName']}"
-    def stream_log_file = "${exportBasePath}\\${project.properties['prepareTable.streamLogFileName']}"
-    def stream_error_file = "${exportBasePath}\\${project.properties['prepareTable.streamErrFileName']}"
+    def filesBasePath="${projectDir}\\${project.properties['basePath']}"
+    def log_file = "${filesBasePath}\\${project.properties['prepareTable.logFileName']}"
+    def stream_log_file = "${filesBasePath}\\${project.properties['prepareTable.streamLogFileName']}"
+    def stream_error_file = "${filesBasePath}\\${project.properties['prepareTable.streamErrFileName']}"
 
     def db = [un: project.properties['db.userName'],
               pw: project.properties['db.password'],
               tns: project.properties['db.tnsName'],
-              sqlfile: "${exportBasePath}\\${project.properties['prepareTable.sqlFileName']}",
+              sqlfile: "${filesBasePath}\\${project.properties['prepareTable.sqlFileName']}",
               tableName: "${project.properties['prepareTable.tableName']}",
               logfile: log_file]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
@@ -137,17 +137,16 @@ task importTable (dependsOn: prepareManualTable, description: project.properties
     println '*                                                   *'
     println '*****************************************************'
 
-    def importBasePath="${projectDir}\\${project.properties['importTable.basePath']}"
-
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()
 
-    def dataFile = "${importBasePath}\\${project.properties['importTable.dataFileName']}"
-    def logFile = "${importBasePath}\\${project.properties['importTable.logFileName']}"
-    def discardFile = "${importBasePath}\\${project.properties['importTable.discardFileName']}"
-    def badFile = "${importBasePath}\\${project.properties['importTable.badFileName']}"
-    def stream_log_file = "${importBasePath}\\${project.properties['importTable.streamLogFileName']}"
-    def stream_error_file = "${importBasePath}\\${project.properties['importTable.streamErrFileName']}"
+    def filesBasePath="${projectDir}\\${project.properties['basePath']}"
+    def dataFile = "${filesBasePath}\\${project.properties['importTable.dataFileName']}"
+    def logFile = "${filesBasePath}\\${project.properties['importTable.logFileName']}"
+    def discardFile = "${filesBasePath}\\${project.properties['importTable.discardFileName']}"
+    def badFile = "${filesBasePath}\\${project.properties['importTable.badFileName']}"
+    def stream_log_file = "${filesBasePath}\\${project.properties['importTable.streamLogFileName']}"
+    def stream_error_file = "${filesBasePath}\\${project.properties['importTable.streamErrFileName']}"
 
     def bosOut = new ByteArrayOutputStream(), bosErr = new ByteArrayOutputStream()
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
@@ -155,7 +154,7 @@ task importTable (dependsOn: prepareManualTable, description: project.properties
     exec {
         executable "sqlldr.exe"
         args "USERID=${project.properties['db.userName']}/${project.properties['db.password']}@${project.properties['db.tnsName']} " +
-                "CONTROL=${importBasePath}\\${project.properties['importTable.controlFileName']} DATA=$dataFile LOG=$logFile DISCARD=$discardFile BAD=$badFile"
+                "CONTROL=${filesBasePath}\\${project.properties['importTable.controlFileName']} DATA=$dataFile LOG=$logFile DISCARD=$discardFile BAD=$badFile"
         standardOutput = bosOut
         errorOutput = bosErr
     }
