@@ -2,7 +2,7 @@ OPTIONS (errors=0, direct=true, skip=1)
 LOAD DATA 
 INFILE 'manual_table_data.csv' "str '\r\n'"
 APPEND
-INTO TABLE manual_table
+INTO TABLE MOCK_MANUAL_TABLE
 FIELDS TERMINATED BY ';'
 OPTIONALLY ENCLOSED BY '"'
 TRAILING NULLCOLS (
