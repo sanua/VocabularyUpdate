@@ -1,11 +1,11 @@
-OPTIONS (errors=0, direct=true, skip=0)
+OPTIONS (errors=0, direct=true, skip=1)
 LOAD DATA 
 INFILE 'manual_table_data.csv' "str '\r\n'"
 APPEND
 INTO TABLE manual_table
-fields terminated by ';'
+FIELDS TERMINATED BY ';'
 OPTIONALLY ENCLOSED BY '"'
-trailing nullcols (
+TRAILING NULLCOLS (
 "CONCEPT_ID",
 "CONCEPT_NAME" CHAR (255),
 "DOMAIN_ID" CHAR (20),

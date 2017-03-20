@@ -521,7 +521,7 @@ task sendMail(dependsOn: extractManualTable, description: project.properties['em
     ant.mail( mailParams ) {
         from(address: project.properties['email.sentFrom'])
         to(address: project.properties['email.sentTo'])
-        message(String.format(project.properties['email.Message'], "${projectDir}\\${project.properties['basePath']}\\${project.properties['extractManual.csvFileName']}"))
+        message(String.format(project.properties['email.Message'], "${projectDir}\\${project.properties['basePath']}\\${project.properties['extractManual.dataFileName']}"))
     }
 
     // Finish action checkpoint
