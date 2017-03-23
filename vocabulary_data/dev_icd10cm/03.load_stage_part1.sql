@@ -31,8 +31,7 @@ SPOOL &1
 /* Clean up from last unsuccessful load stage run, to avoid build process errors */
 DECLARE
   TYPE TStringArray IS TABLE OF VARCHAR2(255);
-  t_names TStringArray := TStringArray('ICD10CM_domain',
-                                       'filled_domain');
+  t_names TStringArray := TStringArray('ICD10CM_domain','filled_domain','MANUAL_table');
   l_cnt NUMBER;
   l_str VARCHAR2(255);
 BEGIN
@@ -105,7 +104,6 @@ INSERT /*+ APPEND */ INTO concept_stage (concept_id,
      FROM ICD10CM_TABLE;
 COMMIT;					  
 
-drop TABLE MANUAL_table;
 CREATE TABLE MANUAL_table 
 (
    CONCEPT_CODE_1     VARCHAR2 (50 BYTE) ,

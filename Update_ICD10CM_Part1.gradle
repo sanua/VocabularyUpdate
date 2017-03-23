@@ -476,6 +476,8 @@ task extractManualTable(dependsOn: runLoadStage, description: project.properties
               logfile: "${filesBasePath}\\${project.properties['extractManual.logFileName']}"]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
     def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.expPath} ${db.expcsvfile} ${db.tableName} > ${db.logfile}""".execute()
+    
+    println new StringBuilderWrapper('extracting table...')
 
     sqlplus.consumeProcessOutput(sout, serr)
     sqlplus.waitFor()
