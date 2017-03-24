@@ -763,7 +763,7 @@ AND c.invalid_reason = 'U' -- not already deprecated
 COMMIT;
 
 --Deprecate 'Maps to' mappings to deprecated and upgraded concepts
-DBMS_OUTPUT.PUT_LINE('Deprecate 'Maps to' mappings to deprecated and upgraded concepts...');
+DBMS_OUTPUT.PUT_LINE('Deprecate ''Maps to'' mappings to deprecated and upgraded concepts...');
 UPDATE concept_relationship r
    SET r.valid_end_date =
             (SELECT MAX (v.latest_update)

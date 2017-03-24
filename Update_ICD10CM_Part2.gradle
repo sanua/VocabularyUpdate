@@ -123,6 +123,16 @@ task prepareManualTable(description: project.properties['prepareTable.descriptio
     f = new File(stream_error_file)
     f.write(serr.toString())
 
+    // Get Manual Table from editors
+    println new StringBuilderWrapper('сopy started...')
+    def srcFile = "${projectDir}\\${project.properties['basePath']}\\${project.properties['prepareTable.manualWorkResultPath']}\\${project.properties['prepareTable.dataFileName']}"
+    def dest = "${projectDir}\\${project.properties['basePath']}"
+    copy {
+        from srcFile
+        into dest
+    }
+    println new StringBuilderWrapper('сopy done...')
+
     // Measure time execution
     def timeElapsed = (timeFinish - timeStart) / 1000
     println "Time elapsed: ${timeElapsed} seconds."
