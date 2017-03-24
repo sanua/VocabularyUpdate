@@ -9,7 +9,6 @@ WHENEVER SQLERROR EXIT SQL.SQLCODE
 */
 SPOOL &1
 
-PROMPT Update MANUAL_table''s dates...
 update manual_table set valid_start_date = sysdate 
 where valid_start_date is null
 ;
@@ -27,10 +26,6 @@ commit
 --do it once MANUAL_table is done by medical coder
 --or probably another temporary table can be used where we put the result of manual mappings
 --truncate table
-PROMPT Need to think if we need to give only those where concept_code_2 is null or it is mappped only to deprecated concept
-PROMPT if medical coder wants to change relatoinship (i.e. found a better mapping - set an old row as deprecated, add a new row to concept_relationship)
-PROMPT do it once MANUAL_table is done by medical coder
-PROMPT or probably another temporary table can be used where we put the result of manual mappings...
 insert into concept_relationship_manual (CONCEPT_CODE_1,CONCEPT_CODE_2,VOCABULARY_ID_1,VOCABULARY_ID_2,RELATIONSHIP_ID,VALID_START_DATE,VALID_END_DATE,INVALID_REASON)
 select CONCEPT_CODE_1,CONCEPT_CODE_2,VOCABULARY_ID_1,VOCABULARY_ID_2,RELATIONSHIP_ID,VALID_START_DATE,VALID_END_DATE,INVALID_REASON from MANUAL_table
 ;
@@ -38,7 +33,7 @@ commit
 ;
 
 /* This is WORKAROUND-HACK.TODO: should be checked later */
-delete from concept_relationship_manual where (CONCEPT_CODE_1, CONCEPT_CODE_2) in
+delete from concept_relationship_manual where (CONCEPT_CODE_1, CONCEPT_CODE_2) in 
 (select CONCEPT_CODE_1, CONCEPT_CODE_2
   FROM concept_relationship_manual  crm
              LEFT JOIN concept c1 ON c1.concept_code = crm.concept_code_1 AND c1.vocabulary_id = crm.vocabulary_id_1
@@ -60,7 +55,6 @@ COMMIT;
 /*End of WORKAROUND-HACK*/
 
 --4 Add ICD10CM to SNOMED manual mappings
-PROMPT 4 Add ICD10CM to SNOMED manual mappings...
 BEGIN
    DEVV5.VOCABULARY_PACK.ProcessManualRelationships;
 END;
@@ -68,7 +62,6 @@ END;
 COMMIT;
 
 --5 Working with replacement mappings
-PROMPT 5 Working with replacement mappings...
 BEGIN
    DEVV5.VOCABULARY_PACK.CheckReplacementMappings;
 END;
@@ -76,7 +69,6 @@ END;
 COMMIT;
 
 --6 Deprecate 'Maps to' mappings to deprecated and upgraded concepts
-PROMPT 6 Deprecate 'Maps to' mappings to deprecated and upgraded concepts...
 BEGIN
    DEVV5.VOCABULARY_PACK.DeprecateWrongMAPSTO;
 END;
@@ -84,7 +76,6 @@ END;
 COMMIT;		
 
 --7 Add mapping from deprecated to fresh concepts
-PROMPT 7 Add mapping from deprecated to fresh concepts...
 BEGIN
    DEVV5.VOCABULARY_PACK.AddFreshMAPSTO;
 END;
@@ -92,15 +83,14 @@ END;
 COMMIT;
 
 --8 Delete ambiguous 'Maps to' mappings
-PROMPT 8 Delete ambiguous 'Maps to' mappings...
 BEGIN
    DEVV5.VOCABULARY_PACK.DeleteAmbiguousMAPSTO;
 END;
 /
 COMMIT;
 
+
 --9 Add "subsumes" relationship between concepts where the concept_code is like of another
-PROMPT 9 Add "subsumes" relationship between concepts where the concept_code is like of another...
 INSERT INTO concept_relationship_stage (concept_code_1,
                                         concept_code_2,
                                         vocabulary_id_1,
@@ -133,8 +123,6 @@ COMMIT;
 
 --10 Update domain_id for ICD10CM from SNOMED
 --create 1st temporary table ICD10CM_domain with direct mappings
-PROMPT 10 Update domain_id for ICD10CM from SNOMED
-PROMPT create 1st temporary table ICD10CM_domain with direct mappings...
 create table filled_domain NOLOGGING as
 	with domain_map2value as (--ICD10CM have direct "Maps to value" mapping
 		SELECT c1.concept_code, c2.domain_id
@@ -185,8 +173,6 @@ create table filled_domain NOLOGGING as
 
 --create 2d temporary table with ALL ICD10CM domains
 --if domain_id is empty we use previous and next domain_id or its combination
-PROMPT Create 2d temporary table with ALL ICD10CM domains
-PROMPT if domain_id is empty we use previous and next domain_id or its combination...
 create table ICD10CM_domain NOLOGGING as
     select concept_code, 
     case when domain_id is not null then domain_id 
@@ -213,27 +199,22 @@ create table ICD10CM_domain NOLOGGING as
     );
 
 -- INDEX was set as UNIQUE to prevent concept_code duplication
-PROMPT INDEX was set as UNIQUE to prevent concept_code duplication...
 CREATE UNIQUE INDEX idx_ICD10CM_domain ON ICD10CM_domain (concept_code) NOLOGGING;
 
 --11 Simplify the list by removing Observations
-PROMPT 11 Simplify the list by removing Observations...
 update ICD10CM_domain set domain_id=trim('/' FROM replace('/'||domain_id||'/','/Observation/','/'))
 where '/'||domain_id||'/' like '%/Observation/%'
 and instr(domain_id,'/')<>0;
 
 --Reducing some domain_id if his length>20
-PROMPT Reducing some domain_id if his length>20...
 update ICD10CM_domain set domain_id='Condition/Meas' where domain_id='Condition/Measurement';
 
 COMMIT;
 
 -- Check that all domain_id are exists in domain table
-PROMPT Check that all domain_id are exists in domain table...
 ALTER TABLE ICD10CM_domain ADD CONSTRAINT fk_ICD10CM_domain FOREIGN KEY (domain_id) REFERENCES domain (domain_id);
 
 --12 Update each domain_id with the domains field from ICD10CM_domain.
-PROMPT 12 Update each domain_id with the domains field from ICD10CM_domain...
 UPDATE concept_stage c
    SET (domain_id) =
           (SELECT domain_id
@@ -243,7 +224,6 @@ UPDATE concept_stage c
 COMMIT;
 
 --13 Load into concept_synonym_stage name from ICD10CM_TABLE
-PROMPT 13 Load into concept_synonym_stage name from ICD10CM_TABLE...
 INSERT /*+ APPEND */ INTO concept_synonym_stage (synonym_concept_id,
                                    synonym_concept_code,
                                    synonym_name,
@@ -266,13 +246,11 @@ INSERT /*+ APPEND */ INTO concept_synonym_stage (synonym_concept_id,
 COMMIT;
 
 --14 Clean up
-PROMPT 14 Clean up...
 DROP TABLE ICD10CM_domain PURGE;
 DROP TABLE filled_domain PURGE;	
 
 SET sqlbl off
 -- At the end, the three tables concept_stage, concept_relationship_stage and concept_synonym_stage should be ready to be fed into the generic_update.sql script		
-PROMPT At the end, the three tables concept_stage, concept_relationship_stage and concept_synonym_stage should be ready to be fed into the generic_update.sql script...
 
 SPOOL OFF
 EXIT

@@ -29,7 +29,6 @@ WHENEVER SQLERROR EXIT SQL.SQLCODE
 SPOOL &1
 
 /* Clean up from last unsuccessful load stage run, to avoid build process errors */
-PROMPT Clean up from last unsuccessful load stage run, to avoid build process errors...
 DECLARE
   TYPE TStringArray IS TABLE OF VARCHAR2(255);
   t_names TStringArray := TStringArray('ICD10CM_domain','filled_domain','MANUAL_table');
@@ -47,7 +46,6 @@ END;
 /
 
 -- 1. Update latest_update field to new date 
-PROMPT 1. Update latest_update field to new date...
 BEGIN
    DEVV5.VOCABULARY_PACK.SetLatestUpdate (pVocabularyName        => 'ICD10CM',
                                           pVocabularyDate        => TO_DATE ('20160325', 'yyyymmdd'),
@@ -58,7 +56,6 @@ END;
 COMMIT;
 
 -- 2. Truncate all working tables
-PROMPT 2. Truncate all working tables...
 TRUNCATE TABLE concept_stage;
 TRUNCATE TABLE concept_relationship_stage;
 TRUNCATE TABLE concept_synonym_stage;
@@ -66,7 +63,6 @@ TRUNCATE TABLE pack_content_stage;
 TRUNCATE TABLE drug_strength_stage;
 
 --3. Load into concept_stage from ICD10CM_TABLE
-PROMPT 3. Load into concept_stage from ICD10CM_TABLE...
 INSERT /*+ APPEND */ INTO concept_stage (concept_id,
                            concept_name,
                            domain_id,
@@ -106,9 +102,8 @@ INSERT /*+ APPEND */ INTO concept_stage (concept_id,
           TO_DATE ('20991231', 'yyyymmdd') AS valid_end_date,
           NULL AS invalid_reason
      FROM ICD10CM_TABLE;
-COMMIT;
+COMMIT;					  
 
-PROMPT Create MANUAL_table...
 CREATE TABLE MANUAL_table 
 (
    CONCEPT_CODE_1     VARCHAR2 (50 BYTE) ,
@@ -133,10 +128,6 @@ NOLOGGING
 -- instead of concept use concept_stage (medical coders need to review new concepts also)
 -- need to add more useful attributes exactly to concept_relationship_manual to make the manual mapping process easier
 -- create temporary table MANUAL_table that will be filled by the medical coder
-PROMPT 5. Create file with mappings for medical coder from the existing one
-PROMPT instead of concept use concept_stage (medical coders need to review new concepts also)
-PROMPT need to add more useful attributes exactly to concept_relationship_manual to make the manual mapping process easier
-PROMPT create temporary table MANUAL_table that will be filled by the medical coder...
 truncate table MANUAL_table;
 insert into MANUAL_table (CONCEPT_CODE_1,CONCEPT_NAME_1,VOCABULARY_ID_1,invalid_reason_1, CONCEPT_CODE_2,CONCEPT_NAME_2,CONCEPT_CLASS_ID_2,VOCABULARY_ID_2,invalid_reason_2, RELATIONSHIP_ID,VALID_START_DATE,VALID_END_DATE,INVALID_REASON)
 SELECT c.concept_code,c.concept_name,c.vocabulary_id,c.invalid_reason, t.concept_code, t.concept_name,t.concept_class_id,t.vocabulary_id,t.invalid_reason, r.RELATIONSHIP_ID, r.VALID_START_DATE, r.VALID_END_DATE, r.INVALID_REASON
@@ -150,7 +141,6 @@ COMMIT;
 
 SET sqlbl off
 -- At the end, the three tables concept_stage, concept_relationship_stage and concept_synonym_stage should be ready to be fed into the generic_update.sql script		
-PROMPT At the end, the three tables concept_stage, concept_relationship_stage and concept_synonym_stage should be ready to be fed into the generic_update.sql script...
 
 SPOOL OFF
 EXIT

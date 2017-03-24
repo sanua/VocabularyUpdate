@@ -17,6 +17,33 @@
 * Date: 2016
 **************************************************************************/
 
+SET VERIFY OFF
+/* If any errors occurs - stop script execution and return error code */
+WHENEVER SQLERROR EXIT SQL.SQLCODE
+/*
+ *****************************
+ *  Log to file...    
+ *****************************
+*/
+SPOOL &1
+
+/* Delete import-data table if it exists, to avoid build process errors */
+DECLARE
+	TYPE TStringArray IS TABLE OF VARCHAR2(255);
+	t_names TStringArray := TStringArray('ICD10CM_TABLE','LOINC','MAP_TO','SOURCE_ORGANIZATION','LOINC_ANSWERS','LOINC_FORMS','LOINC_CLASS','CPT_MRSMAP','scccRefset_MapCorrOrFull_INT');
+	l_cnt NUMBER;
+	l_str VARCHAR2(255);
+BEGIN
+	FOR i in t_names.FIRST..t_names.LAST LOOP
+	  l_str := t_names(i);
+    SELECT COUNT(1) INTO l_cnt FROM user_tables WHERE UPPER(table_name) = UPPER(l_str);
+    IF l_cnt > 0 THEN
+      EXECUTE IMMEDIATE 'DROP TABLE ' || l_str;
+    END IF;
+	END LOOP;
+END;
+/
+
 CREATE TABLE LOINC
 (
   LOINC_NUM                  VARCHAR2(10 BYTE),
@@ -140,3 +167,6 @@ CREATE TABLE scccRefset_MapCorrOrFull_INT
    REFERENCEDCOMPONENTID   NUMBER NOT NULL,
    MAPTARGET               VARCHAR (256) NOT NULL
 );
+
+SPOOL OFF
+EXIT

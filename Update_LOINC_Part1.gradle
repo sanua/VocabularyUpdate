@@ -1,5 +1,3 @@
-import com.sun.org.apache.xalan.internal.xsltc.cmdline.Compile
-
 /*
 *************************************
 * ICD10CM Vocabulary update. Part 1 *
@@ -56,6 +54,7 @@ configurations {
 dependencies {
     mail 'org.apache.ant:ant-javamail:1.8.1'
 }
+
 
 /*
 configurations { antMail }
@@ -576,10 +575,3 @@ task startUpdate(dependsOn: sendMail, description: project.properties['startUpda
 task writeToPdf(description: project.properties['writeToPdf.description']) << {
 	System.out.println('stop.on.error: ' + project.properties['stop.on.error'] + ', project dir: ' + projectDir)
 }
-
-task compileJavaFiles(type: JavaCompile) {
-    source = sourceSets.main.java.srcDirs
-    classpath = sourceSets.main.compileClasspath
-    destinationDir = sourceSets.main.output.classesDir
-}
-

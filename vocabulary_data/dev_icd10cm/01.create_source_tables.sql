@@ -28,6 +28,7 @@ WHENEVER SQLERROR EXIT SQL.SQLCODE
 SPOOL &1
 
 /* Delete import-data table if it exists, to avoid build process errors */
+PROMPT Delete import-data table if it exists, to avoid build process errors...
 DECLARE
 	TYPE TStringArray IS TABLE OF VARCHAR2(255);
 	t_names TStringArray := TStringArray('ICD10CM_TABLE');
@@ -44,6 +45,7 @@ BEGIN
 END;
 /
 
+PROMPT Create ICD10CM_TABLE...
 CREATE TABLE ICD10CM_TABLE
 (
    CODE         VARCHAR2 (8),
@@ -53,4 +55,5 @@ CREATE TABLE ICD10CM_TABLE
 )
 NOLOGGING;
 
+SPOOL OFF
 EXIT

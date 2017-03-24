@@ -11,6 +11,7 @@ WHENEVER SQLERROR EXIT SQL.SQLCODE
 SPOOL &1
 
 /* Delete Manual Table is exist */
+PROMPT Delete Manual Table is exist...
 DECLARE
 	TYPE TStringArray IS TABLE OF VARCHAR2(255);
 	t_names TStringArray := TStringArray('&2');
@@ -32,4 +33,5 @@ CREATE TABLE &2 AS
 
 COMMIT;
 
+SPOOL OFF
 EXIT

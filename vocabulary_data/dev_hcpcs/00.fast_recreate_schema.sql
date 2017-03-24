@@ -124,4 +124,5 @@ begin
 end;
 /
 
+SPOOL OFF
 EXIT
