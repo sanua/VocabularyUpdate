@@ -124,14 +124,14 @@ task prepareManualTable(description: project.properties['prepareTable.descriptio
     f.write(serr.toString())
 
     // Get Manual Table from editors
-    println new StringBuilderWrapper('сopy started...')
+    println new StringBuilderWrapper('\'Manual Table\' copy started...')
     def srcFile = "${projectDir}\\${project.properties['basePath']}\\${project.properties['prepareTable.manualWorkResultPath']}\\${project.properties['prepareTable.dataFileName']}"
     def dest = "${projectDir}\\${project.properties['basePath']}"
     copy {
         from srcFile
         into dest
     }
-    println new StringBuilderWrapper('сopy done...')
+    println new StringBuilderWrapper('\'Manual Table\' copy done...')
 
     // Measure time execution
     def timeElapsed = (timeFinish - timeStart) / 1000
