@@ -351,14 +351,10 @@ task importData(dependsOn: renameFile, description: project.properties['import.d
     }
 
     // Write to console
-    try {
-        def fileFromLogFile = new File(logFile)
-        // Write compact SQLPlus's spool log
-        System.out.println(fileFromLogFile.getText())
-    } catch (IOException ioe) {
-        // Write whole SQLPlus's log
-        System.out.println(sout.toString())
-    }
+    /*
+     *  When import prefer to write stream log to console (it's shorter)
+     * */
+    System.out.println(sout.toString())
 
     // Write to logfile
     File f = new File(streamLogFile)
