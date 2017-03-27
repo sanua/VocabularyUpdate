@@ -220,8 +220,6 @@ task runLoadStage(dependsOn: importTable, description: project.properties['loadS
     def stream_log_file = "${tempDir.getPath()}\\${project.properties['loadStage.streamLogFileName']}"
     def stream_error_file = "${tempDir.getPath()}\\${project.properties['loadStage.streamErrFileName']}"
 
-    System.out.println("loadStage.sqlFileName: ${project.properties['loadStage.sqlFileName']}")
-
     def db = [un: project.properties['db.userName'],
               pw: project.properties['db.password'],
               tns: project.properties['db.tnsName'],
