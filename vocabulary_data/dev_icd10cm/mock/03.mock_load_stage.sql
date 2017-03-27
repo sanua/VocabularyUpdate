@@ -9,12 +9,12 @@ WHENEVER SQLERROR EXIT SQL.SQLCODE
 SPOOL &1
 
 PROMPT
-PROMPT 'Fast Recreate' is starting...
+PROMPT 'Load Stage' is starting...
 BEGIN
 	DBMS_LOCK.sleep(1);
 END;
 /
-PROMPT 'Fast Recreate' is done...
+PROMPT 'Load Stage' is done...
 PROMPT
 
 EXIT

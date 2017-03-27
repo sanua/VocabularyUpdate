@@ -11,7 +11,7 @@ SPOOL &1
 PROMPT
 PROMPT 'Load Stage part 2' is starting...
 BEGIN
-	dbms_lock.sleep(1);
+	DBMS_LOCK.sleep(1);
 END;
 /
 PROMPT 'Load Stage part 2' is done...

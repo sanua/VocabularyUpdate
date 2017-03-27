@@ -11,7 +11,7 @@ SPOOL &1
 PROMPT
 PROMPT 'Update Results' is starting...
 BEGIN
-	dbms_lock.sleep(1);
+	DBMS_LOCK.sleep(1);
 END;
 /
 PROMPT 'Update Results' is done...
