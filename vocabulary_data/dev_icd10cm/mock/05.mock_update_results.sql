@@ -14,4 +14,5 @@ EXEC DBMS_LOCK.sleep(1);
 PROMPT 'Update Results' is done...
 PROMPT
 
+SPOOL OFF
 EXIT

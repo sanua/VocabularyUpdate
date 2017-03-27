@@ -14,4 +14,5 @@ EXEC DBMS_LOCK.sleep(1);
 PROMPT 'Fast Recreate' is done...
 PROMPT
 
+SPOOL OFF
 EXIT

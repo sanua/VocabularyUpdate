@@ -14,4 +14,5 @@ EXEC DBMS_LOCK.sleep(1);
 PROMPT 'Load Stage' is done...
 PROMPT
 
+SPOOL OFF
 EXIT

@@ -35,5 +35,4 @@ FROM &3
 ;
 
 SPOOL OFF
-
 EXIT
