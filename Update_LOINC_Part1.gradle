@@ -226,23 +226,85 @@ task createSourceTable(dependsOn: fastRecreateSchema, description: project.prope
     println "*** '${description}' action done ***"
 }
 
-/**
- * Task which will download vocabulary update package from source host.
- * This one - 'ftp://ftp.cdc.gov/pub/Health_Statistics/NCHS/Publications/ICD10CM' is our case.
- */
-task downloadUpdatePack(dependsOn: createSourceTable, description: project.properties['downloadUpdatePack.description']) << {
+task mockDownload(dependsOn: createSourceTable, description: project.properties['downloadUpdatePack.description']) {
     println '\n\n***********************************************'
     println '*                                             *'
     println "*       '${description}' action started...          *"
     println '*                                             *'
     println '***********************************************'
 
+    System.out.println('temp: ' + tempDir)
+
     /* Downloading file */
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()
     println new StringBuilderWrapper('downloading file...')
     println new StringBuilderWrapper("stored to: ${tempDir.getPath()}")
-    ant.get(src: project.properties['downloadUpdatePack.fileUrl'], dest: tempDir, verbose: true)
+
+    def srcFile = "${projectDir}\\${project.properties['basePath']}\\dowbnload\\'${project.properties['prepareTable.manualWorkResultPath']}"
+    def dest = "${tempDir.getPath()}"
+    copy {
+        from srcFile
+        into dest
+    }
+
+    // Finish action checkpoint
+    def timeFinish = System.currentTimeMillis()
+    def timeElapsed = (timeFinish - timeStart) / 1000
+    println "Time elapsed: ${timeElapsed} seconds."
+
+    println "*** '${description}' action done ***"
+
+}
+
+/**
+ * Task which will download vocabulary update package from source host.
+ * This one - 'ftp://ftp.cdc.gov/pub/Health_Statistics/NCHS/Publications/ICD10CM' is our case.
+ */
+task downloadUpdatePack(/*dependsOn: createSourceTable, */ description: project.properties['downloadUpdatePack.description']) << {
+    println '\n\n***********************************************'
+    println '*                                             *'
+    println "*       '${description}' action started...          *"
+    println '*                                             *'
+    println '***********************************************'
+
+    System.out.println('temp: ' + tempDir)
+
+    /* Downloading file */
+    // Start action checkpoint
+    def timeStart = System.currentTimeMillis()
+    println new StringBuilderWrapper('downloading file...')
+    println new StringBuilderWrapper("stored to: ${tempDir.getPath()}")
+    // Download 'full set' package
+    ant.get(src: project.properties['downloadUpdatePack.fullSetUrl'],
+            dest: tempDir,
+            verbose: true,
+            user: project.properties['downloadUpdatePack.username'],
+            password: project.properties['downloadUpdatePack.password'])
+    // Download 'multiaxial hierarchy' package
+    ant.get(src: project.properties['downloadUpdatePack.multiaxialHierarchyUrl'],
+            dest: tempDir,
+            verbose: true,
+            user: project.properties['downloadUpdatePack.username'],
+            password: project.properties['downloadUpdatePack.password'])
+    // Download 'forms' package
+    ant.get(src: project.properties['downloadUpdatePack.formsUrl'],
+            dest: tempDir,
+            verbose: true,
+            user: project.properties['downloadUpdatePack.username'],
+            password: project.properties['downloadUpdatePack.password'])
+    // Download 'association' package
+    ant.get(src: project.properties['downloadUpdatePack.associationUrl'],
+            dest: tempDir,
+            verbose: true,
+            user: project.properties['downloadUpdatePack.username'],
+            password: project.properties['downloadUpdatePack.password'])
+    // Download 'mappings' package
+    ant.get(src: project.properties['downloadUpdatePack.mappingsUrl'],
+            dest: tempDir,
+            verbose: true,
+            user: project.properties['downloadUpdatePack.username'],
+            password: project.properties['downloadUpdatePack.password'])
     println new StringBuilderWrapper('download completed')
 
     // Finish action checkpoint
@@ -255,7 +317,7 @@ task downloadUpdatePack(dependsOn: createSourceTable, description: project.prope
 /**
  * Task will rename the file 'icd10cm_order_20xx.txt' to the 'icd10cm.txt'.
  */
-task renameFile(dependsOn: downloadUpdatePack, description: project.properties['renameFile.description']) << {
+task renameFile(dependsOn: mockDownload, description: project.properties['renameFile.description']) << {
     println '\n\n***********************************************'
     println '*                                             *'
     println "*       '${description}' action started...       *"
