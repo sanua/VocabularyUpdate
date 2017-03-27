@@ -521,15 +521,18 @@ task extractManualTable(dependsOn: runLoadStage, description: project.properties
     sqlplus.consumeProcessOutput(sout, serr)
     sqlplus.waitFor()
 
-    // Write to console
-    try {
+    // Write to console.
+    /*
+     Currently it's is no need to duplicate data export to console's log
+      */
+    /*try {
         def fileFromLogFile = new File(logFile)
         // Write compact SQLPlus's spool log
         System.out.println(fileFromLogFile.getText())
     } catch (IOException ioe) {
         // Write whole SQLPlus's log
         System.out.println(sout.toString())
-    }
+    }*/
 
     // Write to logfile
     File f = new File(streamLogFile)
