@@ -10,7 +10,10 @@ SPOOL &1
 
 PROMPT
 PROMPT 'Generic Update' is starting...
-EXECUTE dbms_lock.sleep(1);
+BEGIN
+	dbms_lock.sleep(1);
+END;
+/
 PROMPT 'Generic Update' is done...
 PROMPT
 

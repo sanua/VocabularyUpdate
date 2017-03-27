@@ -10,7 +10,10 @@ SPOOL &1
 
 PROMPT
 PROMPT 'Load Stage part 1' is starting...
-EXECUTE dbms_lock.sleep(1);
+BEGIN
+	dbms_lock.sleep(1);
+END;
+/
 PROMPT 'Load Stage part 1' is done...
 PROMPT
 

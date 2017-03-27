@@ -10,7 +10,10 @@ SPOOL &1
 
 PROMPT
 PROMPT 'Update Results' is starting...
-EXECUTE dbms_lock.sleep(1);
+BEGIN
+	dbms_lock.sleep(1);
+END;
+/
 PROMPT 'Update Results' is done...
 PROMPT
 
