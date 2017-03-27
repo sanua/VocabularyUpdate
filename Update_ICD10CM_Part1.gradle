@@ -370,7 +370,6 @@ task runLoadStage(dependsOn: importData, description: project.properties['loadSt
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()
 
-    def filesBasePath="${projectDir}\\${project.properties['basePath']}"
     def log_file = "${tempDir.getPath()}\\${project.properties['loadStage.logFileName']}"
     def stream_log_file = "${tempDir.getPath()}\\${project.properties['loadStage.streamLogFileName']}"
     def stream_error_file = "${tempDir.getPath()}\\${project.properties['loadStage.streamErrFileName']}"
@@ -378,7 +377,7 @@ task runLoadStage(dependsOn: importData, description: project.properties['loadSt
     def db = [un: project.properties['db.userName'],
               pw: project.properties['db.password'],
               tns: project.properties['db.tnsName'],
-              sqlfile: "${filesBasePath}\\${project.properties['loadStage.sqlFileName']}",
+              sqlfile: "${project.properties['basePath']}\\${project.properties['loadStage.sqlFileName']}",
               logfile: log_file]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
     def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
