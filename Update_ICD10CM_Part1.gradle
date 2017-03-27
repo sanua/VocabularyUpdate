@@ -420,16 +420,16 @@ task createManualTable(/*dependsOn: runLoadStage,*/ description: project.propert
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()
 
-    def filesBasePath="${projectDir}\\${project.properties['basePath']}"
-    def stream_log_file = "${filesBasePath}\\${project.properties['createManual.streamLogFileName']}"
-    def stream_error_file = "${filesBasePath}\\${project.properties['createManual.streamErrFileName']}"
+    def log_file = "${project.properties['basePath']}\\${project.properties['createManual.logFileName']}"
+    def stream_log_file = "${project.properties['basePath']}\\${project.properties['createManual.streamLogFileName']}"
+    def stream_error_file = "${project.properties['basePath']}\\${project.properties['createManual.streamErrFileName']}"
 
     def db = [un: project.properties['db.userName'],
               pw: project.properties['db.password'],
               tns: project.properties['db.tnsName'],
-              sqlfile: "${filesBasePath}\\${project.properties['createManual.sqlFileName']}",
+              sqlfile: "${project.properties['basePath']}\\${project.properties['createManual.sqlFileName']}",
               tableName: "${project.properties['manualTableName']}",
-              logfile: "${filesBasePath}\\${project.properties['createManual.logFileName']}"]
+              logfile: log_file]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
     def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile} ${db.tableName}""".execute()
 
@@ -464,18 +464,19 @@ task extractManualTable(dependsOn: runLoadStage, description: project.properties
     println '*                                             *'
     println '***********************************************'
 
-    def filesBasePath="${projectDir}\\${project.properties['basePath']}"
-    def stream_log_file = "${filesBasePath}\\${project.properties['extractManual.streamLogFileName']}"
-    def stream_error_file = "${filesBasePath}\\${project.properties['extractManual.streamErrFileName']}"
+    //def absoluteBasePath="${projectDir}\\${project.properties['basePath']}"
+    def log_file = "${project.properties['basePath']}\\${project.properties['extractManual.logFileName']}"
+    def stream_log_file = "${project.properties['basePath']}\\${project.properties['extractManual.streamLogFileName']}"
+    def stream_error_file = "${project.properties['basePath']}\\${project.properties['extractManual.streamErrFileName']}"
 
     def db = [un: project.properties['db.userName'],
               pw: project.properties['db.password'],
               tns: project.properties['db.tnsName'],
-              expPath: "${filesBasePath}",
-              sqlfile: "${filesBasePath}\\${project.properties['extractManual.sqlFileName']}",
+              expPath: "${project.properties['basePath']}",
+              sqlfile: "${project.properties['basePath']}\\${project.properties['extractManual.sqlFileName']}",
               expcsvfile: "${project.properties['extractManual.dataFileName']}",
               tableName: "${project.properties['manualTableName']}",
-              logfile: "${filesBasePath}\\${project.properties['extractManual.logFileName']}"]
+              logfile: log_file]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
     def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.expPath} ${db.expcsvfile} ${db.tableName} > ${db.logfile}""".execute()
     
@@ -525,7 +526,7 @@ task sendMail(dependsOn: extractManualTable, description: project.properties['em
     ant.mail( mailParams ) {
         from(address: project.properties['email.sentFrom'])
         to(address: project.properties['email.sentTo'])
-        message(String.format(project.properties['email.Message'], "${projectDir}\\${project.properties['basePath']}\\${project.properties['extractManual.dataFileName']}"))
+        message(String.format(project.properties['email.Message'], "${project.properties['basePath']}\\${project.properties['extractManual.dataFileName']}"))
     }
 
     // Finish action checkpoint
@@ -573,7 +574,7 @@ task startUpdate(dependsOn: sendMail, description: project.properties['startUpda
 }
 
 task writeToPdf(description: project.properties['writeToPdf.description']) << {
-	System.out.println('stop.on.error: ' + project.properties['stop.on.error'] + ', project dir: ' + projectDir)
+	System.out.println("Stop.on.error: ${project.properties['stop.on.error']}, project dir: ${project.properties['basePath']}")
 }
 
 task compileJavaFiles(type: JavaCompile) {
