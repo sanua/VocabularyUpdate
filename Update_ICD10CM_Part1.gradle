@@ -1,4 +1,5 @@
 import com.sun.org.apache.xalan.internal.xsltc.cmdline.Compile
+import sun.management.Agent
 
 /*
 *************************************
@@ -151,7 +152,14 @@ task fastRecreateSchema(description: project.properties['fastRecreate.descriptio
     def timeFinish = System.currentTimeMillis()
 
     // Write to console
-    System.out.println(sout.toString())
+    try {
+        def fileFromLogFile = new File(log_file)
+        // Write compact SQLPlus's spool log
+        System.out.println(fileFromLogFile.getText())
+    } catch (IOException ioe) {
+        // Write whole SQLPlus's log
+        System.out.println(sout.toString())
+    }
 
     // Write to logfile
     File f = new File(stream_log_file)
@@ -205,7 +213,14 @@ task createSourceTable(dependsOn: fastRecreateSchema, description: project.prope
     def timeFinish = System.currentTimeMillis()
 
     // Write to console
-    System.out.println(sout.toString())
+    try {
+        def fileFromLogFile = new File(log_file)
+        // Write compact SQLPlus's spool log
+        System.out.println(fileFromLogFile.getText())
+    } catch (IOException ioe) {
+        // Write whole SQLPlus's log
+        System.out.println(sout.toString())
+    }
 
     // Write to logfile
     File f = new File(stream_log_file)
@@ -336,7 +351,14 @@ task importData(dependsOn: renameFile, description: project.properties['import.d
     }
 
     // Write to console
-    System.out.println(sout.toString())
+    try {
+        def fileFromLogFile = new File(log_file)
+        // Write compact SQLPlus's spool log
+        System.out.println(fileFromLogFile.getText())
+    } catch (IOException ioe) {
+        // Write whole SQLPlus's log
+        System.out.println(sout.toString())
+    }
 
     // Write to logfile
     File f = new File(stream_log_file)
@@ -388,7 +410,14 @@ task runLoadStage(dependsOn: importData, description: project.properties['loadSt
     def timeFinish = System.currentTimeMillis()
 
     // Write to console
-    System.out.println(sout.toString())
+    try {
+        def fileFromLogFile = new File(log_file)
+        // Write compact SQLPlus's spool log
+        System.out.println(fileFromLogFile.getText())
+    } catch (IOException ioe) {
+        // Write whole SQLPlus's log
+        System.out.println(sout.toString())
+    }
 
     // Write to logfile
     File f = new File(stream_log_file)
@@ -437,7 +466,14 @@ task createManualTable(/*dependsOn: runLoadStage,*/ description: project.propert
     sqlplus.waitFor()
 
     // Write to console
-    System.out.println(sout.toString())
+    try {
+        def fileFromLogFile = new File(log_file)
+        // Write compact SQLPlus's spool log
+        System.out.println(fileFromLogFile.getText())
+    } catch (IOException ioe) {
+        // Write whole SQLPlus's log
+        System.out.println(sout.toString())
+    }
 
     // Write to logfile
     File f = new File(stream_log_file)
@@ -486,7 +522,14 @@ task extractManualTable(dependsOn: runLoadStage, description: project.properties
     sqlplus.waitFor()
 
     // Write to console
-    //System.out.println(sout.toString())
+    try {
+        def fileFromLogFile = new File(log_file)
+        // Write compact SQLPlus's spool log
+        System.out.println(fileFromLogFile.getText())
+    } catch (IOException ioe) {
+        // Write whole SQLPlus's log
+        System.out.println(sout.toString())
+    }
 
     // Write to logfile
     File f = new File(stream_log_file)
