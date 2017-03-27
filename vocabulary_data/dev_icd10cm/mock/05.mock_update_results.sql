@@ -10,10 +10,20 @@ SPOOL &1
 
 PROMPT
 PROMPT 'Update Results' is starting...
+
+/* Just pause for a second approx */
+DECLARE
+  start_date DATE := sysdate;
+  current_date DATE;
+  DELTA CONSTANT NUMBER := 1/(24*60*60);
 BEGIN
-	DBMS_LOCK.sleep(1);
+	LOOP
+    current_date := sysdate;
+		EXIT WHEN current_date > start_date + DELTA;
+	END LOOP;
 END;
 /
+
 PROMPT 'Update Results' is done...
 PROMPT
 
