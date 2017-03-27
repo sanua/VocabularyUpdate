@@ -134,15 +134,15 @@ task fastRecreateSchema(description: project.properties['fastRecreate.descriptio
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()
 
-    def log_file = "${tempDir.getPath()}\\${project.properties['fastRecreate.logFileName']}"
-    def stream_log_file = "${tempDir.getPath()}\\${project.properties['fastRecreate.streamLogFileName']}"
-    def stream_error_file = "${tempDir.getPath()}\\${project.properties['fastRecreate.streamErrFileName']}"
+    def logFile= "${tempDir.getPath()}\\${project.properties['fastRecreate.logFileName']}"
+    def streamLogFile = "${tempDir.getPath()}\\${project.properties['fastRecreate.streamLogFileName']}"
+    def streamErrorFile = "${tempDir.getPath()}\\${project.properties['fastRecreate.streamErrFileName']}"
 
     def db = [un: project.properties['db.userName'],
               pw:  project.properties['db.password'],
               tns: project.properties['db.tnsName'],
               sqlfile: "${project.properties['basePath']}\\${project.properties['fastRecreate.sqlFileName']}",
-              logfile: log_file]
+              logfile: logFile]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
     def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)
@@ -153,7 +153,7 @@ task fastRecreateSchema(description: project.properties['fastRecreate.descriptio
 
     // Write to console
     try {
-        def fileFromLogFile = new File(log_file)
+        def fileFromLogFile = new File(logFile)
         // Write compact SQLPlus's spool log
         System.out.println(fileFromLogFile.getText())
     } catch (IOException ioe) {
@@ -162,11 +162,11 @@ task fastRecreateSchema(description: project.properties['fastRecreate.descriptio
     }
 
     // Write to logfile
-    File f = new File(stream_log_file)
+    File f = new File(streamLogFile)
     f.write(sout.toString())
 
     // Write to error file
-    f = new File(stream_error_file)
+    f = new File(streamErrorFile)
     f.write(serr.toString())
 
     /* Check for errors */
@@ -195,15 +195,15 @@ task createSourceTable(dependsOn: fastRecreateSchema, description: project.prope
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()
 
-    def log_file = "${tempDir.getPath()}\\${project.properties['createSourceTable.logFileName']}"
-    def stream_log_file = "${tempDir.getPath()}\\${project.properties['createSourceTable.streamLogFileName']}"
-    def stream_error_file = "${tempDir.getPath()}\\${project.properties['createSourceTable.streamErrFileName']}"
+    def logFile = "${tempDir.getPath()}\\${project.properties['createSourceTable.logFileName']}"
+    def streamLogFile = "${tempDir.getPath()}\\${project.properties['createSourceTable.streamLogFileName']}"
+    def streamErrorFile = "${tempDir.getPath()}\\${project.properties['createSourceTable.streamErrFileName']}"
 
     def db = [un: project.properties['db.userName'],
               pw: project.properties['db.password'],
               tns: project.properties['db.tnsName'],
               sqlfile: "${project.properties['basePath']}\\${project.properties['createSourceTable.sqlFileName']}",
-              logfile: log_file]
+              logfile: logFile]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
     def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)
@@ -214,7 +214,7 @@ task createSourceTable(dependsOn: fastRecreateSchema, description: project.prope
 
     // Write to console
     try {
-        def fileFromLogFile = new File(log_file)
+        def fileFromLogFile = new File(logFile)
         // Write compact SQLPlus's spool log
         System.out.println(fileFromLogFile.getText())
     } catch (IOException ioe) {
@@ -223,11 +223,11 @@ task createSourceTable(dependsOn: fastRecreateSchema, description: project.prope
     }
 
     // Write to logfile
-    File f = new File(stream_log_file)
+    File f = new File(streamLogFile)
     f.write(sout.toString())
 
     // Write to error file
-    f = new File(stream_error_file)
+    f = new File(streamErrorFile)
     f.write(serr.toString())
 
     /* Check for errors */
@@ -325,8 +325,8 @@ task importData(dependsOn: renameFile, description: project.properties['import.d
     def logFile = "${tempDir.getPath()}\\${project.properties['importData.logFileName']}"
     def discardFile = "${tempDir.getPath()}\\${project.properties['importData.discardFileName']}"
     def badFile = "${tempDir.getPath()}\\${project.properties['importData.badFileName']}"
-    def stream_log_file = "${tempDir.getPath()}\\${project.properties['importData.streamLogFileName']}"
-    def stream_error_file = "${tempDir.getPath()}\\${project.properties['importData.streamErrFileName']}"
+    def streamLogFile = "${tempDir.getPath()}\\${project.properties['importData.streamLogFileName']}"
+    def streamErrorFile = "${tempDir.getPath()}\\${project.properties['importData.streamErrFileName']}"
 
     def bosOut = new ByteArrayOutputStream(), bosErr = new ByteArrayOutputStream()
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
@@ -352,7 +352,7 @@ task importData(dependsOn: renameFile, description: project.properties['import.d
 
     // Write to console
     try {
-        def fileFromLogFile = new File(log_file)
+        def fileFromLogFile = new File(logFile)
         // Write compact SQLPlus's spool log
         System.out.println(fileFromLogFile.getText())
     } catch (IOException ioe) {
@@ -361,11 +361,11 @@ task importData(dependsOn: renameFile, description: project.properties['import.d
     }
 
     // Write to logfile
-    File f = new File(stream_log_file)
+    File f = new File(streamLogFile)
     f.write(sout.toString())
 
     // Write to error file
-    f = new File(stream_error_file)
+    f = new File(streamErrorFile)
     f.write(serr.toString())
 
     // Finish action checkpoint
@@ -392,15 +392,15 @@ task runLoadStage(dependsOn: importData, description: project.properties['loadSt
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()
 
-    def log_file = "${tempDir.getPath()}\\${project.properties['loadStage.logFileName']}"
-    def stream_log_file = "${tempDir.getPath()}\\${project.properties['loadStage.streamLogFileName']}"
-    def stream_error_file = "${tempDir.getPath()}\\${project.properties['loadStage.streamErrFileName']}"
+    def logFile = "${tempDir.getPath()}\\${project.properties['loadStage.logFileName']}"
+    def streamLogFile = "${tempDir.getPath()}\\${project.properties['loadStage.streamLogFileName']}"
+    def streamErrorFile = "${tempDir.getPath()}\\${project.properties['loadStage.streamErrFileName']}"
 
     def db = [un: project.properties['db.userName'],
               pw: project.properties['db.password'],
               tns: project.properties['db.tnsName'],
               sqlfile: "${project.properties['basePath']}\\${project.properties['loadStage.sqlFileName']}",
-              logfile: log_file]
+              logfile: logFile]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
     def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)
@@ -411,7 +411,7 @@ task runLoadStage(dependsOn: importData, description: project.properties['loadSt
 
     // Write to console
     try {
-        def fileFromLogFile = new File(log_file)
+        def fileFromLogFile = new File(logFile)
         // Write compact SQLPlus's spool log
         System.out.println(fileFromLogFile.getText())
     } catch (IOException ioe) {
@@ -420,11 +420,11 @@ task runLoadStage(dependsOn: importData, description: project.properties['loadSt
     }
 
     // Write to logfile
-    File f = new File(stream_log_file)
+    File f = new File(streamLogFile)
     f.write(sout.toString())
 
     // Write to error file
-    f = new File(stream_error_file)
+    f = new File(streamErrorFile)
     f.write(serr.toString())
 
     /* Check for errors */
@@ -449,16 +449,16 @@ task createManualTable(/*dependsOn: runLoadStage,*/ description: project.propert
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()
 
-    def log_file = "${project.properties['basePath']}\\${project.properties['createManual.logFileName']}"
-    def stream_log_file = "${project.properties['basePath']}\\${project.properties['createManual.streamLogFileName']}"
-    def stream_error_file = "${project.properties['basePath']}\\${project.properties['createManual.streamErrFileName']}"
+    def logFile = "${project.properties['basePath']}\\${project.properties['createManual.logFileName']}"
+    def streamLogFile = "${project.properties['basePath']}\\${project.properties['createManual.streamLogFileName']}"
+    def streamErrorFile = "${project.properties['basePath']}\\${project.properties['createManual.streamErrFileName']}"
 
     def db = [un: project.properties['db.userName'],
               pw: project.properties['db.password'],
               tns: project.properties['db.tnsName'],
               sqlfile: "${project.properties['basePath']}\\${project.properties['createManual.sqlFileName']}",
               tableName: "${project.properties['manualTableName']}",
-              logfile: log_file]
+              logfile: logFile]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
     def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile} ${db.tableName}""".execute()
 
@@ -467,7 +467,7 @@ task createManualTable(/*dependsOn: runLoadStage,*/ description: project.propert
 
     // Write to console
     try {
-        def fileFromLogFile = new File(log_file)
+        def fileFromLogFile = new File(logFile)
         // Write compact SQLPlus's spool log
         System.out.println(fileFromLogFile.getText())
     } catch (IOException ioe) {
@@ -476,11 +476,11 @@ task createManualTable(/*dependsOn: runLoadStage,*/ description: project.propert
     }
 
     // Write to logfile
-    File f = new File(stream_log_file)
+    File f = new File(streamLogFile)
     f.write(sout.toString())
 
     // Write to error file
-    f = new File(stream_error_file)
+    f = new File(streamErrorFile)
     f.write(serr.toString())
 
     // Finish action checkpoint
@@ -501,9 +501,9 @@ task extractManualTable(dependsOn: runLoadStage, description: project.properties
     println '***********************************************'
 
     //def absoluteBasePath="${projectDir}\\${project.properties['basePath']}"
-    def log_file = "${project.properties['basePath']}\\${project.properties['extractManual.logFileName']}"
-    def stream_log_file = "${project.properties['basePath']}\\${project.properties['extractManual.streamLogFileName']}"
-    def stream_error_file = "${project.properties['basePath']}\\${project.properties['extractManual.streamErrFileName']}"
+    def logFile = "${project.properties['basePath']}\\${project.properties['extractManual.logFileName']}"
+    def streamLogFile = "${project.properties['basePath']}\\${project.properties['extractManual.streamLogFileName']}"
+    def streamErrorFile = "${project.properties['basePath']}\\${project.properties['extractManual.streamErrFileName']}"
 
     def db = [un: project.properties['db.userName'],
               pw: project.properties['db.password'],
@@ -512,7 +512,7 @@ task extractManualTable(dependsOn: runLoadStage, description: project.properties
               sqlfile: "${project.properties['basePath']}\\${project.properties['extractManual.sqlFileName']}",
               expcsvfile: "${project.properties['extractManual.dataFileName']}",
               tableName: "${project.properties['manualTableName']}",
-              logfile: log_file]
+              logfile: logFile]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
     def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.expPath} ${db.expcsvfile} ${db.tableName} > ${db.logfile}""".execute()
     
@@ -523,7 +523,7 @@ task extractManualTable(dependsOn: runLoadStage, description: project.properties
 
     // Write to console
     try {
-        def fileFromLogFile = new File(log_file)
+        def fileFromLogFile = new File(logFile)
         // Write compact SQLPlus's spool log
         System.out.println(fileFromLogFile.getText())
     } catch (IOException ioe) {
@@ -532,11 +532,11 @@ task extractManualTable(dependsOn: runLoadStage, description: project.properties
     }
 
     // Write to logfile
-    File f = new File(stream_log_file)
+    File f = new File(streamLogFile)
     f.write(sout.toString())
 
     // Write to error file
-    f = new File(stream_error_file)
+    f = new File(streamErrorFile)
     f.write(serr.toString())
 
     println "*** '${description}' action done ***"
