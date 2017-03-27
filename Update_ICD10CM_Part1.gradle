@@ -445,9 +445,9 @@ task createManualTable(/*dependsOn: runLoadStage,*/ description: project.propert
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()
 
-    def logFile = "${project.properties['basePath']}\\${project.properties['createManual.logFileName']}"
-    def streamLogFile = "${project.properties['basePath']}\\${project.properties['createManual.streamLogFileName']}"
-    def streamErrorFile = "${project.properties['basePath']}\\${project.properties['createManual.streamErrFileName']}"
+    def logFile = "${tempDir.getPath()}\\${project.properties['createManual.logFileName']}"
+    def streamLogFile = "${tempDir.getPath()}\\${project.properties['createManual.streamLogFileName']}"
+    def streamErrorFile = "${tempDir.getPath()}\\${project.properties['createManual.streamErrFileName']}"
 
     def db = [un: project.properties['db.userName'],
               pw: project.properties['db.password'],
@@ -496,10 +496,9 @@ task extractManualTable(dependsOn: runLoadStage, description: project.properties
     println '*                                             *'
     println '***********************************************'
 
-    //def absoluteBasePath="${projectDir}\\${project.properties['basePath']}"
-    def logFile = "${project.properties['basePath']}\\${project.properties['extractManual.logFileName']}"
-    def streamLogFile = "${project.properties['basePath']}\\${project.properties['extractManual.streamLogFileName']}"
-    def streamErrorFile = "${project.properties['basePath']}\\${project.properties['extractManual.streamErrFileName']}"
+    def logFile = "${tempDir.getPath()}\\${project.properties['extractManual.logFileName']}"
+    def streamLogFile = "${tempDir.getPath()}\\${project.properties['extractManual.streamLogFileName']}"
+    def streamErrorFile = "${tempDir.getPath()}\\${project.properties['extractManual.streamErrFileName']}"
 
     def db = [un: project.properties['db.userName'],
               pw: project.properties['db.password'],
@@ -516,19 +515,6 @@ task extractManualTable(dependsOn: runLoadStage, description: project.properties
 
     sqlplus.consumeProcessOutput(sout, serr)
     sqlplus.waitFor()
-
-    // Write to console.
-    /*
-     Currently it's is no need to duplicate data export to console's log
-      */
-    /*try {
-        def fileFromLogFile = new File(logFile)
-        // Write compact SQLPlus's spool log
-        System.out.println(fileFromLogFile.getText())
-    } catch (IOException ioe) {
-        // Write whole SQLPlus's log
-        System.out.println(sout.toString())
-    }*/
 
     // Write to logfile
     File f = new File(streamLogFile)
