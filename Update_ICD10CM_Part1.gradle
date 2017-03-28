@@ -497,6 +497,7 @@ task extractManualTable(dependsOn: [createManualTable, loadStage], description: 
     println '*                                             *'
     println '***********************************************'
 
+    // TODO: Need to deeply check why piped output does not works here (the > operator below)
     def logFile = "${tempDir.getPath()}\\${project.properties['extractManualTable.logFileName']}"
     def streamLogFile = "${tempDir.getPath()}\\${project.properties['extractManualTable.streamLogFileName']}"
     def streamErrorFile = "${tempDir.getPath()}\\${project.properties['extractManualTable.streamErrFileName']}"
