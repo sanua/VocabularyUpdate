@@ -21,16 +21,16 @@ SELECT 'CONCEPT_ID' || ';'
     || 'VALID_END_DATE' || ';'
     || 'INVALID_REASON' FROM DUAL
 UNION ALL
-SELECT CONCEPT_ID  || ';'
-    || CONCEPT_NAME || ';'
-    || DOMAIN_ID || ';'
-    || VOCABULARY_ID || ';'
-    || CONCEPT_CLASS_ID || ';'
-    || STANDARD_CONCEPT || ';'
-    || CONCEPT_CODE || ';'
-    || VALID_START_DATE || ';'
-    || VALID_END_DATE || ';'
-    || INVALID_REASON
+SELECT '"' || CONCEPT_ID  || '";'
+    || '"' || CONCEPT_NAME || '";'
+    || '"' || DOMAIN_ID || '";'
+    || '"' || VOCABULARY_ID || '";'
+    || '"' || CONCEPT_CLASS_ID || '";'
+    || '"' || STANDARD_CONCEPT || '";'
+    || '"' || CONCEPT_CODE || '";'
+    || '"' || VALID_START_DATE || '";'
+    || '"' || VALID_END_DATE || '";'
+    || '"' || INVALID_REASON || '"'
 FROM &3
 ;
 

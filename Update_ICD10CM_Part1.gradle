@@ -294,7 +294,7 @@ task renameFile(dependsOn: downloadUpdatePack, description: project.properties['
     boolean isSuccess = fOld.renameTo(fNew);
     if (!isSuccess) {
         println project.properties['renameFile.error.other']
-        throw new GradleException(String.format(project.properties['error.message'], name))
+        throw new GradleException(String.format(project.properties['error.message'], '', name))
     }
     println new StringBuilderWrapper('renamed successfully...')
 
@@ -311,7 +311,7 @@ task renameFile(dependsOn: downloadUpdatePack, description: project.properties['
 /**
  * Task performed import CSV data to database
  */
-task importData(dependsOn: renameFile, description: project.properties['import.description']) << {
+task importData(dependsOn: renameFile, description: project.properties['importData.description']) << {
     println '\n\n***********************************************'
     println '*                                             *'
     println "*        '${description}' action started...           *"
@@ -333,7 +333,7 @@ task importData(dependsOn: renameFile, description: project.properties['import.d
     exec {
         executable "sqlldr.exe"
         args "USERID=${project.properties['db.userName']}/${project.properties['db.password']}@${project.properties['db.tnsName']} " +
-                "CONTROL=${project.properties['basePath']}\\${project.properties['import.controlFileName']} DATA=$dataFile LOG=$logFile DISCARD=$discardFile BAD=$badFile"
+                "CONTROL=${project.properties['basePath']}\\${project.properties['importData.controlFileName']} DATA=$dataFile LOG=$logFile DISCARD=$discardFile BAD=$badFile"
         standardOutput = bosOut
         errorOutput = bosErr
     }
@@ -378,7 +378,7 @@ task importData(dependsOn: renameFile, description: project.properties['import.d
  * This task will run 'Load stage' script.
  * Seems it's is specific for each vocabulary.
  */
-task runLoadStage(dependsOn: importData, description: project.properties['loadStage.description']) << {
+task loadStage(dependsOn: importData, description: project.properties['loadStage.description']) << {
     println '\n\n***********************************************'
     println '*                                             *'
     println "*     '${description}' action started...   *"
@@ -435,7 +435,8 @@ task runLoadStage(dependsOn: importData, description: project.properties['loadSt
     println "*** '${description}' action done ***"
 }
 
-task createManualTable(/*dependsOn: runLoadStage,*/ description: project.properties['createManual.description']) << {
+/* This task is for testing purposes only */
+task createManualTable(dependsOn: loadStage, description: project.properties['createManualTable.description']) << {
     println '\n\n***********************************************'
     println '*                                             *'
     println "*   '${description}' action started...   *"
@@ -445,14 +446,14 @@ task createManualTable(/*dependsOn: runLoadStage,*/ description: project.propert
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()
 
-    def logFile = "${tempDir.getPath()}\\${project.properties['createManual.logFileName']}"
-    def streamLogFile = "${tempDir.getPath()}\\${project.properties['createManual.streamLogFileName']}"
-    def streamErrorFile = "${tempDir.getPath()}\\${project.properties['createManual.streamErrFileName']}"
+    def logFile = "${tempDir.getPath()}\\${project.properties['createManualTable.logFileName']}"
+    def streamLogFile = "${tempDir.getPath()}\\${project.properties['createManualTable.streamLogFileName']}"
+    def streamErrorFile = "${tempDir.getPath()}\\${project.properties['createManualTable.streamErrFileName']}"
 
     def db = [un: project.properties['db.userName'],
               pw: project.properties['db.password'],
               tns: project.properties['db.tnsName'],
-              sqlfile: "${project.properties['basePath']}\\${project.properties['createManual.sqlFileName']}",
+              sqlfile: "${project.properties['basePath']}\\${project.properties['createManualTable.sqlFileName']}",
               tableName: "${project.properties['manualTableName']}",
               logfile: logFile]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
@@ -489,23 +490,23 @@ task createManualTable(/*dependsOn: runLoadStage,*/ description: project.propert
     println "*** '${description}' action done ***"
 }
 
-task extractManualTable(dependsOn: runLoadStage, description: project.properties['extractManual.description']) << {
+task extractManualTable(dependsOn: [createManualTable, loadStage], description: project.properties['extractManualTable.description']) << {
     println '\n\n***********************************************'
     println '*                                             *'
     println "* '${description}' action started... *"
     println '*                                             *'
     println '***********************************************'
 
-    def logFile = "${tempDir.getPath()}\\${project.properties['extractManual.logFileName']}"
-    def streamLogFile = "${tempDir.getPath()}\\${project.properties['extractManual.streamLogFileName']}"
-    def streamErrorFile = "${tempDir.getPath()}\\${project.properties['extractManual.streamErrFileName']}"
+    def logFile = "${tempDir.getPath()}\\${project.properties['extractManualTable.logFileName']}"
+    def streamLogFile = "${tempDir.getPath()}\\${project.properties['extractManualTable.streamLogFileName']}"
+    def streamErrorFile = "${tempDir.getPath()}\\${project.properties['extractManualTable.streamErrFileName']}"
 
     def db = [un: project.properties['db.userName'],
               pw: project.properties['db.password'],
               tns: project.properties['db.tnsName'],
               expPath: "${project.properties['basePath']}",
-              sqlfile: "${project.properties['basePath']}\\${project.properties['extractManual.sqlFileName']}",
-              expcsvfile: "${project.properties['extractManual.dataFileName']}",
+              sqlfile: "${project.properties['basePath']}\\${project.properties['extractManualTable.sqlFileName']}",
+              expcsvfile: "${project.properties['manualTableFileName']}",
               tableName: "${project.properties['manualTableName']}",
               logfile: logFile]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
@@ -527,7 +528,7 @@ task extractManualTable(dependsOn: runLoadStage, description: project.properties
     println "*** '${description}' action done ***"
 }
 
-task sendMail(dependsOn: extractManualTable, description: project.properties['email.description']) << {
+task sendMail(dependsOn: extractManualTable, description: project.properties['sendMail.description']) << {
     println '\n\n***********************************************'
     println '*                                             *'
     println "* '${description}' action started...  *"
@@ -538,11 +539,11 @@ task sendMail(dependsOn: extractManualTable, description: project.properties['em
     def timeStart = System.currentTimeMillis()
 
     def mailParams = [
-            mailhost: project.properties['email.mailHost'],
-            subject: project.properties['email.Subject'],
+            mailhost: project.properties['sendMail.mailHost'],
+            subject: project.properties['sendMail.Subject'],
             messagemimetype: "text/plain",
-            user: project.properties['email.user'],
-            password: project.properties['email.password']
+            user: project.properties['sendMail.user'],
+            password: project.properties['sendMail.password']
     ]
 
     println new StringBuilderWrapper('sending mail...')
@@ -552,9 +553,9 @@ task sendMail(dependsOn: extractManualTable, description: project.properties['em
     }
 
     ant.mail( mailParams ) {
-        from(address: project.properties['email.sentFrom'])
-        to(address: project.properties['email.sentTo'])
-        message(String.format(project.properties['email.Message'], "${project.properties['basePath']}\\${project.properties['extractManual.dataFileName']}"))
+        from(address: project.properties['sendMail.sentFrom'])
+        to(address: project.properties['sendMail.sentTo'])
+        message(String.format(project.properties['sendMail.Message'], "${project.properties['basePath']}\\${project.properties['manualTableFileName']}"))
     }
 
     // Finish action checkpoint
@@ -579,6 +580,14 @@ task startUpdate(dependsOn: sendMail, description: project.properties['startUpda
     println "*      '${description}' action started...       *"
     println '*                                             *'
     println '***********************************************'
+
+    /* Disable 'Create Manual Table' step */
+    def manualTableName = project.properties['manualTableName']
+    if (manualTableName == null) {
+        throw new GradleException(String.format(project.properties['error.message'], '''empty ''Manual Table'' name parameter''', name))
+    } else if (!manualTableName.toString().toLowerCase().startsWith('mock')) {
+        createManualTable.enabled = false
+    }
 
     println "Updating of '${project.properties['vocabulary.display.name']}' vocabulary..."
 

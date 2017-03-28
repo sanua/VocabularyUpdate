@@ -83,7 +83,7 @@ props.each {prop ->
 def tempDir = File.createTempDir()
 tempDir.deleteOnExit()
 
-task prepareManualTable(description: project.properties['prepareTable.description']) << {
+task prepareManualTable(description: project.properties['prepareManualTable.description']) << {
     println '\n\n*****************************************************'
     println '*                                                   *'
     println "*     '${description}' action started...      *"
@@ -93,14 +93,14 @@ task prepareManualTable(description: project.properties['prepareTable.descriptio
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()
 
-    def logFile = "${tempDir.getPath()}\\${project.properties['prepareTable.logFileName']}"
-    def streamLogFile = "${tempDir.getPath()}\\${project.properties['prepareTable.streamLogFileName']}"
-    def streamErrorFile = "${tempDir.getPath()}\\${project.properties['prepareTable.streamErrFileName']}"
+    def logFile = "${tempDir.getPath()}\\${project.properties['prepareManualTable.logFileName']}"
+    def streamLogFile = "${tempDir.getPath()}\\${project.properties['prepareManualTable.streamLogFileName']}"
+    def streamErrorFile = "${tempDir.getPath()}\\${project.properties['prepareManualTable.streamErrFileName']}"
 
     def db = [un: project.properties['db.userName'],
               pw: project.properties['db.password'],
               tns: project.properties['db.tnsName'],
-              sqlfile: "${project.properties['basePath']}\\${project.properties['prepareTable.sqlFileName']}",
+              sqlfile: "${project.properties['basePath']}\\${project.properties['prepareManualTable.sqlFileName']}",
               tableName: "${project.properties['manualTableName']}",
               logfile: logFile]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
@@ -131,7 +131,7 @@ task prepareManualTable(description: project.properties['prepareTable.descriptio
 
     // Get Manual Table from editors
     println new StringBuilderWrapper('\'Manual Table\' copy started...')
-    def srcFile = "${project.properties['basePath']}\\${project.properties['prepareTable.manualWorkResultPath']}\\${project.properties['prepareTable.dataFileName']}"
+    def srcFile = "${project.properties['basePath']}\\${project.properties['prepareManualTable.manualWorkResultPath']}\\${project.properties['manualTableFileName']}"
     def dest = "${project.properties['basePath']}"
     copy {
         from srcFile
@@ -146,7 +146,7 @@ task prepareManualTable(description: project.properties['prepareTable.descriptio
     println "*** '${description}' action done ***"
 }
 
-task importTable (dependsOn: prepareManualTable, description: project.properties['importTable.description']) << {
+task importManualTable (dependsOn: prepareManualTable, description: project.properties['importManualTable.description']) << {
     println '\n\n*****************************************************'
     println '*                                                   *'
     println "*      '${description}' action started...      *"
@@ -156,20 +156,19 @@ task importTable (dependsOn: prepareManualTable, description: project.properties
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()
 
-    def dataFile = "${project.properties['basePath']}\\${project.properties['importTable.dataFileName']}"
-    def logFile = "${tempDir.getPath()}\\${project.properties['importTable.logFileName']}"
-    def discardFile = "${tempDir.getPath()}\\${project.properties['importTable.discardFileName']}"
-    def badFile = "${tempDir.getPath()}\\${project.properties['importTable.badFileName']}"
-    def streamLogFile = "${tempDir.getPath()}\\${project.properties['importTable.streamLogFileName']}"
-    def streamErrorFile = "${tempDir.getPath()}\\${project.properties['importTable.streamErrFileName']}"
+    def dataFile = "${project.properties['basePath']}\\${project.properties['manualTableFileName']}"
+    def logFile = "${tempDir.getPath()}\\${project.properties['importManualTable.logFileName']}"
+    def discardFile = "${tempDir.getPath()}\\${project.properties['importManualTable.discardFileName']}"
+    def badFile = "${tempDir.getPath()}\\${project.properties['importManualTable.badFileName']}"
+    def streamLogFile = "${tempDir.getPath()}\\${project.properties['importManualTable.streamLogFileName']}"
+    def streamErrorFile = "${tempDir.getPath()}\\${project.properties['importManualTable.streamErrFileName']}"
 
     def bosOut = new ByteArrayOutputStream(), bosErr = new ByteArrayOutputStream()
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
-
     exec {
         executable "sqlldr.exe"
         args "USERID=${project.properties['db.userName']}/${project.properties['db.password']}@${project.properties['db.tnsName']} " +
-                "CONTROL=${project.properties['basePath']}\\${project.properties['importTable.controlFileName']} DATA=$dataFile LOG=$logFile DISCARD=$discardFile BAD=$badFile"
+                "CONTROL=${project.properties['basePath']}\\${project.properties['importManualTable.controlFileName']} DATA=$dataFile LOG=$logFile DISCARD=$discardFile BAD=$badFile"
         standardOutput = bosOut
         errorOutput = bosErr
     }
@@ -214,7 +213,7 @@ task importTable (dependsOn: prepareManualTable, description: project.properties
  * This task will run 'Load stage' script.
  * Seems it's is specific for each vocabulary.
  */
-task runLoadStage(dependsOn: importTable, description: project.properties['loadStage.description']) << {
+task loadStage(dependsOn: importManualTable, description: project.properties['loadStage.description']) << {
     println '\n\n***********************************************'
     println '*                                             *'
     println "*    '${description}' action started...    *"
@@ -275,7 +274,7 @@ task runLoadStage(dependsOn: importTable, description: project.properties['loadS
  * This task will run 'Genetic update' script.
  * It's common for all updated vocabularies and located in '\Vocabulary-v5.0\working\generic_update.sql' file.
  */
-task runGenericUpdate(dependsOn: runLoadStage, description: project.properties['genericUpdate.description']) << {
+task genericUpdate(dependsOn: loadStage, description: project.properties['genericUpdate.description']) << {
     println '\n\n***********************************************'
     println '*                                             *'
     println "*      '${description}' action started...     *"
@@ -335,7 +334,7 @@ task runGenericUpdate(dependsOn: runLoadStage, description: project.properties['
 /**
  * This task will run scripts which allows to see the vocabulary update results
  */
-task checkUpdateResults(dependsOn: runGenericUpdate, description: project.properties['checkUpdateResults.description']) << {
+task checkUpdateResults(dependsOn: genericUpdate, description: project.properties['checkUpdateResults.description']) << {
     println '\n\n***********************************************'
     println '*                                             *'
     println "*   '${description}' action started...  *"

@@ -82,7 +82,7 @@ tempDir.deleteOnExit()
 /**
  * Just renew user schema and prepare it for further vocabulary update
  */
-task fastRecreateSchema(description: project.properties['fastRecreate.description']) << {
+task fastRecreate(description: project.properties['fastRecreate.description']) << {
     println '\n\n***********************************************'
     println '*                                             *'
     println "*       '${description}' action started...     *"
@@ -136,7 +136,7 @@ task fastRecreateSchema(description: project.properties['fastRecreate.descriptio
  * This task will prepare user schema for vocabulary update routine.
  * It will create auxiliary table - the "ICD10CM_TABLE" in our case, for example.
  */
-task createSourceTable(dependsOn: fastRecreateSchema, description: project.properties['createSourceTable.description']) << {
+task createSourceTable(dependsOn: fastRecreate, description: project.properties['createSourceTable.description']) << {
     println '\n\n***********************************************'
     println '*                                             *'
     println "*   '${description}' action started...   *"
@@ -255,7 +255,7 @@ task renameFile(dependsOn: downloadUpdatePack, description: project.properties['
 /**
  * Task performed import CSV data to database
  */
-task importData(dependsOn: renameFile, description: project.properties['import.description']) << {
+task importData(dependsOn: renameFile, description: project.properties['importData.description']) << {
     println '\n\n***********************************************'
     println '*                                             *'
     println "*        '${description}' action started...           *"
@@ -277,7 +277,7 @@ task importData(dependsOn: renameFile, description: project.properties['import.d
     exec {
         executable "sqlldr.exe"
         args "USERID=${project.properties['db.userName']}/${project.properties['db.password']}@${project.properties['db.tnsName']} " +
-                "CONTROL=${project.properties['basePath']}\\${project.properties['import.controlFileName']} DATA=$dataFile LOG=$logFile DISCARD=$discardFile BAD=$badFile"
+                "CONTROL=${project.properties['basePath']}\\${project.properties['importData.controlFileName']} DATA=$dataFile LOG=$logFile DISCARD=$discardFile BAD=$badFile"
         standardOutput = bosOut
         errorOutput = bosErr
     }
@@ -319,7 +319,7 @@ task importData(dependsOn: renameFile, description: project.properties['import.d
  * This task will run 'Load stage' script.
  * Seems it's is specific for each vocabulary.
  */
-task runLoadStage(dependsOn: importData, description: project.properties['loadStage.description']) << {
+task loadStage(dependsOn: importData, description: project.properties['loadStage.description']) << {
     println '\n\n***********************************************'
     println '*                                             *'
     println "*        '${description}' action started...       *"
@@ -374,7 +374,7 @@ task runLoadStage(dependsOn: importData, description: project.properties['loadSt
  * This task will run 'Genetic update' script.
  * It's common for all updated vocabularies and located in '\Vocabulary-v5.0\working\generic_update.sql' file.
  */
-task runGenericUpdate(dependsOn: runLoadStage, description: project.properties['genericUpdate.description']) << {
+task genericUpdate(dependsOn: loadStage, description: project.properties['genericUpdate.description']) << {
     println '\n\n***********************************************'
     println '*                                             *'
     println "*      '${description}' action started...     *"
@@ -427,7 +427,7 @@ task runGenericUpdate(dependsOn: runLoadStage, description: project.properties['
 /**
  * This task will run scripts which allows to see the vocabulary update results
  */
-task checkUpdateResults(dependsOn: runGenericUpdate, description: project.properties['checkUpdateResults.description']) << {
+task checkUpdateResults(dependsOn: genericUpdate, description: project.properties['checkUpdateResults.description']) << {
     println '\n\n***********************************************'
     println '*                                             *'
     println "*   '${description}' action started...  *"
@@ -484,34 +484,6 @@ task checkUpdateResults(dependsOn: runGenericUpdate, description: project.proper
  * TODO: This one via doFirst/doLast actions isn't working.
  */
 task startUpdate(dependsOn: checkUpdateResults, description: project.properties['startUpdate.description']) {
-    println '\n\n***********************************************'
-    println '*                                             *'
-    println "*      '${description}' action started...       *"
-    println '*                                             *'
-    println '***********************************************'
-
-    println "Updating of '${project.properties['vocabulary.display.name']}' vocabulary..."
-
-    // Start action checkpoint
-    def timeStart = System.currentTimeMillis()
-
-    doLast {
-        // Finish action checkpoint
-        def timeFinish = System.currentTimeMillis()
-
-        // Measure time execution
-        def timeElapsed = (timeFinish - timeStart) / 1000
-        println "\n\nTotal time elapsed: ${timeElapsed} seconds."
-        println "Updating of '${project.properties['vocabulary.display.name']}' vocabulary completed successfully..."
-        println '***********************************************'
-        println '*                                             *'
-        println "*      '${description}' action is done...       *"
-        println '*                                             *'
-        println '***********************************************\n'
-    }
-}
-
-task startUpdatePartOne(dependsOn: checkUpdateResults, description: project.properties['startUpdate.description']) {
     println '\n\n***********************************************'
     println '*                                             *'
     println "*      '${description}' action started...       *"
