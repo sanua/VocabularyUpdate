@@ -32,7 +32,7 @@ SPOOL &1
 PROMPT Clean up from last unsuccessful load stage run, to avoid build process errors...
 DECLARE
   TYPE TStringArray IS TABLE OF VARCHAR2(255);
-  t_names TStringArray := TStringArray('ICD10CM_domain','filled_domain','MANUAL_table');
+  t_names TStringArray := TStringArray('ICD10CM_domain','filled_domain');
   l_cnt NUMBER;
   l_str VARCHAR2(255);
 BEGIN
@@ -106,46 +106,6 @@ INSERT /*+ APPEND */ INTO concept_stage (concept_id,
           TO_DATE ('20991231', 'yyyymmdd') AS valid_end_date,
           NULL AS invalid_reason
      FROM ICD10CM_TABLE;
-COMMIT;
-
-PROMPT Create MANUAL_table...
-CREATE TABLE MANUAL_table 
-(
-   CONCEPT_CODE_1     VARCHAR2 (50 BYTE) ,
-   concept_name_1 varchar (250),
-   VOCABULARY_ID_1    VARCHAR (20), 
-   invalid_reason_1  VARCHAR2 (1 BYTE),
-   CONCEPT_CODE_2     VARCHAR2 (50 BYTE) ,
-   concept_name_2 varchar (250),
-   concept_class_id_2 varchar (250),
-   VOCABULARY_ID_2    VARCHAR (20) ,
-   invalid_reason_2  VARCHAR2 (1 BYTE),
-   RELATIONSHIP_ID    VARCHAR2 (20 BYTE) ,
-   VALID_START_DATE   DATE,
-   VALID_END_DATE     DATE,
-   INVALID_REASON     VARCHAR2 (1 BYTE)
-)
-NOLOGGING
-;
-
-
---5. Create file with mappings for medical coder from the existing one
--- instead of concept use concept_stage (medical coders need to review new concepts also)
--- need to add more useful attributes exactly to concept_relationship_manual to make the manual mapping process easier
--- create temporary table MANUAL_table that will be filled by the medical coder
-PROMPT 5. Create file with mappings for medical coder from the existing one
-PROMPT instead of concept use concept_stage (medical coders need to review new concepts also)
-PROMPT need to add more useful attributes exactly to concept_relationship_manual to make the manual mapping process easier
-PROMPT create temporary table MANUAL_table that will be filled by the medical coder...
-truncate table MANUAL_table;
-insert into MANUAL_table (CONCEPT_CODE_1,CONCEPT_NAME_1,VOCABULARY_ID_1,invalid_reason_1, CONCEPT_CODE_2,CONCEPT_NAME_2,CONCEPT_CLASS_ID_2,VOCABULARY_ID_2,invalid_reason_2, RELATIONSHIP_ID,VALID_START_DATE,VALID_END_DATE,INVALID_REASON)
-SELECT c.concept_code,c.concept_name,c.vocabulary_id,c.invalid_reason, t.concept_code, t.concept_name,t.concept_class_id,t.vocabulary_id,t.invalid_reason, r.RELATIONSHIP_ID, r.VALID_START_DATE, r.VALID_END_DATE, r.INVALID_REASON
-  FROM concept_stage c
-  left join concept cc on c.concept_code = cc.concept_code and cc.vocabulary_id = 'ICD10CM' and cc.invalid_reason is null
- left join  concept_relationship r on cc.concept_id = r.concept_id_1 and r.relationship_id in ('Maps to', 'Maps to value') -- for this case other relationships shouldn't be checked manualy
- left join concept t on t.concept_id = r.concept_id_2
-;
-
 COMMIT;
 
 SET sqlbl off

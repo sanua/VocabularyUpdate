@@ -209,11 +209,64 @@ task importManualTable (dependsOn: prepareManualTable, description: project.prop
     println "*** '${description}' action done ***"
 }
 
+task applyManualTable(dependsOn: importManualTable, description: project.properties['applyManualTable.description']) << {
+    println '\n\n*****************************************************'
+    println '*                                                   *'
+    println "*     '${description}' action started...      *"
+    println '*                                                   *'
+    println '*****************************************************'
+
+    // Start action checkpoint
+    def timeStart = System.currentTimeMillis()
+
+    def logFile = "${tempDir.getPath()}\\${project.properties['applyManualTable.logFileName']}"
+    def streamLogFile = "${tempDir.getPath()}\\${project.properties['applyManualTable.streamLogFileName']}"
+    def streamErrorFile = "${tempDir.getPath()}\\${project.properties['applyManualTable.streamErrFileName']}"
+
+    def db = [un: project.properties['db.userName'],
+              pw: project.properties['db.password'],
+              tns: project.properties['db.tnsName'],
+              sqlfile: "${project.properties['basePath']}\\${project.properties['applyManualTable.sqlFileName']}",
+              tableName: "${project.properties['manualTableName']}",
+              logfile: logFile]
+    def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
+    def sqlplus = """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile} ${db.tableName}""".execute()
+    sqlplus.consumeProcessOutput(sout, serr)
+    sqlplus.waitFor()
+
+    // Finish action checkpoint
+    def timeFinish = System.currentTimeMillis()
+
+    // Write to console
+    try {
+        def fileFromLogFile = new File(logFile)
+        // Write compact SQLPlus's spool log
+        System.out.println(fileFromLogFile.getText())
+    } catch (IOException ioe) {
+        // Write whole SQLPlus's log
+        System.out.println(sout.toString())
+    }
+
+    // Write to logfile
+    File f = new File(streamLogFile)
+    f.write(sout.toString())
+
+    // Write to error file
+    f = new File(streamErrorFile)
+    f.write(serr.toString())
+
+    // Measure time execution
+    def timeElapsed = (timeFinish - timeStart) / 1000
+    println "Time elapsed: ${timeElapsed} seconds."
+
+    println "*** '${description}' action done ***"
+}
+
 /**
  * This task will run 'Load stage' script.
  * Seems it's is specific for each vocabulary.
  */
-task loadStage(dependsOn: importManualTable, description: project.properties['loadStage.description']) << {
+task loadStage(dependsOn: applyManualTable, description: project.properties['loadStage.description']) << {
     println '\n\n***********************************************'
     println '*                                             *'
     println "*    '${description}' action started...    *"
