@@ -7,7 +7,7 @@ SET NEWPAGE NONE
 -- SET COLSEP ';'
 
 COLUMN exp_file_name new_val exp_file_name
-SELECT '&1'|| '\\' || '&2' AS exp_file_name FROM dual;
+SELECT '&1'|| '/' || '&2' AS exp_file_name FROM dual;
 SPOOL &&exp_file_name
 
 SELECT 'CONCEPT_CODE_1' || ','
