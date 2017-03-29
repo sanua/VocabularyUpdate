@@ -86,6 +86,22 @@ public class StringBuilderWrapper implements java.lang.Appendable {
         wrapped.append(IDENT_CHAR).append(value)
     }
 
+    public static StringBuilderWrapper getBuilder() {
+        return new StringBuilderWrapper()
+    }
+
+    public static String readFromFile(File file) {
+        if (file == null)
+            return ''
+        def builder = getBuilder()
+        def br = new BufferedReader(new FileReader(file))
+        def strLine
+        while ((strLine = br.readLine()) != null) {
+            builder.append(strLine).append('\n')
+        }
+        return builder.toString()
+    }
+
     @Override
     Appendable append(CharSequence csq) throws IOException {
         wrapped.append(IDENT_CHAR).append(csq)
@@ -153,9 +169,8 @@ task fastRecreateSchema(description: project.properties['fastRecreate.descriptio
 
     // Write to console
     try {
-        def fileFromLogFile = new File(logFile)
         // Write compact SQLPlus's spool log
-        System.out.println(fileFromLogFile.getText())
+        System.out.println(StringBuilderWrapper.readFromFile(new File(logFile)))
     } catch (IOException ioe) {
         // Write whole SQLPlus's log
         System.out.println(sout.toString())
@@ -214,9 +229,8 @@ task createSourceTable(dependsOn: fastRecreateSchema, description: project.prope
 
     // Write to console
     try {
-        def fileFromLogFile = new File(logFile)
         // Write compact SQLPlus's spool log
-        System.out.println(fileFromLogFile.getText())
+        System.out.println(StringBuilderWrapper.readFromFile(new File(logFile)))
     } catch (IOException ioe) {
         // Write whole SQLPlus's log
         System.out.println(sout.toString())
@@ -407,9 +421,8 @@ task loadStage(dependsOn: importData, description: project.properties['loadStage
 
     // Write to console
     try {
-        def fileFromLogFile = new File(logFile)
         // Write compact SQLPlus's spool log
-        System.out.println(fileFromLogFile.getText())
+        System.out.println(StringBuilderWrapper.readFromFile(new File(logFile)))
     } catch (IOException ioe) {
         // Write whole SQLPlus's log
         System.out.println(sout.toString())
@@ -464,9 +477,8 @@ task createManualTable(dependsOn: loadStage, description: project.properties['cr
 
     // Write to console
     try {
-        def fileFromLogFile = new File(logFile)
         // Write compact SQLPlus's spool log
-        System.out.println(fileFromLogFile.getText())
+        System.out.println(StringBuilderWrapper.readFromFile(new File(logFile)))
     } catch (IOException ioe) {
         // Write whole SQLPlus's log
         System.out.println(sout.toString())
