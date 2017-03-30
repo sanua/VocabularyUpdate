@@ -148,9 +148,14 @@ task prepareManualTable(description: project.properties['prepareManualTable.desc
     println new StringBuilderWrapper('\'Manual Table\' copy started...')
     def srcFile = "${project.properties['basePath']}/${project.properties['prepareManualTable.manualWorkResultPath']}/${project.properties['manualTableFileName']}"
     def dest = "${project.properties['basePath']}"
-    copy {
+    def result = copy {
         from srcFile
         into dest
+    }
+    if (result.getDidWork()) {
+	    println new StringBuilderWrapper('file copied')
+    } else {
+		println new StringBuilderWrapper('file isn\'t copied')
     }
     println new StringBuilderWrapper('\'Manual Table\' copy done...')
 
