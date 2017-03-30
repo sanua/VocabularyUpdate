@@ -602,7 +602,7 @@ task startUpdate(dependsOn: sendMail, description: project.properties['startUpda
         createManualTable.enabled = false
     }
 
-    println "Updating of '${project.properties['vocabulary.display.name']}' vocabulary..."
+    println "Updating of '${project.properties['vocabulary.display.name']}' vocabulary on the '${project.properties['db.userName']}' schema..."
 
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()
@@ -614,7 +614,7 @@ task startUpdate(dependsOn: sendMail, description: project.properties['startUpda
         // Measure time execution
         def timeElapsed = (timeFinish - timeStart) / 1000
         println "\n\nTotal time elapsed: ${timeElapsed} seconds."
-        println "Updating of '${project.properties['vocabulary.display.name']}' vocabulary completed successfully..."
+        println "Updating of '${project.properties['vocabulary.display.name']}' vocabulary on the '${project.properties['db.userName']}' schema is completed successfully..."
         println '***********************************************'
         println '*                                             *'
         println "*      '${description}' action is done...       *"
