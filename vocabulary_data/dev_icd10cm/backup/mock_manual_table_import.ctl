@@ -1,9 +1,11 @@
 OPTIONS (errors=0, direct=true, skip=1)
 LOAD DATA 
-INFILE 'mock_manual_table_data.csv'
+INFILE 'mock_manual_table_data.csv' "str '\r\n'"
 APPEND
 INTO TABLE MOCK_MANUAL_TABLE
 FIELDS TERMINATED BY ','
+-- FIELDS TERMINATED BY X'9'
+-- FIELDS TERMINATED BY x'09'
 OPTIONALLY ENCLOSED BY '"'
 TRAILING NULLCOLS (
 "CONCEPT_ID",
