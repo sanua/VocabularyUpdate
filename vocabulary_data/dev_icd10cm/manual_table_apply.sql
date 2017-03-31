@@ -9,7 +9,7 @@ WHENEVER SQLERROR EXIT SQL.SQLCODE
 */
 SPOOL &1
 
-PROMPT Update MANUAL_table''s dates...
+PROMPT Update MANUAL_table's dates...
 update manual_table set valid_start_date = sysdate 
 where valid_start_date is null
 ;
