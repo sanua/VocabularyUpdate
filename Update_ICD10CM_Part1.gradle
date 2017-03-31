@@ -502,7 +502,7 @@ task createManualTable(dependsOn: loadStage, description: project.properties['cr
     println "*** '${description}' action done ***"
 }
 
-task extractManualTable(dependsOn: [createManualTable, loadStage], description: project.properties['extractManualTable.description']) << {
+task extractManualTable(/*dependsOn: [createManualTable, loadStage]*/dependsOn: createManualTable, description: project.properties['extractManualTable.description']) << {
     println '\n\n***********************************************'
     println '*                                             *'
     println "* '${description}' action started... *"
@@ -595,12 +595,12 @@ task startUpdate(dependsOn: sendMail, description: project.properties['startUpda
     println '***********************************************'
 
     /* Disable 'Create Manual Table' step */
-    def manualTableName = project.properties['manualTableName']
+    /*def manualTableName = project.properties['manualTableName']
     if (manualTableName == null) {
         throw new GradleException(String.format(project.properties['error.message'], '''empty ''Manual Table'' name parameter''', name))
     } else if (!manualTableName.toString().toLowerCase().startsWith('mock')) {
         createManualTable.enabled = false
-    }
+    }*/
 
     println "Updating of '${project.properties['vocabulary.display.name']}' vocabulary on the '${project.properties['db.userName']}' schema..."
 
