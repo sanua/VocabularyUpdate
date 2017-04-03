@@ -21,6 +21,10 @@ where valid_end_date is null
 commit
 ;
 
+PROMPT Empty the 'concept_relationship_manual' table...
+TRUNCATE TABLE concept_relationship_manual;
+COMMIT;
+
 --need to think if we need to give only those where concept_code_2 is null or it's mappped only to deprecated concept
 -- if medical coder wants to change relatoinship (i.e. found a better mapping - set an old row as deprecated, add a new row to concept_relationship)
 --;
