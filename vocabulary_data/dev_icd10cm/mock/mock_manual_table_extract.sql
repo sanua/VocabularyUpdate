@@ -28,8 +28,8 @@ SELECT '"' || CONCEPT_ID  || '",'
     || '"' || CONCEPT_CLASS_ID || '",'
     || '"' || STANDARD_CONCEPT || '",'
     || '"' || CONCEPT_CODE || '",'
-    || '"' || VALID_START_DATE || '",'
-    || '"' || VALID_END_DATE || '",'
+    || '"' || TO_CHAR(VALID_START_DATE, 'YYYY-MM-DD HH24:MI:SS') || '",'
+    || '"' || TO_CHAR(VALID_END_DATE, 'YYYY-MM-DD HH24:MI:SS')  || '",'
     || '"' || INVALID_REASON || '"'
 FROM &3
 ;
