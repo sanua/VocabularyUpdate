@@ -9,13 +9,13 @@ WHENEVER SQLERROR EXIT SQL.SQLCODE
 */
 SPOOL &1
 
-PROMPT Update MANUAL_table's dates...
-update manual_table set valid_start_date = sysdate 
+PROMPT Update &2's dates...
+update &2 set valid_start_date = sysdate 
 where valid_start_date is null
 ;
 commit
 ;
-update manual_table set valid_end_date = to_date ('20991231', 'yyyymmdd')
+update &2 set valid_end_date = to_date ('20991231', 'yyyymmdd')
 where valid_end_date is null
 ;
 commit
@@ -28,15 +28,15 @@ COMMIT;
 --need to think if we need to give only those where concept_code_2 is null or it's mappped only to deprecated concept
 -- if medical coder wants to change relatoinship (i.e. found a better mapping - set an old row as deprecated, add a new row to concept_relationship)
 --;
---do it once MANUAL_table is done by medical coder
+--do it once &2 is done by medical coder
 --or probably another temporary table can be used where we put the result of manual mappings
 --truncate table
 PROMPT Need to think if we need to give only those where concept_code_2 is null or it is mappped only to deprecated concept
 PROMPT if medical coder wants to change relatoinship (i.e. found a better mapping - set an old row as deprecated, add a new row to concept_relationship)
-PROMPT do it once MANUAL_table is done by medical coder
+PROMPT do it once &2 is done by medical coder
 PROMPT or probably another temporary table can be used where we put the result of manual mappings...
 insert into concept_relationship_manual (CONCEPT_CODE_1,CONCEPT_CODE_2,VOCABULARY_ID_1,VOCABULARY_ID_2,RELATIONSHIP_ID,VALID_START_DATE,VALID_END_DATE,INVALID_REASON)
-select CONCEPT_CODE_1,CONCEPT_CODE_2,VOCABULARY_ID_1,VOCABULARY_ID_2,RELATIONSHIP_ID,VALID_START_DATE,VALID_END_DATE,INVALID_REASON from MANUAL_table
+select CONCEPT_CODE_1,CONCEPT_CODE_2,VOCABULARY_ID_1,VOCABULARY_ID_2,RELATIONSHIP_ID,VALID_START_DATE,VALID_END_DATE,INVALID_REASON from &2
 ;
 commit
 ;
