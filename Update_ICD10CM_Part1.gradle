@@ -97,7 +97,7 @@ public class StringBuilderWrapper implements java.lang.Appendable {
         def br = new BufferedReader(new FileReader(file))
         def strLine
         while ((strLine = br.readLine()) != null) {
-            builder.append(strLine).append('\n')
+            builder.append('\n').append(strLine)
         }
         return builder.toString()
     }
@@ -160,7 +160,7 @@ task fastRecreateSchema(description: project.properties['fastRecreate.descriptio
               sqlfile: "${project.properties['basePath']}/${project.properties['fastRecreate.sqlFileName']}",
               logfile: logFile]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
-    def sqlplus= """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
+    def sqlplus = """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)
     sqlplus.waitFor()
 
@@ -220,7 +220,7 @@ task createSourceTable(dependsOn: fastRecreateSchema, description: project.prope
               sqlfile: "${project.properties['basePath']}/${project.properties['createSourceTable.sqlFileName']}",
               logfile: logFile]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
-    def sqlplus= """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
+    def sqlplus = """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)
     sqlplus.waitFor()
 
@@ -412,7 +412,7 @@ task loadStage(dependsOn: importData, description: project.properties['loadStage
               sqlfile: "${project.properties['basePath']}/${project.properties['loadStage.sqlFileName']}",
               logfile: logFile]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
-    def sqlplus= """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
+    def sqlplus = """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)
     sqlplus.waitFor()
 

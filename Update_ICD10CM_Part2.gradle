@@ -59,7 +59,7 @@ public class StringBuilderWrapper implements java.lang.Appendable {
         def br = new BufferedReader(new FileReader(file))
         def strLine
         while ((strLine = br.readLine()) != null) {
-            builder.append(strLine).append('\n')
+            builder.append('\n').append(strLine)
         }
         return builder.toString()
     }

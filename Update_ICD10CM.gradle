@@ -48,6 +48,22 @@ public class StringBuilderWrapper implements java.lang.Appendable {
         wrapped.append(IDENT_CHAR).append(value)
     }
 
+    public static StringBuilderWrapper getBuilder() {
+        return new StringBuilderWrapper()
+    }
+
+    public static String readFromFile(File file) {
+        if (file == null)
+            return ''
+        def builder = getBuilder()
+        def br = new BufferedReader(new FileReader(file))
+        def strLine
+        while ((strLine = br.readLine()) != null) {
+            builder.append('\n').append(strLine)
+        }
+        return builder.toString()
+    }
+
     @Override
     Appendable append(CharSequence csq) throws IOException {
         wrapped.append(IDENT_CHAR).append(csq)
@@ -92,17 +108,17 @@ task fastRecreate(description: project.properties['fastRecreate.description']) <
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()
 
-    def log_file = "${tempDir.getPath()}/${project.properties['fastRecreate.logFileName']}"
-    def stream_log_file = "${tempDir.getPath()}/${project.properties['fastRecreate.streamLogFileName']}"
-    def stream_error_file = "${tempDir.getPath()}/${project.properties['fastRecreate.streamErrFileName']}"
+    def logFile = "${tempDir.getPath()}/${project.properties['fastRecreate.logFileName']}"
+    def streamLogFile = "${tempDir.getPath()}/${project.properties['fastRecreate.streamLogFileName']}"
+    def streamErrorFile = "${tempDir.getPath()}/${project.properties['fastRecreate.streamErrFileName']}"
 
     def db = [un: project.properties['db.userName'],
               pw:  project.properties['db.password'],
               tns: project.properties['db.tnsName'],
               sqlfile: "${project.properties['basePath']}/${project.properties['fastRecreate.sqlFileName']}",
-              logfile: log_file]
+              logfile: logFile]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
-    def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
+    def sqlplus = """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)
     sqlplus.waitFor()
 
@@ -110,14 +126,20 @@ task fastRecreate(description: project.properties['fastRecreate.description']) <
     def timeFinish = System.currentTimeMillis()
 
     // Write to console
-    System.out.println(sout.toString())
+    try {
+        // Write compact SQLPlus's spool log
+        System.out.println(StringBuilderWrapper.readFromFile(new File(logFile)))
+    } catch (IOException ioe) {
+        // Write whole SQLPlus's log
+        System.out.println(sout.toString())
+    }
 
     // Write to logfile
-    File f = new File(stream_log_file)
+    File f = new File(streamLogFile)
     f.write(sout.toString())
 
     // Write to error file
-    f = new File(stream_error_file)
+    f = new File(streamErrorFile)
     f.write(serr.toString())
 
     /* Check for errors */
@@ -146,17 +168,17 @@ task createSourceTable(dependsOn: fastRecreate, description: project.properties[
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()
 
-    def log_file = "${tempDir.getPath()}/${project.properties['createSourceTable.logFileName']}"
-    def stream_log_file = "${tempDir.getPath()}/${project.properties['createSourceTable.streamLogFileName']}"
-    def stream_error_file = "${tempDir.getPath()}/${project.properties['createSourceTable.streamErrFileName']}"
+    def logFile = "${tempDir.getPath()}/${project.properties['createSourceTable.logFileName']}"
+    def streamLogFile = "${tempDir.getPath()}/${project.properties['createSourceTable.streamLogFileName']}"
+    def streamErrorFile = "${tempDir.getPath()}/${project.properties['createSourceTable.streamErrFileName']}"
 
     def db = [un: project.properties['db.userName'],
               pw: project.properties['db.password'],
               tns: project.properties['db.tnsName'],
               sqlfile: "${project.properties['basePath']}/${project.properties['createSourceTable.sqlFileName']}",
-              logfile: log_file]
+              logfile: logFile]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
-    def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
+    def sqlplus = """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)
     sqlplus.waitFor()
 
@@ -164,14 +186,20 @@ task createSourceTable(dependsOn: fastRecreate, description: project.properties[
     def timeFinish = System.currentTimeMillis()
 
     // Write to console
-    System.out.println(sout.toString())
+    try {
+        // Write compact SQLPlus's spool log
+        System.out.println(StringBuilderWrapper.readFromFile(new File(logFile)))
+    } catch (IOException ioe) {
+        // Write whole SQLPlus's log
+        System.out.println(sout.toString())
+    }
 
     // Write to logfile
-    File f = new File(stream_log_file)
+    File f = new File(streamLogFile)
     f.write(sout.toString())
 
     // Write to error file
-    f = new File(stream_error_file)
+    f = new File(streamErrorFile)
     f.write(serr.toString())
 
     /* Check for errors */
@@ -269,8 +297,8 @@ task importData(dependsOn: renameFile, description: project.properties['importDa
     def logFile = "${tempDir.getPath()}/${project.properties['importData.logFileName']}"
     def discardFile = "${tempDir.getPath()}/${project.properties['importData.discardFileName']}"
     def badFile = "${tempDir.getPath()}/${project.properties['importData.badFileName']}"
-    def stream_log_file = "${tempDir.getPath()}/${project.properties['importData.streamLogFileName']}"
-    def stream_error_file = "${tempDir.getPath()}/${project.properties['importData.streamErrFileName']}"
+    def streamLogFile = "${tempDir.getPath()}/${project.properties['importData.streamLogFileName']}"
+    def streamErrorFile = "${tempDir.getPath()}/${project.properties['importData.streamErrFileName']}"
 
     def bosOut = new ByteArrayOutputStream(), bosErr = new ByteArrayOutputStream()
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
@@ -295,14 +323,17 @@ task importData(dependsOn: renameFile, description: project.properties['importDa
     }
 
     // Write to console
+    /*
+     *  When import prefer to write stream log to console (it's shorter)
+     * */
     System.out.println(sout.toString())
 
     // Write to logfile
-    File f = new File(stream_log_file)
+    File f = new File(streamLogFile)
     f.write(sout.toString())
 
     // Write to error file
-    f = new File(stream_error_file)
+    f = new File(streamErrorFile)
     f.write(serr.toString())
 
     // Finish action checkpoint
@@ -329,18 +360,17 @@ task loadStage(dependsOn: importData, description: project.properties['loadStage
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()
 
-    def filesBasePath="${projectDir}/${project.properties['basePath']}"
-    def log_file = "${tempDir.getPath()}/${project.properties['loadStage.logFileName']}"
-    def stream_log_file = "${tempDir.getPath()}/${project.properties['loadStage.streamLogFileName']}"
-    def stream_error_file = "${tempDir.getPath()}/${project.properties['loadStage.streamErrFileName']}"
+    def logFile = "${tempDir.getPath()}/${project.properties['loadStage.logFileName']}"
+    def streamLogFile = "${tempDir.getPath()}/${project.properties['loadStage.streamLogFileName']}"
+    def streamErrorFile = "${tempDir.getPath()}/${project.properties['loadStage.streamErrFileName']}"
 
     def db = [un: project.properties['db.userName'],
               pw: project.properties['db.password'],
               tns: project.properties['db.tnsName'],
-              sqlfile: "${filesBasePath}/${project.properties['loadStage.sqlFileName']}",
-              logfile: log_file]
+              sqlfile: "${project.properties['basePath']}/${project.properties['loadStage.sqlFileName']}",
+              logfile: logFile]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
-    def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
+    def sqlplus = """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)
     sqlplus.waitFor()
 
@@ -348,14 +378,20 @@ task loadStage(dependsOn: importData, description: project.properties['loadStage
     def timeFinish = System.currentTimeMillis()
 
     // Write to console
-    System.out.println(sout.toString())
+    try {
+        // Write compact SQLPlus's spool log
+        System.out.println(StringBuilderWrapper.readFromFile(new File(logFile)))
+    } catch (IOException ioe) {
+        // Write whole SQLPlus's log
+        System.out.println(sout.toString())
+    }
 
     // Write to logfile
-    File f = new File(stream_log_file)
+    File f = new File(streamLogFile)
     f.write(sout.toString())
 
     // Write to error file
-    f = new File(stream_error_file)
+    f = new File(streamErrorFile)
     f.write(serr.toString())
 
     /* Check for errors */
@@ -384,15 +420,15 @@ task genericUpdate(dependsOn: loadStage, description: project.properties['generi
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()
 
-    def log_file = "${tempDir.getPath()}/${project.properties['genericUpdate.logFileName']}"
-    def stream_log_file = "${tempDir.getPath()}/${project.properties['genericUpdate.streamLogFileName']}"
-    def stream_error_file = "${tempDir.getPath()}/${project.properties['genericUpdate.streamErrFileName']}"
+    def logFile = "${tempDir.getPath()}/${project.properties['genericUpdate.logFileName']}"
+    def streamLogFile = "${tempDir.getPath()}/${project.properties['genericUpdate.streamLogFileName']}"
+    def streamErrorFile = "${tempDir.getPath()}/${project.properties['genericUpdate.streamErrFileName']}"
 
     def db = [un: project.properties['db.userName'],
               pw: project.properties['db.password'],
               tns: project.properties['db.tnsName'],
               sqlfile: "${project.properties['basePath']}/${project.properties['genericUpdate.sqlFileName']}",
-              logfile: log_file]
+              logfile: logFile]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
     def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)
@@ -402,14 +438,20 @@ task genericUpdate(dependsOn: loadStage, description: project.properties['generi
     def timeFinish = System.currentTimeMillis()
 
     // Write to console
-    System.out.println(sout.toString())
+    try {
+        // Write compact SQLPlus's spool log
+        System.out.println(StringBuilderWrapper.readFromFile(new File(logFile)))
+    } catch (IOException ioe) {
+        // Write whole SQLPlus's log
+        System.out.println(sout.toString())
+    }
 
     // Write to logfile
-    File f = new File(stream_log_file)
+    File f = new File(streamLogFile)
     f.write(sout.toString())
 
     // Write to error file
-    f = new File(stream_error_file)
+    f = new File(streamErrorFile)
     f.write(serr.toString())
 
     /* Check for errors */
@@ -437,17 +479,17 @@ task checkUpdateResults(dependsOn: genericUpdate, description: project.propertie
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()
 
-    def log_file = "${tempDir.getPath()}/${project.properties['checkUpdateResults.logFileName']}"
-    def stream_log_file = "${tempDir.getPath()}/${project.properties['checkUpdateResults.streamLogFileName']}"
-    def stream_error_file = "${tempDir.getPath()}/${project.properties['checkUpdateResults.streamErrFileName']}"
+    def logFile = "${tempDir.getPath()}/${project.properties['checkUpdateResults.logFileName']}"
+    def streamLogFile = "${tempDir.getPath()}/${project.properties['checkUpdateResults.streamLogFileName']}"
+    def streamErrorFile = "${tempDir.getPath()}/${project.properties['checkUpdateResults.streamErrFileName']}"
 
     def db = [un: project.properties['db.userName'],
               pw: project.properties['db.password'],
               tns: project.properties['db.tnsName'],
               sqlfile: "${project.properties['basePath']}/${project.properties['checkUpdateResults.sqlFileName']}",
-              logfile: log_file]
+              logfile: logFile]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
-    def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
+    def sqlplus = """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)
     sqlplus.waitFor()
 
@@ -455,14 +497,20 @@ task checkUpdateResults(dependsOn: genericUpdate, description: project.propertie
     def timeFinish = System.currentTimeMillis()
 
     // Write to console
-    System.out.println(sout.toString())
+    try {
+        // Write compact SQLPlus's spool log
+        System.out.println(StringBuilderWrapper.readFromFile(new File(logFile)))
+    } catch (IOException ioe) {
+        // Write whole SQLPlus's log
+        System.out.println(sout.toString())
+    }
 
     // Write to logfile
-    File f = new File(stream_log_file)
+    File f = new File(streamLogFile)
     f.write(sout.toString())
 
     // Write to error file
-    f = new File(stream_error_file)
+    f = new File(streamErrorFile)
     f.write(serr.toString())
 
     /* Check for errors */
@@ -490,7 +538,7 @@ task startUpdate(dependsOn: checkUpdateResults, description: project.properties[
     println '*                                             *'
     println '***********************************************'
 
-    println "Updating of '${project.properties['vocabulary.display.name']}' vocabulary..."
+    println "Updating of '${project.properties['vocabulary.display.name']}' vocabulary on the '${project.properties['db.userName']}' schema..."
 
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()
@@ -502,7 +550,7 @@ task startUpdate(dependsOn: checkUpdateResults, description: project.properties[
         // Measure time execution
         def timeElapsed = (timeFinish - timeStart) / 1000
         println "\n\nTotal time elapsed: ${timeElapsed} seconds."
-        println "Updating of '${project.properties['vocabulary.display.name']}' vocabulary completed successfully..."
+        println "Updating of '${project.properties['vocabulary.display.name']}' vocabulary on the '${project.properties['db.userName']}' schema is completed successfully..."
         println '***********************************************'
         println '*                                             *'
         println "*      '${description}' action is done...       *"
