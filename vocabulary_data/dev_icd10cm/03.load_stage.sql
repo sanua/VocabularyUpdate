@@ -47,6 +47,15 @@ BEGIN
 END;
 /
 
+-- Delete sysnonym for source table if exists
+PROMPT Delete sysnonym for source table if exists...
+BEGIN
+   EXECUTE IMMEDIATE 'DROP SYNONYM ICD10CM_TABLE';
+EXCEPTION WHEN OTHERS THEN NULL;
+END;
+/
+COMMIT;
+
 -- Create sysnonym for source table from DEV_ICD10CM schema
 PROMPT  Create sysnonym for source table from DEV_ICD10CM schema
 CREATE SYNONYM ICD10CM_TABLE FOR DEV_ICD10CM.ICD10CM_TABLE; 
