@@ -87,7 +87,7 @@ public class StringBuilderWrapper implements java.lang.Appendable {
 
 // Load ICD10CM properties
 Properties props = new Properties()
-props.load(new FileInputStream("$project.rootDir/Update_ICD10CM.properties"))
+props.load(new FileInputStream("${project.getBuildFile().toString().replace('.gradle', '.properties')}"))
 props.each {prop ->
     project.ext.set(prop.key, prop.value)
 }
