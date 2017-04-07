@@ -232,7 +232,7 @@ task importManualTable (dependsOn: prepareManualTable, description: project.prop
 task applyManualTable(dependsOn: importManualTable, description: project.properties['applyManualTable.description']) << {
     println '\n\n*****************************************************'
     println '*                                                   *'
-    println "*     '${description}' action started...      *"
+    println "*      '${description}' action started...       *"
     println '*                                                   *'
     println '*****************************************************'
 
