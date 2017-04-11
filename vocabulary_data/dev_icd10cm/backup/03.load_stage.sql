@@ -301,7 +301,7 @@ COMMIT;
 --14 Clean up
 DROP TABLE ICD10CM_domain PURGE;
 DROP TABLE filled_domain PURGE;	
--- drop TABLE CONCEPT_RELATION_pre_MANUAL;
+
 -- At the end, the three tables concept_stage, concept_relationship_stage and concept_synonym_stage should be ready to be fed into the generic_update.sql script		
 
 SET sqlbl off
