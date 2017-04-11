@@ -57,11 +57,41 @@ EXEC DEVV5.QA_TESTS.PURGE_CACHE;
 SET ECHO ON
 -- Perform CONCEPT checks
 PROMPT Perform CONCEPT checks...
-SELECT * FROM TABLE(devv5.qa_tests.get_summary('concept'));
+WITH VGSC AS (SELECT * FROM TABLE(DEVV5.QA_TESTS.get_summary('concept')))
+SELECT VOCABULARY_ID_1,
+       VOCABULARY_ID_2,
+       CONCEPT_CLASS_ID,
+       RELATIONSHIP_ID,
+       INVALID_REASON,
+       CONCEPT_DELTA
+FROM VGSC
+  UNION ALL
+SELECT '-',
+       '-',
+       '-',
+       '-',
+       '-',
+       SUM(CONCEPT_DELTA)
+FROM VGSC;
 
 -- Perform CONCEPT RELATIONSHIPS checks
 PROMPT Perform CONCEPT RELATIONSHIPS checks...
-SELECT * FROM TABLE(devv5.qa_tests.get_summary('concept_relationship'));
+WITH VGSCR AS (SELECT * FROM TABLE(DEVV5.QA_TESTS.get_summary('concept_relationship')))
+SELECT VOCABULARY_ID_1,
+       VOCABULARY_ID_2,
+       CONCEPT_CLASS_ID,
+       RELATIONSHIP_ID,
+       INVALID_REASON,
+       CONCEPT_DELTA
+FROM VGSCR
+  UNION ALL
+SELECT '-',
+       '-',
+       '-',
+       '-',
+       '-',
+       SUM(CONCEPT_DELTA)
+FROM VGSCR;
 
 SPOOL OFF
 EXIT

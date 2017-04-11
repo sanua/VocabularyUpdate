@@ -172,6 +172,8 @@ INSERT INTO concept_relationship_stage (concept_code_1,
                          AND r_int.relationship_id = 'Subsumes');
 COMMIT;
 
+
+---!!! what if concepts doesn't have mapping???
 --10 Update domain_id for ICD10CM from SNOMED
 --create 1st temporary table ICD10CM_domain with direct mappings
 create table filled_domain NOLOGGING as
@@ -300,7 +302,7 @@ COMMIT;
 DROP TABLE ICD10CM_domain PURGE;
 DROP TABLE filled_domain PURGE;	
 
-SET sqlbl off
 -- At the end, the three tables concept_stage, concept_relationship_stage and concept_synonym_stage should be ready to be fed into the generic_update.sql script		
 
+SET sqlbl off
 EXIT

@@ -97,7 +97,7 @@ public class StringBuilderWrapper implements java.lang.Appendable {
         def br = new BufferedReader(new FileReader(file))
         def strLine
         while ((strLine = br.readLine()) != null) {
-            builder.append(strLine).append('\n')
+            builder.append('\n').append(strLine)
         }
         return builder.toString()
     }
@@ -129,7 +129,7 @@ props.load(new FileInputStream("$project.rootDir/Update_ICD10CM.properties"))
 props.each {prop ->
     project.ext.set(prop.key, prop.value)
 }
-props.load(new FileInputStream("$project.rootDir/Update_ICD10CM_Part1.properties"))
+props.load(new FileInputStream("${project.getBuildFile().toString().replace('.gradle', '.properties')}"))
 props.each {prop ->
     project.ext.set(prop.key, prop.value)
 }
@@ -160,7 +160,7 @@ task fastRecreateSchema(description: project.properties['fastRecreate.descriptio
               sqlfile: "${project.properties['basePath']}/${project.properties['fastRecreate.sqlFileName']}",
               logfile: logFile]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
-    def sqlplus= """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
+    def sqlplus = """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)
     sqlplus.waitFor()
 
@@ -220,7 +220,7 @@ task createSourceTable(dependsOn: fastRecreateSchema, description: project.prope
               sqlfile: "${project.properties['basePath']}/${project.properties['createSourceTable.sqlFileName']}",
               logfile: logFile]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
-    def sqlplus= """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
+    def sqlplus = """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)
     sqlplus.waitFor()
 
@@ -412,7 +412,7 @@ task loadStage(dependsOn: importData, description: project.properties['loadStage
               sqlfile: "${project.properties['basePath']}/${project.properties['loadStage.sqlFileName']}",
               logfile: logFile]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
-    def sqlplus= """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
+    def sqlplus = """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)
     sqlplus.waitFor()
 
@@ -502,7 +502,7 @@ task createManualTable(dependsOn: loadStage, description: project.properties['cr
     println "*** '${description}' action done ***"
 }
 
-task extractManualTable(dependsOn: [createManualTable, loadStage], description: project.properties['extractManualTable.description']) << {
+task extractManualTable(/*dependsOn: [createManualTable, loadStage]*/dependsOn: createManualTable, description: project.properties['extractManualTable.description']) << {
     println '\n\n***********************************************'
     println '*                                             *'
     println "* '${description}' action started... *"
@@ -595,12 +595,12 @@ task startUpdate(dependsOn: sendMail, description: project.properties['startUpda
     println '***********************************************'
 
     /* Disable 'Create Manual Table' step */
-    def manualTableName = project.properties['manualTableName']
+    /*def manualTableName = project.properties['manualTableName']
     if (manualTableName == null) {
         throw new GradleException(String.format(project.properties['error.message'], '''empty ''Manual Table'' name parameter''', name))
     } else if (!manualTableName.toString().toLowerCase().startsWith('mock')) {
         createManualTable.enabled = false
-    }
+    }*/
 
     println "Updating of '${project.properties['vocabulary.display.name']}' vocabulary on the '${project.properties['db.userName']}' schema..."
 

@@ -1,0 +1,15 @@
+package inc.odysses.tasks
+
+class MyCustomTask extends DefaultTask {
+    @Input
+    String name = ''
+
+    @Input
+    String version = ''
+
+    @TaskAction
+    def build() {
+        println "\tname is: name"
+        println "\tversion is: version"
+    }
+}

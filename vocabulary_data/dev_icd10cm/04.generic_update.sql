@@ -172,7 +172,8 @@ PROMPT Create sequence after last valid one...
 DECLARE
  ex NUMBER;
 BEGIN
-  --SELECT MAX(concept_id)+1 INTO ex FROM concept WHERE concept_id<500000000; -- Last valid below HOI concept_id
+  --SELECT MAX(concept_id)+1 INTO ex FROM concept WHERE concept_id<500000000 -- Last valid below HOI concept_id
+  --; 
   BEGIN
     EXECUTE IMMEDIATE 'DROP SEQUENCE v5_concept';
     EXCEPTION
@@ -193,6 +194,7 @@ BEGIN
 END;
 /
 
+PROMPT Inserting into CONCEPT...
 INSERT /*+ APPEND */ INTO concept (concept_id,
                      concept_name,
                      domain_id,
@@ -214,8 +216,10 @@ INSERT /*+ APPEND */ INTO concept (concept_id,
           cs.valid_end_date,
           cs.invalid_reason
      FROM concept_stage cs
-    WHERE cs.concept_id IS NULL; -- new because no concept_id could be found for the concept_code/vocabulary_id combination
+    WHERE cs.concept_id IS NULL -- new because no concept_id could be found for the concept_code/vocabulary_id combination
+    ;
 
+PROMPT Delete v5_concept sequence...
 DROP SEQUENCE v5_concept;
 
 COMMIT;
@@ -716,8 +720,7 @@ MERGE INTO concept_relationship r
                                AND r.invalid_reason IS NULL
                                AND c1.concept_id = r.concept_id_1
                                AND c2.concept_id = r.concept_id_2
-                               AND c1.vocabulary_id = c2.vocabulary_id
-							   AND c1.vocabulary_id IN (SELECT vocabulary_id FROM vocabulary WHERE latest_update IS NOT NULL)
+							   AND EXISTS (SELECT 1 FROM vocabulary WHERE latest_update IS NOT NULL AND vocabulary_id IN (c1.vocabulary_id,c2.vocabulary_id))
                                AND c2.concept_code <> 'OMOP generated'
                                AND r.concept_id_1 <> r.concept_id_2)
                 SELECT u.concept_id_1, u.concept_id_2, u.relationship_id

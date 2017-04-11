@@ -28,9 +28,10 @@ WHENEVER SQLERROR EXIT SQL.SQLCODE
 SPOOL &1
 
 /* Delete import-data table if it exists, to avoid build process errors */
+PROMPT Delete import-data table if it exists, to avoid build process errors
 DECLARE
 	TYPE TStringArray IS TABLE OF VARCHAR2(255);
-	t_names TStringArray := TStringArray('ICD10CM_TABLE','LOINC','MAP_TO','SOURCE_ORGANIZATION','LOINC_ANSWERS','LOINC_FORMS','LOINC_CLASS','CPT_MRSMAP','scccRefset_MapCorrOrFull_INT');
+	t_names TStringArray := TStringArray('LOINC','MAP_TO','SOURCE_ORGANIZATION','LOINC_ANSWERS','LOINC_FORMS','LOINC_CLASS','CPT_MRSMAP','scccRefset_MapCorrOrFull_INT');
 	l_cnt NUMBER;
 	l_str VARCHAR2(255);
 BEGIN
@@ -44,6 +45,7 @@ BEGIN
 END;
 /
 
+PROMPT Create LOINC table...
 CREATE TABLE LOINC
 (
   LOINC_NUM                  VARCHAR2(10 BYTE),
@@ -92,6 +94,7 @@ CREATE TABLE LOINC
   ASSOCIATEDOBSERVATIONS     VARCHAR2(255 BYTE)
 );
 
+PROMPT Create MAP_TO table...
 CREATE TABLE MAP_TO
 (
   LOINC      VARCHAR2(10),
@@ -99,6 +102,7 @@ CREATE TABLE MAP_TO
   "COMMENT"  CLOB
 );
 
+PROMPT Create SOURCE_ORGANIZATION table...
 CREATE TABLE SOURCE_ORGANIZATION
 (
   COPYRIGHT_ID	VARCHAR2(255),
@@ -108,6 +112,7 @@ CREATE TABLE SOURCE_ORGANIZATION
   URL           VARCHAR2(255)
 );
 
+PROMPT Create LOINC_ANSWERS table...
 CREATE TABLE LOINC_ANSWERS
 (
   LOINC                   VARCHAR2(10 BYTE),
@@ -122,12 +127,14 @@ CREATE TABLE LOINC_ANSWERS
   DISPLAYTEXT             VARCHAR2(255 BYTE)
 );
 
+PROMPT Create LOINC_FORMS table...
 CREATE TABLE LOINC_FORMS
 (
    ParentLoinc   VARCHAR2 (10 BYTE),
    Loinc         VARCHAR2 (10 BYTE)
 );
 
+PROMPT Create LOINC_CLASS table...
 CREATE TABLE LOINC_CLASS
 (
   CONCEPT_ID        INTEGER,
@@ -142,6 +149,7 @@ CREATE TABLE LOINC_CLASS
   INVALID_REASON    VARCHAR2(1 BYTE)
 );
 
+PROMPT Create CPT_MRSMAP table...
 CREATE TABLE CPT_MRSMAP
 (
   MAPSETCUI  CHAR(8 BYTE),
@@ -157,6 +165,7 @@ CREATE TABLE CPT_MRSMAP
   CVF        INTEGER
 );
 
+PROMPT Create scccRefset_MapCorrOrFull_INT table...
 CREATE TABLE scccRefset_MapCorrOrFull_INT
 (
    ID                      VARCHAR (256) NOT NULL,
