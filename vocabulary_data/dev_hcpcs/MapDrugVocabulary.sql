@@ -133,7 +133,7 @@ update shared_ing set cnt=null where r_did in (select concept_id from concept wh
 --drop table r_bn;
 create table r_bn nologging as
 select distinct descendant_concept_id as concept_id_1, concept_id_2
-from concept_relationship join concept_ancestor on ancestor_concept_id=concept_id_1
+from concept_relationship join concept_ancestor on ancestor_concept_id=concept_id_1 
 join concept bn on concept_id_2=bn.concept_id and bn.vocabulary_id in ('RxNorm', 'RxNorm Extension') and bn.concept_class_id='Brand Name'
 join concept c on concept_id_1=c.concept_id 
 join concept bd on descendant_concept_id=bd.concept_id and bd.vocabulary_id in ('RxNorm', 'RxNorm Extension') and bd.concept_class_id in
@@ -253,7 +253,7 @@ with q as (
   from drug_strength r_ds 
 )
 -- Create variables div as r amount / q amount, and unit as 1 for matching and 0 as non-matching 
-select
+select 
   q_dcode, q_icode, r_did, r_iid, nvl(df_prec, 100) as df_prec, nvl(bn_prec, 100) as bn_prec, nvl(u_prec, 100) as u_prec, i_prec,
   case when div>1 then 1/div else div end as div, -- the one the closest to 1 wins, but the range is 0-1, which is the opposite direction of the other ones
   unit as u_match, rc_cnt
