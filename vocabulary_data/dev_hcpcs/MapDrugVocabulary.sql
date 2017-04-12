@@ -410,7 +410,6 @@ PROMPT Define order as combination of attributes number and each attribute weigh
 create table attrib_cnt as
 select concept_id_1, count (1)|| max(weight) as weight  from (
 --need to go throught Drug Form / Component to get the Brand Name
-PROMPT need to go throught Drug Form / Component to get the Brand Name
 select distinct concept_id_1, 3 as weight from
 r_bn
 union ALL
