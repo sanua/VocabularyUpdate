@@ -15,6 +15,9 @@ SPOOL &1
 /**
 * Perform update results verification
 **/
+PROMPT **
+PROMPT * Perform update results verification...
+PROMPT **
 SET ECHO OFF
 -- Define column width
 COLUMN CHECK_ID FORMAT A10 HEADING 'CHECK_ID' NULL - WRAP
@@ -27,6 +30,7 @@ COLUMN INVALID_REASON FORMAT A15 HEADING 'INVALID_REASON' NULL - WRAP
 
 SET ECHO ON
 -- Perform common checks
+PROMPT Perform common checks...
 SELECT 
 	TO_CHAR(CHECK_ID) as CHECK_ID,
 	TO_CHAR(CONCEPT_ID_1) as CONCEPT_ID_1,
@@ -47,14 +51,47 @@ COLUMN INVALID_REASON FORMAT A15 HEADING 'INVALID_REASON' NULL - WRAP
 COLUMN CONCEPT_DELTA FORMAT 999999999.99 HEADING 'CONCEPT_DELTA' NULL - WRAP
 
 -- Clear cache
+PROMPT Clear cache...
 EXEC DEVV5.QA_TESTS.PURGE_CACHE;
 
 SET ECHO ON
 -- Perform CONCEPT checks
-SELECT * FROM TABLE(devv5.qa_tests.get_summary('concept'));
+PROMPT Perform CONCEPT checks...
+WITH VGSC AS (SELECT * FROM TABLE(DEVV5.QA_TESTS.get_summary('concept')))
+SELECT VOCABULARY_ID_1,
+       VOCABULARY_ID_2,
+       CONCEPT_CLASS_ID,
+       RELATIONSHIP_ID,
+       INVALID_REASON,
+       CONCEPT_DELTA
+FROM VGSC
+  UNION ALL
+SELECT '-',
+       '-',
+       '-',
+       '-',
+       '-',
+       SUM(CONCEPT_DELTA)
+FROM VGSC;
 
 -- Perform CONCEPT RELATIONSHIPS checks
-SELECT * FROM TABLE(devv5.qa_tests.get_summary('concept_relationship'));
+PROMPT Perform CONCEPT RELATIONSHIPS checks...
+WITH VGSCR AS (SELECT * FROM TABLE(DEVV5.QA_TESTS.get_summary('concept_relationship')))
+SELECT VOCABULARY_ID_1,
+       VOCABULARY_ID_2,
+       CONCEPT_CLASS_ID,
+       RELATIONSHIP_ID,
+       INVALID_REASON,
+       CONCEPT_DELTA
+FROM VGSCR
+  UNION ALL
+SELECT '-',
+       '-',
+       '-',
+       '-',
+       '-',
+       SUM(CONCEPT_DELTA)
+FROM VGSCR;
 
 SPOOL OFF
 EXIT

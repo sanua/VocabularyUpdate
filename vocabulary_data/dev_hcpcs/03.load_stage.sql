@@ -29,6 +29,7 @@ WHENEVER SQLERROR EXIT SQL.SQLCODE
 SPOOL &1
 
 /* Clean up from last unsuccessful load stage run, to avoid build process errors */
+PROMPT Clean up from last unsuccessful load stage run, to avoid build process errors...
 DECLARE
   TYPE TStringArray IS TABLE OF VARCHAR2(255);
   t_names TStringArray := TStringArray('t_domains');
@@ -46,6 +47,7 @@ END;
 /
 
 --1. Update latest_update field to new date 
+PROMPT Update latest_update field to new date 
 BEGIN
    DEVV5.VOCABULARY_PACK.SetLatestUpdate (pVocabularyName        => 'HCPCS',
                                           pVocabularyDate        => TO_DATE ('20161128', 'yyyymmdd'),
@@ -56,6 +58,7 @@ END;
 COMMIT;
 
 -- 2. Truncate all working tables
+PROMPT 2. Truncate all working tables
 TRUNCATE TABLE concept_stage;
 TRUNCATE TABLE concept_relationship_stage;
 TRUNCATE TABLE concept_synonym_stage;
@@ -63,6 +66,7 @@ TRUNCATE TABLE pack_content_stage;
 TRUNCATE TABLE drug_strength_stage;
 
 --3. Create concept_stage from HCPCS
+PROMPT 3. Create concept_stage from HCPCS
 INSERT /*+ APPEND */ INTO concept_stage (concept_id,
                            concept_name,
                            domain_id,
@@ -100,6 +104,8 @@ COMMIT;
 
 --4 Update domain_id in concept_stage
 --4.1. Part 1
+PROMPT 4 Update domain_id in concept_stage
+PROMPT 4.1. Part 1
 CREATE TABLE t_domains nologging AS
 --create temporary table with domain_id defined by rules
     (
@@ -346,6 +352,7 @@ CREATE INDEX tmp_idx_cs
    NOLOGGING;
 
 --update concept_stage from temporary table   
+PROMPT Update concept_stage from temporary table
 UPDATE concept_stage c
    SET domain_id =
           (SELECT t.domain_id
@@ -354,6 +361,7 @@ UPDATE concept_stage c
 COMMIT;
 
 --4.2. Part 2 (for HCPCS Modifiers)
+PROMPT 4.2. Part 2 (for HCPCS Modifiers)
 begin
 update concept_stage set domain_id='Device' where vocabulary_id='HCPCS' and concept_class_id='HCPCS Modifier' and concept_code='A1'; --Dressing for one wound
 update concept_stage set domain_id='Device' where vocabulary_id='HCPCS' and concept_class_id='HCPCS Modifier' and concept_code='A2'; --Dressing for two wounds
@@ -692,11 +700,19 @@ update concept_stage set domain_id='Observation' where vocabulary_id='HCPCS' and
 update concept_stage set domain_id='Observation' where vocabulary_id='HCPCS' and concept_class_id='HCPCS Modifier' and concept_code='XS'; --Separate structure, a service that is distinct because it was performed on a separate organ/structure
 update concept_stage set domain_id='Observation' where vocabulary_id='HCPCS' and concept_class_id='HCPCS Modifier' and concept_code='XU'; --Unusual non-overlapping service, the use of a service that is distinct because it does not overlap usual components of the main service
 update concept_stage set domain_id='Observation' where vocabulary_id='HCPCS' and concept_class_id='HCPCS Modifier' and concept_code='ZA'; --Novartis/sandoz
+--2017 release added domains
+update concept_stage set domain_id='Observation' where vocabulary_id='HCPCS' and concept_class_id='HCPCS Modifier' and concept_code ='FX'; --X-ray taken using film
+update concept_stage set domain_id='Observation' where vocabulary_id='HCPCS' and concept_class_id='HCPCS Modifier' and concept_code ='PN'; --Non-excepted service provided at an off-campus, outpatient, provider-based department of a hospital
+update concept_stage set domain_id='Observation' where vocabulary_id='HCPCS' and concept_class_id='HCPCS Modifier' and concept_code ='V1'; --Demonstration modifier 1
+update concept_stage set domain_id='Observation' where vocabulary_id='HCPCS' and concept_class_id='HCPCS Modifier' and concept_code ='V2'; --Demonstration modifier 2
+update concept_stage set domain_id='Observation' where vocabulary_id='HCPCS' and concept_class_id='HCPCS Modifier' and concept_code ='V3'; --Demonstration modifier 3
+update concept_stage set domain_id='Observation' where vocabulary_id='HCPCS' and concept_class_id='HCPCS Modifier' and concept_code ='ZB'; --Pfizer/hospira
 end;
 /
 COMMIT;
 
 --if some codes does not have domain_id pick it up from existing concept table
+PROMPT If some codes does not have domain_id pick it up from existing concept table
 UPDATE concept_stage cs
    SET domain_id =
           (SELECT domain_id
@@ -708,6 +724,8 @@ COMMIT;
 
 --Procedure Drug codes are handled as Procedures, but this might change in near future. 
 --Therefore, we are keeping an interim domain_id='Procedure Drug'
+PROMPT Procedure Drug codes are handled as Procedures, but this might change in near future.
+PROMPT Therefore, we are keeping an interim domain_id='Procedure Drug'
 UPDATE concept_stage
    SET domain_id = 'Procedure'
  WHERE domain_id = 'Procedure Drug';
@@ -716,6 +734,7 @@ COMMIT;
 DROP TABLE t_domains PURGE;
 
 --5 Create CONCEPT_SYNONYM_STAGE
+PROMPT 5 Create CONCEPT_SYNONYM_STAGE
 INSERT /*+ APPEND */ INTO concept_synonym_stage (synonym_concept_id,
                                    synonym_concept_code,
                                    synonym_name,
@@ -733,24 +752,26 @@ INSERT /*+ APPEND */ INTO concept_synonym_stage (synonym_concept_id,
 COMMIT;
 
 --6 Insert existing concepts with concept_class_id = 'HCPCS Class'
+PROMPT 6 Insert existing concepts with concept_class_id = 'HCPCS Class'
 INSERT /*+ APPEND */ INTO  concept_stage
    SELECT *
      FROM concept
     WHERE vocabulary_id = 'HCPCS' AND concept_class_id = 'HCPCS Class';
-COMMIT;	
+COMMIT;
 
 
-prompt *** Step 7 procedure_drug.sql is started... ***
+PROMPT 7 Run HCPCS/procedure_drug.sql. This will create all the input files for MapDrugVocabulary.sql
 --7 Run HCPCS/procedure_drug.sql. This will create all the input files for MapDrugVocabulary.sql
 @&2/procedure_drug.sql '&3'
-prompt *** Step 7 is done... ***
+PROMPT Step 7 is done...
 
-prompt *** Step 8 MapDrugVocabulary.sql id started... ***
+PROMPT 8 Run the generic working/MapDrugVocabulary.sql. This will produce a concept_relationship_stage with HCPCS to RxNorm relatoinships
 --8 Run the generic working/MapDrugVocabulary.sql. This will produce a concept_relationship_stage with HCPCS to RxNorm relatoinships
 @&2/MapDrugVocabulary.sql '&4'
-prompt *** Step 8 is done... ***
+PROMPT Step 8 is done...
 
 --9 Add all other relationships from the existing one. The reason is that there is no good source for these relationships, and we have to build the ones for new codes from UMLS and manually
+PROMPT 9 Add all other relationships from the existing one. The reason is that there is no good source for these relationships, and we have to build the ones for new codes from UMLS and manually
 INSERT /*+ APPEND */ INTO concept_relationship_stage (concept_id_1,
                                         concept_id_2,
                                         concept_code_1,
@@ -780,6 +801,7 @@ INSERT /*+ APPEND */ INTO concept_relationship_stage (concept_id_1,
 COMMIT;
 
 --10 Add upgrade relationships
+PROMPT 10 Add upgrade relationships
 INSERT /*+ APPEND */ INTO  concept_relationship_stage (concept_code_1,
                                         concept_code_2,
                                         relationship_id,
@@ -841,6 +863,7 @@ INSERT /*+ APPEND */ INTO  concept_relationship_stage (concept_code_1,
 COMMIT;		  
 
 --11 Working with replacement mappings
+PROMPT 11 Working with replacement mappings
 BEGIN
    DEVV5.VOCABULARY_PACK.CheckReplacementMappings;
 END;
@@ -848,6 +871,7 @@ END;
 COMMIT;
 
 --12 Deprecate 'Maps to' mappings to deprecated and upgraded concepts
+PROMPT 12 Deprecate 'Maps to' mappings to deprecated and upgraded concepts
 BEGIN
    DEVV5.VOCABULARY_PACK.DeprecateWrongMAPSTO;
 END;
@@ -855,6 +879,7 @@ END;
 COMMIT;			
 
 --13 Create hierarchical relationships between HCPCS and HCPCS class
+PROMPT 13 Create hierarchical relationships between HCPCS and HCPCS class
 INSERT /*+ APPEND */ INTO concept_relationship_stage (
                                         concept_code_1,
                                         concept_code_2,
@@ -888,6 +913,7 @@ INSERT /*+ APPEND */ INTO concept_relationship_stage (
 COMMIT;	
 
 --14 Add all other 'Concept replaced by' relationships
+PROMPT 14 Add all other 'Concept replaced by' relationships
 INSERT /*+ APPEND */ INTO  concept_relationship_stage (concept_code_1,
                                         concept_code_2,
                                         relationship_id,
@@ -925,11 +951,14 @@ INSERT /*+ APPEND */ INTO  concept_relationship_stage (concept_code_1,
                    WHERE     crs.concept_code_1 = c.concept_code
                          AND crs.vocabulary_id_1 = c.vocabulary_id
                          AND crs.relationship_id = r.relationship_id);
-COMMIT;						 
+COMMIT;
 
+PROMPT 15 "Manual Table" processing is skipped...
 /* Skip this section...
+This is a subject of "Manual Table" creation
 
 --15 Create text for Medical Coder with new codes and mappings
+PROMPT  15 Create text for Medical Coder with new codes and mappings
 SELECT NULL AS concept_id_1,
        NULL AS concept_id_2,
        c.concept_code AS concept_code_1,
@@ -978,6 +1007,7 @@ SELECT NULL AS concept_id_1,
 end of skipping */
 
 --16 Append resulting file from Medical Coder (in concept_relationship_stage format) to concept_relationship_stage
+PROMPT 16 Append resulting file from Medical Coder (in concept_relationship_stage format) to concept_relationship_stage
 BEGIN
    DEVV5.VOCABULARY_PACK.ProcessManualRelationships;
 END;
@@ -985,6 +1015,7 @@ END;
 COMMIT;
 
 --17 Add mapping from deprecated to fresh concepts
+PROMPT 17 Add mapping from deprecated to fresh concepts
 BEGIN
    DEVV5.VOCABULARY_PACK.AddFreshMAPSTO;
 END;
@@ -992,6 +1023,7 @@ END;
 COMMIT;	   
 
 --18 Delete ambiguous 'Maps to' mappings
+PROMPT 18 Delete ambiguous 'Maps to' mappings
 BEGIN
    DEVV5.VOCABULARY_PACK.DeleteAmbiguousMAPSTO;
 END;
@@ -999,6 +1031,7 @@ END;
 COMMIT;		 
 
 --19 All the codes that have mapping to RxNorm should get domain_id='Drug'
+PROMPT 19 All the codes that have mapping to RxNorm should get domain_id='Drug'
 UPDATE concept_stage cs
    SET cs.domain_id='Drug'
  WHERE     EXISTS
@@ -1025,6 +1058,7 @@ UPDATE concept_stage cs
 COMMIT;
 
 --20 Procedure Drugs who have a mapping to a Drug concept should not also be recorded as Procedures (no Standard Concepts)
+PROMPT 20 Procedure Drugs who have a mapping to a Drug concept should not also be recorded as Procedures (no Standard Concepts)
 UPDATE concept_stage cs
    SET cs.standard_concept = NULL
  WHERE     EXISTS
@@ -1050,8 +1084,10 @@ UPDATE concept_stage cs
        AND cs.standard_concept IS NOT NULL;
 COMMIT;
 
-SET sqlbl off
--- At the end, the three tables concept_stage, concept_relationship_stage and concept_synonym_stage should be ready to be fed into the generic_update.sql script
 
+-- At the end, the three tables concept_stage, concept_relationship_stage and concept_synonym_stage should be ready to be fed into the generic_update.sql script
+PROMPT At the end, the three tables concept_stage, concept_relationship_stage and concept_synonym_stage should be ready to be fed into the generic_update.sql script
+
+SET sqlbl off
 SPOOL OFF
 EXIT

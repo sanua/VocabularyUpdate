@@ -30,9 +30,11 @@ SPOOL &1
 /*
 use this script to recreate main tables (concept, concept_relationship, concept_synonym) without dropping your schema
 */
-
+PROMPT Use this script to recreate main tables (concept, concept_relationship, concept_synonym) without dropping your schema...
 declare
 main_schema_name constant varchar2(100):='DEVV5';
+include_synonyms constant boolean := true;
+include_deprecated_rels constant boolean := true;
 begin 
     execute immediate 'ALTER TABLE source_to_concept_map DROP CONSTRAINT fpk_source_to_concept_map_v_1';
     execute immediate 'ALTER TABLE source_to_concept_map DROP CONSTRAINT fpk_source_to_concept_map_v_2';
@@ -56,15 +58,25 @@ begin
 
 
     /*CTAS with NOLOGGING (faster)*/
+    DBMS_OUTPUT.PUT_LINE('CTAS with NOLOGGING (faster)...');
     execute immediate 'CREATE TABLE concept NOLOGGING AS SELECT * FROM '||main_schema_name||'.concept';
+    if include_deprecated_rels then
     execute immediate 'CREATE TABLE concept_relationship NOLOGGING AS SELECT * FROM '||main_schema_name||'.concept_relationship';
+	else
+		execute immediate 'CREATE TABLE concept_relationship NOLOGGING AS SELECT * FROM '||main_schema_name||'.concept_relationship where invalid_reason is null';
+	end if;
+    if include_synonyms then
     execute immediate 'CREATE TABLE concept_synonym NOLOGGING AS SELECT * FROM '||main_schema_name||'.concept_synonym';
+	else
+		execute immediate 'CREATE TABLE concept_synonym NOLOGGING AS SELECT * FROM '||main_schema_name||'.concept_synonym where 1=0';
+	end if;
     execute immediate 'CREATE TABLE vocabulary NOLOGGING AS SELECT * FROM '||main_schema_name||'.vocabulary';
     execute immediate 'CREATE TABLE relationship NOLOGGING AS SELECT * FROM '||main_schema_name||'.relationship';
     execute immediate 'CREATE TABLE drug_strength NOLOGGING AS SELECT * FROM '||main_schema_name||'.drug_strength';
     execute immediate 'CREATE TABLE pack_content NOLOGGING AS SELECT * FROM '||main_schema_name||'.pack_content';
 
     /*create indexes and constraints for main tables*/
+    DBMS_OUTPUT.PUT_LINE('Create indexes and constraints for main tables...');
     execute immediate 'ALTER TABLE concept ADD CONSTRAINT xpk_concept PRIMARY KEY (concept_id)';
     execute immediate 'ALTER TABLE vocabulary ADD CONSTRAINT xpk_vocabulary PRIMARY KEY (vocabulary_id)';
     execute immediate 'ALTER TABLE relationship ADD CONSTRAINT xpk_relationship PRIMARY KEY (relationship_id)';
@@ -104,6 +116,7 @@ begin
 
 
     /*enable other constraints*/
+    DBMS_OUTPUT.PUT_LINE('Enable other constraints...');
     execute immediate 'ALTER TABLE domain ADD CONSTRAINT fpk_domain_concept FOREIGN KEY (domain_concept_id) REFERENCES concept (concept_id) ENABLE NOVALIDATE';
     execute immediate 'ALTER TABLE concept_class ADD CONSTRAINT fpk_concept_class_concept FOREIGN KEY (concept_class_concept_id) REFERENCES concept (concept_id) ENABLE NOVALIDATE';
     execute immediate 'ALTER TABLE source_to_concept_map ADD CONSTRAINT fpk_source_to_concept_map_c_1 FOREIGN KEY (target_concept_id) REFERENCES concept (concept_id) ENABLE NOVALIDATE';
@@ -118,6 +131,7 @@ begin
     execute immediate 'ALTER TABLE source_to_concept_map ADD CONSTRAINT fpk_source_to_concept_map_v_2 FOREIGN KEY (target_vocabulary_id) REFERENCES vocabulary (vocabulary_id) ENABLE NOVALIDATE';
 
     /*GATHER_TABLE_STATS*/
+    DBMS_OUTPUT.PUT_LINE('Gather table stats...');
     DBMS_STATS.GATHER_TABLE_STATS (ownname=> USER, tabname => 'concept', cascade => true);
     DBMS_STATS.GATHER_TABLE_STATS (ownname=> USER, tabname => 'concept_relationship', cascade => true);
     DBMS_STATS.GATHER_TABLE_STATS (ownname=> USER, tabname => 'concept_synonym', cascade => true);

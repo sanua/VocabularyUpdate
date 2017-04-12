@@ -22,6 +22,7 @@ WHENEVER SQLERROR EXIT SQL.SQLCODE
 SPOOL &1
 
 /* Clean up from last unsuccessful load stage run, to avoid build process errors */
+PROMPT Clean up from last unsuccessful load stage run, to avoid build process errors
 DECLARE
 	TYPE TStringArray IS TABLE OF VARCHAR2(255);
 	t_names TStringArray := TStringArray('r_drug_ing',
@@ -57,6 +58,8 @@ END;
 --truncate table concept_relationship_stage;
 -- 1. Create lookup tables for existing vocab r (RxNorm and public country-specific ones)
 -- Create table containing ingredients for each drug
+PROMPT 1. Create lookup tables for existing vocab r (RxNorm and public country-specific ones)
+PROMPT Create table containing ingredients for each drug
 --drop table r_drug_ing ;
 create table r_drug_ing nologging as
   select de.concept_id as drug_id, an.concept_id as ing_id
@@ -68,6 +71,7 @@ create table r_drug_ing nologging as
     where an.invalid_reason is null 
 ;
 -- Remove unparsable Albumin products that have no drug_strength entry: Albumin Human, USP 1 NS
+PROMPT Remove unparsable Albumin products that have no drug_strength entry: Albumin Human, USP 1 NS
 delete from r_drug_ing where drug_id in (19094500, 19080557);
 -- Count number of ingredients for each drug
 --drop table r_ing_count;
@@ -75,12 +79,15 @@ create table r_ing_count nologging as
   select drug_id as did, count(*) as cnt from r_drug_ing group by drug_id
 ;
 -- Set all counts for Ingredient and Clinical Drug Comp to null, so in comparisons it can match whatever number necessary. Reason is that, like ingredients, Clinical Drug Comp is always only one ingredient
+PROMPT Set all counts for Ingredient and Clinical Drug Comp to null, so in comparisons it can match whatever number necessary. Reason is that, like ingredients, Clinical Drug Comp is always only one ingredient
 update r_ing_count set cnt=null where did in (select concept_id from concept where concept_class_id in ('Clinical Drug Comp', 'Ingredient'));
 
 --drop index x_r_drug_ing;
+PROMPT drop index x_r_drug_ing;
 create index x_r_drug_ing on r_drug_ing(drug_id, ing_id) nologging;
 
 -- Create lookup table for query vocab q (new vocab)
+PROMPT Create lookup table for query vocab q (new vocab)
 --drop table  q_drug_ing;
 create table q_drug_ing nologging as
 select drug.concept_code as drug_code, nvl(ing.concept_id, 0) as ing_id, i.concept_code as ing_code -- if ingredient is not mapped use 0 to still get the right ingredient count
@@ -95,6 +102,7 @@ where i.concept_class_id='Ingredient'
 and ing.invalid_reason is null
 ;
 -- Count ingredients per drug
+PROMPT Count ingredients per drug
 --drop table q_ing_count;
 create table q_ing_count nologging as
   select drug_code as dcode, count(*) as cnt from q_drug_ing group by drug_code
@@ -102,6 +110,7 @@ create table q_ing_count nologging as
 create index x_q_drug_ing on q_drug_ing(drug_code, ing_id) nologging;
 
 -- Create table that lists for each ingredient all drugs containing it from q and r
+PROMPT Create table that lists for each ingredient all drugs containing it from q and r
 --drop table match;
 create table match nologging as
   select q.ing_id as r_iid, q.ing_code as q_icode, q.drug_code as q_dcode, r.drug_id as r_did
@@ -112,17 +121,19 @@ create index x_match on match(q_dcode, r_did) nologging;
 exec DBMS_STATS.GATHER_TABLE_STATS (ownname=> USER, tabname => 'match', estimate_percent => null, cascade => true);
 
 -- Create table with all drugs in q and r and the number of ingredients they share
+PROMPT Create table with all drugs in q and r and the number of ingredients they share
 --drop table shared_ing;
 create table shared_ing nologging as
 select r_did, q_dcode, count(*) as cnt from match group by r_did, q_dcode
 ;
 -- Set all counts for Clinical Drug Comp to null, so in comparisons it can match whatever number necessary. Reason is that, like ingredients, Clinical Drug Comp is always only one ingredient
+PROMPT Set all counts for Clinical Drug Comp to null, so in comparisons it can match whatever number necessary. Reason is that, like ingredients, Clinical Drug Comp is always only one ingredient
 update shared_ing set cnt=null where r_did in (select concept_id from concept where concept_class_id in ('Clinical Drug Comp', 'Ingredient'));
 
 --drop table r_bn;
 create table r_bn nologging as
 select distinct descendant_concept_id as concept_id_1, concept_id_2
-from concept_relationship join concept_ancestor on ancestor_concept_id=concept_id_1 
+from concept_relationship join concept_ancestor on ancestor_concept_id=concept_id_1
 join concept bn on concept_id_2=bn.concept_id and bn.vocabulary_id in ('RxNorm', 'RxNorm Extension') and bn.concept_class_id='Brand Name'
 join concept c on concept_id_1=c.concept_id 
 join concept bd on descendant_concept_id=bd.concept_id and bd.vocabulary_id in ('RxNorm', 'RxNorm Extension') and bd.concept_class_id in
@@ -131,14 +142,15 @@ where concept_relationship.invalid_reason is null and relationship_id='Has brand
 and c.concept_class_id !='Ingredient' and c.invalid_reason is null and c.vocabulary_id like 'RxNorm%'
 and bd.invalid_reason is null and bn.invalid_reason is null
 ;
-exec DBMS_STATS.GATHER_TABLE_STATS (ownname=> USER, tabname => 'r_bn', estimate_percent => null, cascade => true);
+exec DBMS_STATS.GATHER_TABLE_STATS (ownname=> USER, tabname => 'r_bn', estimate_percent => null, cascade => true)
 ;
 exec DBMS_STATS.GATHER_TABLE_STATS (ownname=> USER, tabname => 'shared_ing', estimate_percent => null, cascade => true)
 ;
 create index x_shared_ing on shared_ing(q_dcode, r_did) nologging
 ;
 -- Create table that matches drugs q to r, based on Ingredient, Dose Form and Brand Name (if exist). Dose, box size or quantity are not yet compared
---drop table q_to_r_anydose; 
+PROMPT Create table that matches drugs q to r, based on Ingredient, Dose Form and Brand Name (if exist). Dose, box size or quantity are not yet compared
+--drop table q_to_r_anydose;
 create table q_to_r_anydose nologging as -- took 3.5 hours to finish it
 -- create table with all query drug codes q_dcode mapped to standard drug concept ids r_did, irrespective of the correct dose
 with m as (
@@ -217,6 +229,7 @@ and coalesce(q_qnt.quant_f, /*r_sp.concept_id_2, */'X')=coalesce(r_qnt.quant_f, 
 --select * from q_to_r_wdose
 --;
 -- Add matching of dose and its units
+PROMPT Add matching of dose and its units
 --drop table q_to_r_wdose ;
 create table q_to_r_wdose nologging as
 -- Create two temp tables with all strength and unit information
@@ -240,7 +253,7 @@ with q as (
   from drug_strength r_ds 
 )
 -- Create variables div as r amount / q amount, and unit as 1 for matching and 0 as non-matching 
-select 
+select
   q_dcode, q_icode, r_did, r_iid, nvl(df_prec, 100) as df_prec, nvl(bn_prec, 100) as bn_prec, nvl(u_prec, 100) as u_prec, i_prec,
   case when div>1 then 1/div else div end as div, -- the one the closest to 1 wins, but the range is 0-1, which is the opposite direction of the other ones
   unit as u_match, rc_cnt
@@ -272,6 +285,7 @@ from (
 commit;
 
 -- Remove all multiple mappings with close divs and keep the best
+PROMPT Remove all multiple mappings with close divs and keep the best
 delete from q_to_r_wdose
 where rowid in (
   select r from (
@@ -286,6 +300,8 @@ commit;
 
 -- Remove all those where not everything fits
 -- The table has to be created separately because both subsequent queries define one field as null
+PROMPT Remove all those where not everything fits
+PROMPT The table has to be created separately because both subsequent queries define one field as null
 --drop table q_to_r ;
 create table q_to_r nologging as
 select q_dcode, r_did, r_iid, bn_prec, df_prec, u_prec, rc_cnt from q_to_r_wdose
@@ -296,6 +312,7 @@ exec DBMS_STATS.GATHER_TABLE_STATS (ownname=> USER, tabname => 'q_to_r_wdose', e
 create index q_to_r_wdose_q on q_to_r_wdose(q_dcode)nologging
 ;
 
+PROMPT Insert into Q_TO_R table...
 insert /*+ APPEND */ into q_to_r
 select 
   a.q_dcode, a.r_did, null as r_iid, a.bn_prec, a.df_prec, a.u_prec, a.rc_cnt
@@ -320,6 +337,7 @@ having not exists (
 commit;
 
 -- Second step add Ingredients and the correct Clinical Drug Components. Their number may not match the total number of Ingredients in the query drug
+PROMPT Second step add Ingredients and the correct Clinical Drug Components. Their number may not match the total number of Ingredients in the query drug
 insert /*+ APPEND */ into q_to_r
 select distinct q_dcode, r_did, r_iid, bn_prec, df_prec, u_prec, null as rc_cnt
 from q_to_r_wdose
@@ -327,6 +345,7 @@ where nvl(rc_cnt, 1)=1 -- process only those that don't have combinations (Ingre
 and div>=0.9 and u_match=1
 ;
 --possible mapping with different dosages for different ingredient, each ingredient should be unique
+PROMPT possible mapping with different dosages for different ingredient, each ingredient should be unique
 create table poss_map as
 select distinct b.* from (
 select dcs.concept_name as concept_name_1,dcs.concept_code, concept.concept_name as concept_name_2, concept.concept_id, RC_CNT, ingredient_concept_id, count (1) as cnt
@@ -369,12 +388,14 @@ on a.CONCEPT_CODE = c.concept_code and a.concept_id = c.concept_id
 where  b.cnt >= b.rc_cnt and a.cnt =1 and c.cnt = 1
 ; 
 --insert possible mappings if they are not already present in q_to_r
-insert into q_to_r (Q_DCODE,R_DID) 
+PROMPT insert possible mappings if they are not already present in q_to_r
+insert into q_to_r (Q_DCODE,R_DID)
 select concept_code, concept_id from poss_map b where not exists (select 1 from q_to_r a where a.Q_DCODE = concept_code and R_DID = concept_id)
 ;
 commit;
 --full relationship with classes within RxNorm
---drop table cnc_rel_class; 
+PROMPT Full relationship with classes within RxNorm
+--drop table cnc_rel_class;
 create table cnc_rel_class as
 select ri.*, ci.concept_class_id as concept_class_id_1 , c2.concept_class_id as concept_class_id_2 
 from concept_relationSHIp ri 
@@ -384,11 +405,13 @@ where ci.vocabulary_id like  'RxNorm%' and ri.invalid_reason is null and ci.inva
 and  c2.vocabulary_id like 'RxNorm%'  and c2.invalid_reason is null 
 ;
 --define order as combination of attributes number and each attribute weight
---drop table attrib_cnt; 
+PROMPT Define order as combination of attributes number and each attribute weight
+--drop table attrib_cnt;
 create table attrib_cnt as
 select concept_id_1, count (1)|| max(weight) as weight  from (
 --need to go throught Drug Form / Component to get the Brand Name
-select distinct concept_id_1, 3 as weight from 
+PROMPT need to go throught Drug Form / Component to get the Brand Name
+select distinct concept_id_1, 3 as weight from
 r_bn
 union ALL
 select concept_id_1, 1 from cnc_rel_class where concept_class_id_2 in ('Supplier')
@@ -425,7 +448,8 @@ join (select drug_concept_code, count (1) as cnt from ds_stage group by drug_con
 where Q_DCODE not in (select Q_DCODE from Q_DCODE_to_hlc)
 )
 ;
- --best map
+--best map
+PROMPT Create BEST_MAP table...
 --drop table best_map;
 create table best_map as 
 select distinct  first_value(concept_id_1) over (partition by q_dcode order by weight desc) as r_did , q_dcode
@@ -437,6 +461,8 @@ union select CONCEPT_ID_1, drug_concept_code from dupl where WEIGHT = 0
 commit;
 -- Write concept_relationship_stage
 --still thinking about update process
+PROMPT Write concept_relationship_stage
+PROMPT still thinking about update process
 --truncate table concept_relationship_stage;
 insert /*+ APPEND */ into concept_relationship_stage
 						(concept_code_1,
@@ -482,7 +508,7 @@ where concept_class_id in ('Procedure Drug') -- but no Unit
   and nvl(domain_id, 'Drug')='Drug'
 ;
 */
-commit;
+--commit;
 /*
 --uncomment when it's a part of a drug vocabulary when creating concept_stage with this script
 -- Write source devices as standard (unless deprecated)
@@ -504,6 +530,7 @@ where domain_id='Device'
 commit;
 */
 --Clean up
+PROMPT Clean up
 drop table r_drug_ing;
 drop table r_ing_count;
 drop table q_drug_ing;
@@ -520,3 +547,5 @@ drop table attrib_cnt;
 drop table Q_DCODE_to_hlc;
 drop table dupl;
 drop table best_map;
+
+SPOOL OFF
