@@ -759,16 +759,19 @@ INSERT /*+ APPEND */ INTO  concept_stage
     WHERE vocabulary_id = 'HCPCS' AND concept_class_id = 'HCPCS Class';
 COMMIT;
 
-
+PROMPT
 PROMPT 7 Run HCPCS/procedure_drug.sql. This will create all the input files for MapDrugVocabulary.sql
 --7 Run HCPCS/procedure_drug.sql. This will create all the input files for MapDrugVocabulary.sql
 @&2/procedure_drug.sql '&3'
-PROMPT Step 7 is done...
+PROMPT Run of HCPCS/procedure_drug.sql if done...
+
+PROMPT
 
 PROMPT 8 Run the generic working/MapDrugVocabulary.sql. This will produce a concept_relationship_stage with HCPCS to RxNorm relatoinships
 --8 Run the generic working/MapDrugVocabulary.sql. This will produce a concept_relationship_stage with HCPCS to RxNorm relatoinships
 @&2/MapDrugVocabulary.sql '&4'
-PROMPT Step 8 is done...
+PROMPT Run of the generic working/MapDrugVocabulary.sql is done...
+PROMPT
 
 --9 Add all other relationships from the existing one. The reason is that there is no good source for these relationships, and we have to build the ones for new codes from UMLS and manually
 PROMPT 9 Add all other relationships from the existing one. The reason is that there is no good source for these relationships, and we have to build the ones for new codes from UMLS and manually
