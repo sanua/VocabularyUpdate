@@ -17,6 +17,7 @@
 * Date: 2016
 **************************************************************************/
 
+SET ECHO OFF
 SET sqlbl on
 SET VERIFY OFF
 /* If any errors occurs - stop script execution and return error code */

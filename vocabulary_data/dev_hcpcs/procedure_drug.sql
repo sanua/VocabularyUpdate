@@ -17,6 +17,7 @@
 * Date: 2016
 **************************************************************************/
 
+SET ECHO OFF
 SET VERIFY OFF
 /* If any errors occurs - stop script execution and return error code */
 WHENEVER SQLERROR EXIT SQL.SQLCODE
