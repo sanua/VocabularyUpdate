@@ -119,7 +119,7 @@ task loadStage(description: project.properties['loadStage.description']) << {
               sqlfile: "${project.properties['basePath']}/${project.properties['loadStage.sqlFileName']}",
               logfile: logFile]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
-    def sqlplus = """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
+    def sqlplus = """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)
     sqlplus.waitFor()
 
@@ -179,7 +179,7 @@ task genericUpdate(dependsOn: loadStage, description: project.properties['generi
               sqlfile: "${project.properties['basePath']}/${project.properties['genericUpdate.sqlFileName']}",
               logfile: logFile]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
-    def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
+    def sqlplus= """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)
     sqlplus.waitFor()
 
@@ -238,7 +238,7 @@ task checkUpdateResults(dependsOn: genericUpdate, description: project.propertie
               sqlfile: "${project.properties['basePath']}/${project.properties['checkUpdateResults.sqlFileName']}",
               logfile: logFile]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
-    def sqlplus = """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
+    def sqlplus = """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)
     sqlplus.waitFor()
 

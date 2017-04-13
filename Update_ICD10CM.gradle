@@ -118,7 +118,7 @@ task fastRecreate(description: project.properties['fastRecreate.description']) <
               sqlfile: "${project.properties['basePath']}/${project.properties['fastRecreate.sqlFileName']}",
               logfile: logFile]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
-    def sqlplus = """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
+    def sqlplus = """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)
     sqlplus.waitFor()
 
@@ -178,7 +178,7 @@ task createSourceTable(dependsOn: fastRecreate, description: project.properties[
               sqlfile: "${project.properties['basePath']}/${project.properties['createSourceTable.sqlFileName']}",
               logfile: logFile]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
-    def sqlplus = """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
+    def sqlplus = """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)
     sqlplus.waitFor()
 
@@ -303,7 +303,7 @@ task importData(dependsOn: renameFile, description: project.properties['importDa
     def bosOut = new ByteArrayOutputStream(), bosErr = new ByteArrayOutputStream()
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
     exec {
-        executable "sqlldr.exe"
+        executable "sqlldr"
         args "USERID=${project.properties['db.userName']}/${project.properties['db.password']}@${project.properties['db.tnsName']} " +
                 "CONTROL=${project.properties['basePath']}/${project.properties['importData.controlFileName']} DATA=$dataFile LOG=$logFile DISCARD=$discardFile BAD=$badFile"
         standardOutput = bosOut
@@ -370,7 +370,7 @@ task loadStage(dependsOn: importData, description: project.properties['loadStage
               sqlfile: "${project.properties['basePath']}/${project.properties['loadStage.sqlFileName']}",
               logfile: logFile]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
-    def sqlplus = """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
+    def sqlplus = """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)
     sqlplus.waitFor()
 
@@ -430,7 +430,7 @@ task genericUpdate(dependsOn: loadStage, description: project.properties['generi
               sqlfile: "${project.properties['basePath']}/${project.properties['genericUpdate.sqlFileName']}",
               logfile: logFile]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
-    def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
+    def sqlplus= """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)
     sqlplus.waitFor()
 
@@ -489,7 +489,7 @@ task checkUpdateResults(dependsOn: genericUpdate, description: project.propertie
               sqlfile: "${project.properties['basePath']}/${project.properties['checkUpdateResults.sqlFileName']}",
               logfile: logFile]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
-    def sqlplus = """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
+    def sqlplus = """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)
     sqlplus.waitFor()
 

@@ -142,7 +142,7 @@ task fastRecreateSchema(description: project.properties['fastRecreate.descriptio
               sqlfile: "${project.properties['basePath']}\\${project.properties['fastRecreate.sqlFileName']}",
               logfile: log_file]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
-    def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
+    def sqlplus= """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)
     sqlplus.waitFor()
 
@@ -196,7 +196,7 @@ task createSourceTable(dependsOn: fastRecreateSchema, description: project.prope
               sqlfile: "${project.properties['basePath']}\\${project.properties['createSourceTable.sqlFileName']}",
               logfile: log_file]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
-    def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
+    def sqlplus= """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)
     sqlplus.waitFor()
 
@@ -377,7 +377,7 @@ task importData(dependsOn: renameFile, description: project.properties['import.d
     def bosOut = new ByteArrayOutputStream(), bosErr = new ByteArrayOutputStream()
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
     exec {
-        executable "sqlldr.exe"
+        executable "sqlldr"
         args "USERID=${project.properties['db.userName']}/${project.properties['db.password']}@${project.properties['db.tnsName']} " +
                 "CONTROL=${project.properties['basePath']}\\${project.properties['import.controlFileName']} DATA=$dataFile LOG=$logFile DISCARD=$discardFile BAD=$badFile"
         standardOutput = bosOut
@@ -442,7 +442,7 @@ task runLoadStage(dependsOn: importData, description: project.properties['loadSt
               sqlfile: "${filesBasePath}\\${project.properties['loadStage.sqlFileName']}",
               logfile: log_file]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
-    def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
+    def sqlplus= """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)
     sqlplus.waitFor()
 
@@ -493,7 +493,7 @@ task createManualTable(/*dependsOn: runLoadStage,*/ description: project.propert
               tableName: "${project.properties['manualTableName']}",
               logfile: "${filesBasePath}\\${project.properties['createManual.logFileName']}"]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
-    def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile} ${db.tableName}""".execute()
+    def sqlplus= """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile} ${db.tableName}""".execute()
 
     sqlplus.consumeProcessOutput(sout, serr)
     sqlplus.waitFor()
@@ -539,7 +539,7 @@ task extractManualTable(dependsOn: runLoadStage, description: project.properties
               tableName: "${project.properties['manualTableName']}",
               logfile: "${filesBasePath}\\${project.properties['extractManual.logFileName']}"]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
-    def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.expPath} ${db.expcsvfile} ${db.tableName} > ${db.logfile}""".execute()
+    def sqlplus= """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.expPath} ${db.expcsvfile} ${db.tableName} > ${db.logfile}""".execute()
     
     println new StringBuilderWrapper('extracting table...')
 

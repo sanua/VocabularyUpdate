@@ -55,7 +55,7 @@ task prepareUpdate << {
     println '100) *** ' + _log_file + ' ' + _error_file
 
     def sout = new StringBuilder(), serr = new StringBuilder()
-    def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} >${db.logfile}""".execute()
+    def sqlplus= """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} >${db.logfile}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)
     sqlplus.waitFor()
 
@@ -215,7 +215,7 @@ task xls2Csv << {
 }
 
 task task1(type:Exec) {
-    commandLine 'sqlldr.exe'
+    commandLine 'sqlldr'
 }
 
 task importData << {
@@ -233,12 +233,12 @@ task importData << {
 
     exec {
         println "2) !!!!!!!!!!!!!" + Thread.currentThread().getId()
-        executable "sqlldr.exe"
+        executable "sqlldr"
         args "USERID=$userName/$password@ORCL CONTROL=$controlFile DATA=$dataFile LOG=$logFile DISCARD=$discardFile"
     }
 
 
-    //commandLine "sqlldr.exe"
+    //commandLine "sqlldr"
 
 //    args "USERID=$userName/$password CONTROL=$controlFile DATA=$dataFile LOG=$logFile DISCARD=$discardFile"
 
@@ -261,7 +261,7 @@ task runLoadStageScript << {
     println '200) *** ' + _log_file + ' ' + _error_file
 
     def sout = new StringBuilder(), serr = new StringBuilder()
-    def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} >${db.logfile}""".execute()
+    def sqlplus= """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} >${db.logfile}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)
     sqlplus.waitFor()
 
@@ -287,7 +287,7 @@ task runLoadStageScript << {
 
     exec {
         println "5) !!!!!!!!!!!!!" + Thread.currentThread().getId()
-        executable "sqlplus.exe"
+        executable "sqlplus"
         args "$userName/$password@orcl @$loadStageFile"
         println "1) %%%" + args
     }
@@ -305,7 +305,7 @@ task runGenericUpdate << {
     println '300) *** ' + _log_file + ' ' + _error_file
 
     def sout = new StringBuilder(), serr = new StringBuilder()
-    def sqlplus= """sqlplus.exe ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} >${db.logfile}""".execute()
+    def sqlplus= """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} >${db.logfile}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)
     sqlplus.waitFor()
 
@@ -333,7 +333,7 @@ task runGenericUpdate << {
 
     exec {
         println "6) !!!!!!!!!!!!!" + Thread.currentThread().getId()
-        executable "sqlplus.exe"
+        executable "sqlplus"
         args "$userName/$password@orcl @$genericUpdateFile"
         println "2) %%%" + args
     }
