@@ -17,6 +17,7 @@
 * Date: 2016
 **************************************************************************/
 
+SET ECHO OFF
 SET sqlbl on
 SET VERIFY OFF
 /* If any errors occurs - stop script execution and return error code */
@@ -339,4 +340,5 @@ DROP TABLE filled_domain PURGE;
 PROMPT At the end, the three tables concept_stage, concept_relationship_stage and concept_synonym_stage should be ready to be fed into the generic_update.sql script...
 
 SET sqlbl off
+SPOOL OFF
 EXIT

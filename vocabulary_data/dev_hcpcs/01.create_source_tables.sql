@@ -17,6 +17,7 @@
 * Date: 2016
 **************************************************************************/
 
+SET ECHO OFF
 SET VERIFY OFF
 /* If any errors occurs - stop script execution and return error code */
 WHENEVER SQLERROR EXIT SQL.SQLCODE
@@ -28,6 +29,7 @@ WHENEVER SQLERROR EXIT SQL.SQLCODE
 SPOOL &1
 
 /* Delete import-data table if it exists, to avoid build process errors */
+PROMPT Delete import-data table if it exists, to avoid build process errors...
 DECLARE
 	TYPE TStringArray IS TABLE OF VARCHAR2(255);
 	t_names TStringArray := TStringArray('ANWEB_V2');
@@ -44,6 +46,7 @@ BEGIN
 END;
 /
 
+PROMPT Create ANWEB_V2...
 CREATE TABLE ANWEB_V2
 (
    HCPC                VARCHAR2 (1000 CHAR),
@@ -88,7 +91,7 @@ CREATE TABLE ANWEB_V2
    ACT_EFF_DT          DATE,
    TERM_DT             DATE,
    ACTION_CODE         VARCHAR2 (1000 CHAR)
-);
+) NOLOGGING;
 
 SPOOL OFF
 EXIT
