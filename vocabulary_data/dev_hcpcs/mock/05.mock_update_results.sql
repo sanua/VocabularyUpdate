@@ -9,9 +9,10 @@ WHENEVER SQLERROR EXIT SQL.SQLCODE
 SPOOL &1
 
 PROMPT
-PROMPT 'Update Results' is starting...
-EXECUTE dbms_lock.sleep(1);
-PROMPT 'Update Results' is done...
+PROMPT 'Check Update Results' is starting...
+EXEC DBMS_LOCK.sleep(1);
+PROMPT 'Check Update Results' is done...
 PROMPT
 
+SPOOL OFF
 EXIT

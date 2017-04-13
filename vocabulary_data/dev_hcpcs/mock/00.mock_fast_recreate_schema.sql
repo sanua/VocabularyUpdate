@@ -10,8 +10,9 @@ SPOOL &1
 
 PROMPT
 PROMPT 'Fast Recreate' is starting...
-EXECUTE dbms_lock.sleep(1);
+EXEC DBMS_LOCK.sleep(1);
 PROMPT 'Fast Recreate' is done...
 PROMPT
 
+SPOOL OFF
 EXIT

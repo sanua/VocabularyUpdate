@@ -9,5 +9,5 @@ WHENEVER SQLERROR EXIT SQL.SQLCODE
 SPOOL &1
 
 PROMPT 'Map Drug Vocabulary' is starting...
-EXECUTE dbms_lock.sleep(1);
+EXEC DBMS_LOCK.sleep(1);
 PROMPT 'Map Drug Vocabulary' is done...
