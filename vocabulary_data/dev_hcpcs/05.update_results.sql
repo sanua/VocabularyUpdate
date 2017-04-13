@@ -15,9 +15,9 @@ SPOOL &1
 /**
 * Perform update results verification
 **/
-PROMPT **
+PROMPT ***
 PROMPT * Perform update results verification...
-PROMPT **
+PROMPT ***
 SET ECHO OFF
 -- Define column width
 COLUMN CHECK_ID FORMAT A10 HEADING 'CHECK_ID' NULL - WRAP
