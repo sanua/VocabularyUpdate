@@ -2122,7 +2122,7 @@ commit;
 PROMPT ****************************
 PROMPT * 6. Clean up
 PROMPT *****************************/
-PROMPT Кemove dose forms from concept_stage table
+PROMPT Remove dose forms from concept_stage table
 alter table drug_concept_stage drop column dose_form;
 drop table drug_concept_stage_tmp purge;
 drop table brandname purge;
