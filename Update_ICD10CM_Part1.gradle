@@ -448,7 +448,9 @@ task loadStage(dependsOn: importData, description: project.properties['loadStage
     println "*** '${description}' action done ***"
 }
 
-/* This task is for testing purposes only */
+/**
+ * This task will create 'Manual Table' to pass for manual mapping processing
+ * */
 task createManualTable(dependsOn: loadStage, description: project.properties['createManualTable.description']) << {
     println '\n\n***********************************************'
     println '*                                             *'
@@ -541,6 +543,9 @@ task extractManualTable(/*dependsOn: [createManualTable, loadStage]*/dependsOn: 
     println "*** '${description}' action done ***"
 }
 
+/**
+ * Send e-mail notification
+ */
 task sendMail(dependsOn: extractManualTable, description: project.properties['sendMail.description']) << {
     println '\n\n***********************************************'
     println '*                                             *'

@@ -32,7 +32,7 @@ COMMIT;
 --or probably another temporary table can be used where we put the result of manual mappings
 --truncate table
 PROMPT Need to think if we need to give only those where concept_code_2 is null or it is mappped only to deprecated concept
-PROMPT if medical coder wants to change relatoinship (i.e. found a better mapping - set an old row as deprecated, add a new row to concept_relationship)
+PROMPT if medical coder wants to change relationship (i.e. found a better mapping - set an old row as deprecated, add a new row to concept_relationship)
 PROMPT do it once &2 is done by medical coder
 PROMPT or probably another temporary table can be used where we put the result of manual mappings...
 insert into concept_relationship_manual (CONCEPT_CODE_1,CONCEPT_CODE_2,VOCABULARY_ID_1,VOCABULARY_ID_2,RELATIONSHIP_ID,VALID_START_DATE,VALID_END_DATE,INVALID_REASON)

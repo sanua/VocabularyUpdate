@@ -99,6 +99,9 @@ props.each {prop ->
 def tempDir = File.createTempDir()
 tempDir.deleteOnExit()
 
+/**
+ * Prepare 'Manual Table' to load data with 'Manual Mapping'
+ */
 task prepareManualTable(description: project.properties['prepareManualTable.description']) << {
     println '\n\n*****************************************************'
     println '*                                                   *'
@@ -166,6 +169,9 @@ task prepareManualTable(description: project.properties['prepareManualTable.desc
     println "*** '${description}' action done ***"
 }
 
+/**
+ * Import data of 'Manual Mapping' into 'Manual Table'
+ */
 task importManualTable (dependsOn: prepareManualTable, description: project.properties['importManualTable.description']) << {
     println '\n\n*****************************************************'
     println '*                                                   *'
@@ -227,8 +233,12 @@ task importManualTable (dependsOn: prepareManualTable, description: project.prop
     println "Time elapsed: ${timeElapsed} seconds."
 
     println "*** '${description}' action done ***"
+
 }
 
+/**
+ * Apply data from 'Manual Mapping' to be ready for further processing in 'Load Stage'
+ */
 task applyManualTable(dependsOn: importManualTable, description: project.properties['applyManualTable.description']) << {
     println '\n\n*****************************************************'
     println '*                                                   *'

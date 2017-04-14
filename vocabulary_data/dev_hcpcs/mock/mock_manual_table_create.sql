@@ -7,10 +7,11 @@ WHENEVER SQLERROR EXIT SQL.SQLCODE
  *  Log to file...    
  *****************************
 */
+
 SPOOL &1
 
-/* Delete from '&2' */
-PROMPT Delete from '&2'... 
+/* Delete Manual Table is exist */
+PROMPT Delete 'Manual Table' if exist...
 DECLARE
 	TYPE TStringArray IS TABLE OF VARCHAR2(255);
 	t_names TStringArray := TStringArray('&2');
@@ -21,13 +22,15 @@ BEGIN
 	  l_str := t_names(i);
     SELECT COUNT(1) INTO l_cnt FROM user_tables WHERE UPPER(table_name) = UPPER(l_str);
     IF l_cnt > 0 THEN
-      EXECUTE IMMEDIATE 'DELETE FROM ' || l_str;
+      EXECUTE IMMEDIATE 'DROP TABLE ' || l_str;
     END IF;
 	END LOOP;
 END;
 /
 
-COMMIT;
+PROMPT Create 'Manual Table' if exist...
+CREATE TABLE &2 AS
+  SELECT * FROM CONCEPT WHERE ROWNUM < 11;
 
 SPOOL OFF
 EXIT
