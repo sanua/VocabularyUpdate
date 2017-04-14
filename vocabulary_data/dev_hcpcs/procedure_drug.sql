@@ -2078,7 +2078,7 @@ delete from ds_stage where drug_concept_code='S5014' and ingredient_concept_code
 PROMPT ******************************
 PROMPT * 5. Create and link Brand Names *
 PROMPT ******************************/
-PROMPT Сreate relationship from drug to brand (direct, need to change to stage-type brandsd
+PROMPT Create relationship from drug to brand (direct, need to change to stage-type brandsd
 create table brandname nologging as
 with bn as (
   select d.concept_code, b.concept_id, b.brandname
@@ -2122,7 +2122,7 @@ commit;
 PROMPT ****************************
 PROMPT * 6. Clean up
 PROMPT *****************************/
-PROMPT Кemove dose forms from concept_stage table
+PROMPT Remove dose forms from concept_stage table
 alter table drug_concept_stage drop column dose_form;
 drop table drug_concept_stage_tmp purge;
 drop table brandname purge;
