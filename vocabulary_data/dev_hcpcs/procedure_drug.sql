@@ -1905,39 +1905,9 @@ commit;
 PROMPT *******************
 PROMPT Start of debug
 PROMPT *******************
-COLUMN concept_code FORMAT A30 HEADING 'concept_code' NULL - WRAP
-COLUMN v FORMAT A10 HEADING 'v' NULL - WRAP
-COLUMN u FORMAT A10 HEADING 'u' NULL - WRAP
-    select concept_code, -- dose,
-      to_char(case
-        when fst is null then null
-        when snd is null then 'weird'
-        else substr(dose, fst+1, snd-fst-1)
-      end) as v,
-      to_char(case
-        when snd is null then null
-        when trd is null then 'weird'
-        else substr(dose, snd+1, trd-snd-1)
-      end) as u
-    from (
-      select d.*, instr(dose, '|', 1, 1) as fst, instr(dose, '|', 1, 2) as snd, instr(dose, '|', 1, 3) as trd
-      from (
-        select
-          regexp_replace(lower(concept_name), '([^0-9]+)([0-9][0-9\.,]*|per) *(mg|ml|micrograms?|units?|i\.?u\.?|grams?|gm|cc|mcg|milligrams?|million units|%)(.*)', '\1|\2|\3|\4') as dose,
-          concept_code
-        from drug_concept_stage
-      ) d
-    );
-PROMPT **********************
-PROMPT End of debug
-PROMPT **********************
-
-PROMPT *******************
-PROMPT Start of debug 2
-PROMPT *******************
 
  select concept_code,
-    to_char(case trim(v) when 'per' then 1 when '-' then null else cast(nvl(trim(translate(v, 'a,-', 'a')), 0) as float) end) as v,
+    to_char(case v when 'per' then 1 when '-' then null else '!' || translate(v, 'a,-', 'a') || '!' end) as v,
     to_char(u) as u
   from (
     select concept_code, -- dose,
@@ -1962,7 +1932,7 @@ PROMPT *******************
     )
   );
 PROMPT **********************
-PROMPT End of debug 2
+PROMPT End of debug
 PROMPT **********************
 
 -- write drug_strength
