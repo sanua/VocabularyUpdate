@@ -1,6 +1,6 @@
 *.txt
 *scratch.*
-vocabulary_data/**/*.csv
+vocabulary_data/dev_*/*.csv
 vocabulary_data/**/*.txt
 vocabulary_data/**/test*.sql
 vocabulary_data/**/_test*.sql
