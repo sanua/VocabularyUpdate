@@ -1909,16 +1909,16 @@ COLUMN concept_code FORMAT A30 HEADING 'concept_code' NULL - WRAP
 COLUMN v FORMAT A10 HEADING 'v' NULL - WRAP
 COLUMN u FORMAT A10 HEADING 'u' NULL - WRAP
     select concept_code, -- dose,
-      case
+      to(char(case
         when fst is null then null
         when snd is null then 'weird'
         else substr(dose, fst+1, snd-fst-1)
-      end as v,
-      case
+      end) as v,
+      to_char(case
         when snd is null then null
         when trd is null then 'weird'
         else substr(dose, snd+1, trd-snd-1)
-      end as u
+      end) as u
     from (
       select d.*, instr(dose, '|', 1, 1) as fst, instr(dose, '|', 1, 2) as snd, instr(dose, '|', 1, 3) as trd
       from (
@@ -1937,8 +1937,8 @@ PROMPT Start of debug 2
 PROMPT *******************
 
  select concept_code,
-    case trim(v) when 'per' then 1 when '-' then null else cast(nvl(trim(translate(v, 'a,-', 'a')), 0) as float) end as v,
-    u
+    to_char(case trim(v) when 'per' then 1 when '-' then null else cast(nvl(trim(translate(v, 'a,-', 'a')), 0) as float) end) as v,
+    to_char(u) as u
   from (
     select concept_code, -- dose,
       case
