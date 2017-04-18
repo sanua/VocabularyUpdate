@@ -198,7 +198,7 @@ task importManualTable (dependsOn: prepareManualTable, description: project.prop
         folder.mkdirs()
         println "Log directory is created: ${folder.getPath()}"
     } else {
-        FileUtils.cleanDirectory(logPath)
+        FileUtils.cleanDirectory(folder)
         println "Log directory is cleaned: ${folder.getPath()}"
     }
 

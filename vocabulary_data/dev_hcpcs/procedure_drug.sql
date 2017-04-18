@@ -1909,7 +1909,7 @@ COLUMN concept_code FORMAT A30 HEADING 'concept_code' NULL - WRAP
 COLUMN v FORMAT A10 HEADING 'v' NULL - WRAP
 COLUMN u FORMAT A10 HEADING 'u' NULL - WRAP
     select concept_code, -- dose,
-      to(char(case
+      to_char(case
         when fst is null then null
         when snd is null then 'weird'
         else substr(dose, fst+1, snd-fst-1)
