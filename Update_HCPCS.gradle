@@ -9,6 +9,7 @@ group 'com.sci.vocabulary'
 version '1.0-SNAPSHOT'
 
 apply plugin: 'java'
+apply plugin: 'idea'
 
 sourceCompatibility = 1.8
 
@@ -21,6 +22,15 @@ buildscript {
         classpath 'org.apache.poi:poi:3.9'
         classpath 'org.apache.poi:poi-ooxml:3.9'
     }
+}
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+dependencies {
+    compile 'org.apache.poi:poi:3.9'
+    compile 'org.apache.poi:poi-ooxml:3.9'
 }
 
 import groovy.io.FileType

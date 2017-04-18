@@ -20,6 +20,8 @@ buildscript {
     dependencies {
         classpath 'org.apache.poi:poi:3.9'
         classpath 'org.apache.poi:poi-ooxml:3.9'
+        classpath group: 'commons-io', name: 'commons-io', version: '2.5'
+
     }
 }
 
@@ -29,6 +31,7 @@ import org.apache.poi.ss.usermodel.Row
 import org.apache.poi.ss.usermodel.Workbook
 import org.apache.poi.ss.usermodel.WorkbookFactory
 import org.apache.poi.ss.usermodel.Sheet
+import org.apache.commons.io.FileUtils
 
 /*
 task compileOne(type: JavaCompile) {
@@ -186,17 +189,25 @@ task importManualTable (dependsOn: prepareManualTable, description: project.prop
     println '*                                                   *'
     println '*****************************************************'
 
-    println "Logs are written to: ${tempDir.getPath()}"
-
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()
 
+    def logPath = "${project.properties['basePath']}/${project.properties['importManualTable.logPath']}"
+    def folder = new File(logPath)
+    if (!folder.exists()) {
+        folder.mkdirs()
+        println "Log directory is created: ${folder.getPath()}"
+    } else {
+        FileUtils.cleanDirectory(logPath)
+        println "Log directory is cleaned: ${folder.getPath()}"
+    }
+
     def dataFile = "${project.properties['basePath']}/${project.properties['manualTableFileName']}"
-    def logFile = "${tempDir.getPath()}/${project.properties['importManualTable.logFileName']}"
-    def discardFile = "${tempDir.getPath()}/${project.properties['importManualTable.discardFileName']}"
-    def badFile = "${tempDir.getPath()}/${project.properties['importManualTable.badFileName']}"
-    def streamLogFile = "${tempDir.getPath()}/${project.properties['importManualTable.streamLogFileName']}"
-    def streamErrorFile = "${tempDir.getPath()}/${project.properties['importManualTable.streamErrFileName']}"
+    def logFile = "${logPath}/${project.properties['importManualTable.logFileName']}"
+    def discardFile = "${logPath}/${project.properties['importManualTable.discardFileName']}"
+    def badFile = "${logPath}/${project.properties['importManualTable.badFileName']}"
+    def streamLogFile = "${logPath}/${project.properties['importManualTable.streamLogFileName']}"
+    def streamErrorFile = "${logPath}/${project.properties['importManualTable.streamErrFileName']}"
 
     def bosOut = new ByteArrayOutputStream(), bosErr = new ByteArrayOutputStream()
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
