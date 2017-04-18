@@ -9,6 +9,7 @@ group 'com.sci.vocabulary'
 version '1.0-SNAPSHOT'
 
 apply plugin: 'java'
+apply plugin: 'idea'
 
 sourceCompatibility = 1.8
 
@@ -21,6 +22,15 @@ buildscript {
         classpath 'org.apache.poi:poi:3.9'
         classpath 'org.apache.poi:poi-ooxml:3.9'
     }
+}
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+dependencies {
+    compile 'org.apache.poi:poi:3.9'
+    compile 'org.apache.poi:poi-ooxml:3.9'
 }
 
 import groovy.io.FileType
@@ -481,7 +491,7 @@ task importData(dependsOn: xls2Csv, description: project.properties['import.desc
  * This task will run 'Load stage' script.
  * Seems it's is specific for each vocabulary.
  */
-task runLoadStage(dependsOn: importData, description: project.properties['loadStage.description']) << {
+task loadStage(dependsOn: importData, description: project.properties['loadStage.description']) << {
     println '\n\n***********************************************'
     println '*                                             *'
     println "*        '${description}' action started...       *"
@@ -546,7 +556,7 @@ task runLoadStage(dependsOn: importData, description: project.properties['loadSt
  * This task will run 'Genetic update' script.
  * It's common for all updated vocabularies and located in '\Vocabulary-v5.0\working\generic_update.sql' file.
  */
-task runGenericUpdate(dependsOn: runLoadStage, description: project.properties['genericUpdate.description']) << {
+task genericUpdate(dependsOn: loadStage, description: project.properties['genericUpdate.description']) << {
     println '\n\n***********************************************'
     println '*                                             *'
     println "*     '${description}' action started...      *"
@@ -605,7 +615,7 @@ task runGenericUpdate(dependsOn: runLoadStage, description: project.properties['
 /**
  * This task will run scripts which allows to see the vocabulary update results
  */
-task checkUpdateResults(dependsOn: runGenericUpdate, description: project.properties['checkUpdateResults.description']) << {
+task checkUpdateResults(dependsOn: genericUpdate, description: project.properties['checkUpdateResults.description']) << {
     println '\n\n***********************************************'
     println '*                                             *'
     println "*  '${description}' action started...   *"

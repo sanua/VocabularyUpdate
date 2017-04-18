@@ -6,6 +6,7 @@ vocabulary_data/**/test*.sql
 vocabulary_data/**/_test*.sql
 vocabulary_data/**/*.html
 vocabulary_data/**/download/
+vocabulary_data/**/log
 backup/
 build/
 .gradle/

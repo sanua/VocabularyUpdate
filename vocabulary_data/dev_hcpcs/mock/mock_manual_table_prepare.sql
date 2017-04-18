@@ -9,8 +9,8 @@ WHENEVER SQLERROR EXIT SQL.SQLCODE
 */
 SPOOL &1
 
-/* Delete from '&2' */
-PROMPT Delete from '&2'... 
+/* Delete from Manual Table */
+PROMPT Delete from &2... 
 DECLARE
 	TYPE TStringArray IS TABLE OF VARCHAR2(255);
 	t_names TStringArray := TStringArray('&2');
