@@ -328,7 +328,6 @@ task loadStage(dependsOn: applyManualTable, description: project.properties['loa
     def logFile = "${tempDir.getPath()}/${project.properties['loadStage.logFileName']}"
     def streamLogFile = "${tempDir.getPath()}/${project.properties['loadStage.streamLogFileName']}"
     def streamErrorFile = "${tempDir.getPath()}/${project.properties['loadStage.streamErrFileName']}"
-    def logFileProcedureDrug = "${tempDir.getPath()}/${project.properties['loadStage.logProcedureDrugFileName']}"
     def logFileMapDrugVocabulary = "${tempDir.getPath()}/${project.properties['loadStage.logMapDrugVocabularyFileName']}"
 
     def db = [un: project.properties['db.userName'],
@@ -337,10 +336,9 @@ task loadStage(dependsOn: applyManualTable, description: project.properties['loa
               sqlfile: "${project.properties['basePath']}/${project.properties['loadStage.sqlFileName']}",
               logfile: logFile,
               contextPath: "${project.properties['basePath']}",
-              logfileProcedureDrug: logFileProcedureDrug,
               logfileMapDrugVocabulary: logFileMapDrugVocabulary]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
-    def sqlplus= """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile} ${db.contextPath} ${db.logfileProcedureDrug} ${db.logfileMapDrugVocabulary}""".execute()
+    def sqlplus= """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile} ${db.contextPath} ${db.logfileMapDrugVocabulary}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)
     sqlplus.waitFor()
 

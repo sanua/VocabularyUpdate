@@ -512,14 +512,17 @@ task loadStage(dependsOn: importData, description: project.properties['loadStage
     def logFile = "${tempDir.getPath()}/${project.properties['loadStage.logFileName']}"
     def streamLogFile = "${tempDir.getPath()}/${project.properties['loadStage.streamLogFileName']}"
     def streamErrorFile = "${tempDir.getPath()}/${project.properties['loadStage.streamErrFileName']}"
+    def logFileProcedureDrug = "${tempDir.getPath()}/${project.properties['loadStage.logProcedureDrugFileName']}"
 
     def db = [un: project.properties['db.userName'],
               pw: project.properties['db.password'],
               tns: project.properties['db.tnsName'],
               sqlfile: "${project.properties['basePath']}/${project.properties['loadStage.sqlFileName']}",
-              logfile: logFile]
+              logfile: logFile,
+              contextPath: "${project.properties['basePath']}",
+              logfileProcedureDrug: logFileProcedureDrug]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
-    def sqlplus= """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
+    def sqlplus= """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile} ${db.contextPath} ${db.logfileProcedureDrug}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)
     sqlplus.waitFor()
 

@@ -57,8 +57,8 @@ END;
 /
 COMMIT;
 
--- Create sysnonym for source table from DEV_ICD10CM schema
-PROMPT  Create sysnonym for source table from DEV_ICD10CM schema
+-- Create synonym for source table from DEV_ICD10CM schema
+PROMPT  Create synonym for source table from DEV_ICD10CM schema
 CREATE SYNONYM ICD10CM_TABLE FOR DEV_ICD10CM.ICD10CM_TABLE; 
 
 -- 1. Update latest_update field to new date 
