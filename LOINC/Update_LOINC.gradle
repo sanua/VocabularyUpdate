@@ -1,0 +1,1009 @@
+/*
+****************************
+* LOINC Vocabulary update  *
+* Version 0.0.6            *
+****************************
+*/
+
+/*
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+dependencies {
+    classpath 'org.apache.poi:poi:3.9'
+    classpath 'org.apache.poi:poi-ooxml:3.9'
+    classpath 'net.bican:jwordpress-java:0.6.5'
+}
+
+*/
+
+import groovy.io.FileType
+import org.apache.poi.ss.usermodel.Cell
+import org.apache.poi.ss.usermodel.Row
+import org.apache.poi.ss.usermodel.Workbook
+import org.apache.poi.ss.usermodel.WorkbookFactory
+import org.apache.poi.ss.usermodel.Sheet
+import net.bican.wordpress.*
+
+
+/*
+task compileOne(type: JavaCompile) {
+    source = sourceSets.main.java.srcDir
+    include 'inc.odysseus.utils/StringBuilderWrapper.java'
+    classpath = sourceSets.main.output.classesDir
+    destinationDir = sourceSets.main.output.classesDir
+}
+compileOne.options.compilerArgs = ["-sourcepath", "$projectDir/src/main/java"]
+*/
+
+/**
+ * Auxiliary classes. TODO: Further should be used java-defined and compiled only
+ */
+public class StringBuilderWrapper implements java.lang.Appendable {
+    private static final String IDENT_CHAR = " " *4
+    private StringBuilder wrapped
+
+    public StringBuilderWrapper() {
+        wrapped = new StringBuilder()
+    }
+    public StringBuilderWrapper(String value) {
+        this()
+        wrapped.append(IDENT_CHAR).append(value)
+    }
+
+    public static StringBuilderWrapper getBuilder() {
+        return new StringBuilderWrapper()
+    }
+
+    public static String readFromFile(File file) {
+        if (file == null)
+            return ''
+        def builder = getBuilder()
+        def br = new BufferedReader(new FileReader(file))
+        def strLine
+        while ((strLine = br.readLine()) != null) {
+                builder.append('\n').append(strLine)
+        }
+        return builder.toString()
+    }
+
+    @Override
+    Appendable append(CharSequence csq) throws IOException {
+        wrapped.append(IDENT_CHAR).append(csq)
+        return this
+    }
+    @Override
+    Appendable append(CharSequence csq, int start, int end) throws IOException {
+        wrapped.append(IDENT_CHAR).append(csq, start, end)
+        return this
+    }
+    @Override
+    Appendable append(char c) throws IOException {
+        wrapped.append(IDENT_CHAR).append(c)
+        return this
+    }
+    @Override
+    String toString() {
+        return wrapped.toString()
+    }
+}
+
+// Load LOINC properties
+Properties props = new Properties()
+props.load(new FileInputStream("${project.getBuildFile().toString().replace('.gradle', '.properties')}"))
+props.each {prop ->
+    project.ext.set(prop.key, prop.value)
+}
+
+def tempDir = File.createTempDir()
+tempDir.deleteOnExit()
+
+/**
+ * Just renew user schema and prepare it for further vocabulary update
+ */
+task fastRecreateSchema(description: project.properties['fastRecreate.description']) << {
+    println '\n\n***********************************************'
+    println '*                                             *'
+    println "*       '${description}' action started...     *"
+    println '*                                             *'
+    println '***********************************************'
+
+    // Start action checkpoint
+    def timeStart = System.currentTimeMillis()
+
+    def logFile = "${tempDir.getPath()}/${project.properties['fastRecreate.logFileName']}"
+    def streamLogFile = "${tempDir.getPath()}/${project.properties['fastRecreate.streamLogFileName']}"
+    def streamErrorFile = "${tempDir.getPath()}/${project.properties['fastRecreate.streamErrFileName']}"
+
+    def db = [un: project.properties['db.userName'],
+              pw: project.properties['db.password'],
+              tns: project.properties['db.tnsName'],
+              sqlfile: "${project.properties['basePath']}/${project.properties['fastRecreate.sqlFileName']}",
+              logfile: logFile]
+    def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
+    def sqlplus = """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
+    sqlplus.consumeProcessOutput(sout, serr)
+    sqlplus.waitFor()
+
+    // Finish action checkpoint
+    def timeFinish = System.currentTimeMillis()
+
+    // Write to console
+    try {
+        // Write compact SQLPlus's spool log
+        System.out.println(StringBuilderWrapper.readFromFile(new File(logFile)))
+    } catch (IOException ioe) {
+        // Write whole SQLPlus's log
+        System.out.println(sout.toString())
+    }
+
+    // Write to logfile
+    File f = new File(streamLogFile)
+    f.write(sout.toString())
+
+    // Write to error file
+    f = new File(streamErrorFile)
+    f.write(serr.toString())
+
+    /* Check for errors */
+    if (project.properties['stop.on.error'].toBoolean() && (sqlplus.exitValue() != 0 || (serr != null && serr.toString().length() > 0))) {
+        throw new GradleException(String.format(project.properties['error.message.with.code'], sqlplus.exitValue(), name))
+    }
+
+    // Measure time execution
+    def timeElapsed = (timeFinish - timeStart) / 1000
+    println "Time elapsed: ${timeElapsed} seconds."
+
+    println "*** '${description}' action done ***"
+}
+
+/**
+ * This task will prepare user schema for vocabulary update routine.
+ * It will create auxiliary tables - the "ICD10CM_TABLE","LOINC","MAP_TO","SOURCE_ORGANIZATION","LOINC_ANSWERS","LOINC_FORMS","LOINC_CLASS","CPT_MRSMAP","scccRefset_MapCorrOrFull_INT" in our case, for example.
+ */
+task createSourceTable(dependsOn: fastRecreateSchema, description: project.properties['createSourceTable.description']) << {
+    println '\n\n***********************************************'
+    println '*                                             *'
+    println "*   '${description}' action started...   *"
+    println '*                                             *'
+    println '***********************************************'
+
+    // Start action checkpoint
+    def timeStart = System.currentTimeMillis()
+
+    def logFile = "${tempDir.getPath()}/${project.properties['createSourceTable.logFileName']}"
+    def streamLogFile = "${tempDir.getPath()}/${project.properties['createSourceTable.streamLogFileName']}"
+    def streamErrorFile = "${tempDir.getPath()}/${project.properties['createSourceTable.streamErrFileName']}"
+
+    def db = [un: project.properties['db.userName'],
+              pw: project.properties['db.password'],
+              tns: project.properties['db.tnsName'],
+              sqlfile: "${project.properties['basePath']}/${project.properties['createSourceTable.sqlFileName']}",
+              logfile: logFile]
+    def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
+    def sqlplus = """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
+    sqlplus.consumeProcessOutput(sout, serr)
+    sqlplus.waitFor()
+
+    // Finish action checkpoint
+    def timeFinish = System.currentTimeMillis()
+
+    // Write to console
+    try {
+        // Write compact SQLPlus's spool log
+        System.out.println(StringBuilderWrapper.readFromFile(new File(logFile)))
+    } catch (IOException ioe) {
+        // Write whole SQLPlus's log
+        System.out.println(sout.toString())
+    }
+
+    // Write to logfile
+    File f = new File(streamLogFile)
+    f.write(sout.toString())
+
+    // Write to error file
+    f = new File(streamErrorFile)
+    f.write(serr.toString())
+
+    /* Check for errors */
+    if (project.properties['stop.on.error'].toBoolean() && (sqlplus.exitValue() != 0 || (serr != null && serr.toString().length() > 0))) {
+        throw new GradleException(String.format(project.properties['error.message.with.code'], sqlplus.exitValue(), name))
+    }
+
+    // Measure time execution
+    def timeElapsed = (timeFinish - timeStart) / 1000
+    println "Time elapsed: ${timeElapsed} seconds."
+
+    println "*** '${description}' action done ***"
+}
+
+/**
+ * Task which will download vocabulary update package from source host.
+ * There are many URLs (in see the https://github.com/OHDSI/Vocabulary-v5.0/blob/master/LOINC/readme.md for details)
+ */
+task downloadUpdatePack(dependsOn: createSourceTable, description: project.properties['downloadUpdatePack.description']) << {
+    println '\n\n***********************************************'
+    println '*                                             *'
+    println "*        '${description}' action started...         *"
+    println '*                                             *'
+    println '***********************************************'
+
+    /* Downloading file */
+    // Start action checkpoint
+    def timeStart = System.currentTimeMillis()
+
+    // 'Full Set' package
+    println new StringBuilderWrapper("${project.properties['downloadUpdatePack.fullSet.description']}...")
+    println new StringBuilderWrapper("stored to: ${tempDir.getPath()}")
+    ant.get(src: project.properties['downloadUpdatePack.fullSet.fileUrl'], dest: tempDir, verbose: true)
+    println new StringBuilderWrapper('download completed')
+
+    // 'Multiaxial Hierarchy' package
+    println new StringBuilderWrapper("${project.properties['downloadUpdatePack.multiaxialHierarchy.description']}...")
+    println new StringBuilderWrapper("stored to: ${tempDir.getPath()}")
+    ant.get(src: project.properties['downloadUpdatePack.fileUrl'], dest: tempDir, verbose: true)
+    println new StringBuilderWrapper('download completed')
+
+    // 'Answers and Forms' package
+    println new StringBuilderWrapper("${project.properties['downloadUpdatePack.answersForms.description']}...")
+    println new StringBuilderWrapper("stored to: ${tempDir.getPath()}")
+    ant.get(src: project.properties['downloadUpdatePack.fileUrl'], dest: tempDir, verbose: true)
+    println new StringBuilderWrapper('download completed')
+
+    // 'Express Association' package
+    println new StringBuilderWrapper("${project.properties['downloadUpdatePack.expressAssociation.description']}...")
+    println new StringBuilderWrapper("stored to: ${tempDir.getPath()}")
+    ant.get(src: project.properties['downloadUpdatePack.fileUrl'], dest: tempDir, verbose: true)
+    println new StringBuilderWrapper('download completed')
+
+    // 'CPT Mappings' package
+    println new StringBuilderWrapper("${project.properties['downloadUpdatePack.cptMappings.description']}...")
+    println new StringBuilderWrapper("stored to: ${tempDir.getPath()}")
+    ant.get(src: project.properties['downloadUpdatePack.fileUrl'], dest: tempDir, verbose: true)
+    println new StringBuilderWrapper('download completed')
+
+    // Finish action checkpoint
+    def timeFinish = System.currentTimeMillis()
+    def timeElapsed = (timeFinish - timeStart) / 1000
+    println "Time elapsed: ${timeElapsed} seconds."
+
+    println "*** '${description}' action done ***"
+}
+
+task extractFiles(dependsOn: downloadUpdatePack, description: project.properties['extractFiles.description']) << {
+    println '\n\n***********************************************'
+    println '*                                             *'
+    println "*        '${description}' action started...          *"
+    println '*                                             *'
+    println '***********************************************'
+
+    // Start action checkpoint
+    def timeStart = System.currentTimeMillis()
+
+    /* Extracting file */
+    def fileList = []
+    def dir = tempDir
+    dir.eachFile(FileType.FILES) { file ->
+        fileList << file
+        if (file.getPath().endsWith('zip')) {
+            ant.unzip(src: file.getPath(), dest: tempDir, overwrite: false)
+            println new StringBuilderWrapper('data exctracted...')
+        }
+    }
+
+    // Finish action checkpoint
+    def timeFinish = System.currentTimeMillis()
+
+    // Measure time execution
+    def timeElapsed = (timeFinish - timeStart) / 1000
+    println "Time elapsed: ${timeElapsed} seconds."
+
+    println "*** '${description}' action done ***"
+}
+
+/**
+ * This task will convert a XLS data file to CSV format.
+ */
+task xls2Csv(dependsOn: extractFiles, description: project.properties['xls2Csv.description']) << {
+    println '\n\n*************************************************'
+    println '*                                               *'
+    println "*  '${description}' action started...  *"
+    println '*                                               *'
+    println '*************************************************'
+
+    def inputFile = "${tempDir.getPath()}/${project.properties['xls2Csv.srcFileName']}"
+    def outputFile = "${tempDir.getPath()}/${project.properties['xls2Csv.destFileName']}"
+
+    // Start action checkpoint
+    def timeStart = System.currentTimeMillis()
+    def timeFinish = timeStart
+
+    // For storing data into CSV files
+    StringBuffer data = new StringBuffer();
+    try {
+        FileOutputStream fos = new FileOutputStream(outputFile);
+
+        // Get the workbook object for XLS file
+        Workbook workbook = WorkbookFactory.create(new FileInputStream(inputFile));
+        // Get first sheet from the workbook
+        Sheet sheet = workbook.getSheetAt(0);
+//        Cell cell;
+//        Row row;
+
+        for (int i = 0; i < sheet.getLastRowNum(); i++){
+            Row row = sheet.getRow(i);
+
+            if (row!= null){
+                for (int j = 0; j < row.getLastCellNum(); j++){
+                    Cell cell = row.getCell(j);
+                    if (cell == null){
+                        data.append(";");
+                    } else {
+                        cell.setCellType(Cell.CELL_TYPE_STRING)
+                        data.append("\"" + cell. toString().trim().replaceAll("\"", "'") + "\"" + ";");
+//                        switch (cell.getCellType()) {
+//                            case Cell.CELL_TYPE_BOOLEAN:
+//                                data.append("\"" + cell.getBooleanCellValue() + "\"" + ";");
+//                                break;
+//
+//                            case Cell.CELL_TYPE_NUMERIC:
+//                                data.append("\"" + cell.cgetNumericCellValue() + "\"" + ";");
+//                                break;
+//
+//                            case Cell.CELL_TYPE_STRING:
+////                                if (!cell.getStringCellValue().contains("\"")){
+//                                println cell.toString()
+//                                    data.append("\"" + cell.getStringCellValue().trim().replaceAll("\"", "'") + "\"" + ";");
+////                                } else {
+////                                    data.append(";");
+////                                }
+//                                break;
+//
+//                            case Cell.CELL_TYPE_BLANK:
+//                                data.append("" + ";");
+//                                break;
+//
+//                            default:
+//                                data.append(cell + ";");
+//                        }
+
+
+
+                    }
+                }
+                data.append('\n');
+            } else {
+
+            }
+        }
+
+        // Iterate through each rows from first sheet
+//        Iterator<Row> rowIterator = sheet.iterator();
+//        while (rowIterator.hasNext()) {
+//            row = rowIterator.next();
+//            // For each row, iterate through each columns
+//            Iterator<Cell> cellIterator = row.cellIterator();
+//            while (cellIterator.hasNext()) {
+//                cell = cellIterator.next();
+//
+//                switch (cell.getCellType()) {
+//                    case Cell.CELL_TYPE_BOOLEAN:
+//                        data.append("\"" + cell.getBooleanCellValue() + "\"" + ";");
+//                        break;
+//
+//                    case Cell.CELL_TYPE_NUMERIC:
+//                        data.append("\"" + cell.getNumericCellValue() + "\"" + ";");
+//                        break;
+//
+//                    case Cell.CELL_TYPE_STRING:
+//                        data.append("\"" + cell.getStringCellValue().trim() + "\"" + ";");
+//                        break;
+//
+//                    case Cell.CELL_TYPE_BLANK:
+//                        data.append("" + ";");
+//                        break;
+//
+//                    default:
+//                        data.append(cell + ";");
+//                }
+//
+//            }
+//
+//        }
+        println new StringBuilderWrapper('files converted...')
+        fos.write(data.toString().getBytes());
+        fos.close()
+
+        // Finish action checkpoint
+        timeFinish = System.currentTimeMillis()
+
+    }
+    catch (FileNotFoundException e) {
+        e.printStackTrace();
+    }
+    catch (IOException e) {
+        e.printStackTrace();
+    }
+
+    // Measure time execution
+    def timeElapsed = (timeFinish - timeStart) / 1000
+    println "Time elapsed: ${timeElapsed} seconds."
+
+    println "*** '${description}' action done ***"
+}
+
+/**
+ * Task performed import CSV data to database
+ */
+task importData(dependsOn: xls2Csv, description: project.properties['import.description']) << {
+    println '\n\n***********************************************'
+    println '*                                             *'
+    println "*         '${description}' action started...          *"
+    println '*                                             *'
+    println '***********************************************'
+
+    // Start action checkpoint
+    def timeStart = System.currentTimeMillis()
+
+    def dataFile = "${tempDir.getPath()}/${project.properties['importData.dataFileName']}"
+    def logFile = "${tempDir.getPath()}/${project.properties['importData.logFileName']}"
+    def discardFile = "${tempDir.getPath()}/${project.properties['importData.discardFileName']}"
+    def badFile = "${tempDir.getPath()}/${project.properties['importData.badFileName']}"
+    def streamLogFile = "${tempDir.getPath()}/${project.properties['importData.streamLogFileName']}"
+    def streamErrorFile = "${tempDir.getPath()}/${project.properties['importData.streamErrFileName']}"
+
+    def bosOut = new ByteArrayOutputStream(), bosErr = new ByteArrayOutputStream()
+    def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
+    exec {
+        executable "sqlldr"
+        args "USERID=${project.properties['db.userName']}/${project.properties['db.password']}@${project.properties['db.tnsName']} " +
+                "CONTROL=${project.properties['basePath']}/${project.properties['import.controlFileName']} DATA=$dataFile LOG=$logFile DISCARD=$discardFile BAD=$badFile"
+        standardOutput = bosOut
+        errorOutput = bosErr
+    }
+    def bisOut = new ByteArrayInputStream(bosOut.toByteArray())
+    bisOut.withReader { out->
+        out.eachLine {
+            sout.append(it).append('\n')
+        }
+    }
+    def bisErr = new ByteArrayInputStream(bosErr.toByteArray())
+    bisErr.withReader { out ->
+        out.eachLine {
+            serr.append(it).append('\n')
+        }
+    }
+
+    // Write to console
+    /*
+     *  When import prefer to write stream log to console (it's shorter)
+     * */
+    System.out.println(sout.toString())
+
+    // Write to logfile
+    File f = new File(streamLogFile)
+    f.write(sout.toString())
+
+    // Write to error file
+    f = new File(streamErrorFile)
+    f.write(serr.toString())
+
+    // Finish action checkpoint
+    def timeFinish = System.currentTimeMillis()
+
+    // Measure time execution
+    def timeElapsed = (timeFinish - timeStart) / 1000
+    println "Time elapsed: ${timeElapsed} seconds."
+
+    println "*** '${description}' action done ***"
+}
+
+/**
+ * This task will run 'Load stage' script.
+ * Seems it's is specific for each vocabulary.
+ */
+task runLoadStage(dependsOn: importData, description: project.properties['loadStage.description']) << {
+    println '\n\n***********************************************'
+    println '*                                             *'
+    println "*        '${description}' action started...       *"
+    println '*                                             *'
+    println '***********************************************'
+
+    // Start action checkpoint
+    def timeStart = System.currentTimeMillis()
+
+    def logFile = "${tempDir.getPath()}/${project.properties['loadStage.logFileName']}"
+    def streamLogFile = "${tempDir.getPath()}/${project.properties['loadStage.streamLogFileName']}"
+    def streamErrorFile = "${tempDir.getPath()}/${project.properties['loadStage.streamErrFileName']}"
+
+    def db = [un: project.properties['db.userName'],
+              pw: project.properties['db.password'],
+              tns: project.properties['db.tnsName'],
+              sqlfile: "${project.properties['basePath']}/${project.properties['loadStage.sqlFileName']}",
+              logfile: logFile]
+    def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
+    def sqlplus = """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
+    sqlplus.consumeProcessOutput(sout, serr)
+    sqlplus.waitFor()
+
+    // Finish action checkpoint
+    def timeFinish = System.currentTimeMillis()
+
+    // Write to console
+    try {
+        // Write compact SQLPlus's spool log
+        System.out.println(StringBuilderWrapper.readFromFile(new File(logFile)))
+    } catch (IOException ioe) {
+        // Write whole SQLPlus's log
+        System.out.println(sout.toString())
+    }
+
+    // Write to logfile
+    File f = new File(streamLogFile)
+    f.write(sout.toString())
+
+    // Write to error file
+    f = new File(streamErrorFile)
+    f.write(serr.toString())
+
+    /* Check for errors */
+    if (project.properties['stop.on.error'].toBoolean() && (sqlplus.exitValue() != 0 || (serr != null && serr.toString().length() > 0))) {
+        throw new GradleException(String.format(project.properties['error.message.with.code'], sqlplus.exitValue(), name))
+    }
+
+    // Measure time execution
+    def timeElapsed = (timeFinish - timeStart) / 1000
+    println "Time elapsed: ${timeElapsed} seconds."
+
+    println "*** '${description}' action done ***"
+}
+
+/**
+ * This task will run 'Genetic update' script.
+ * It's common for all updated vocabularies and located in '\Vocabulary-v5.0\working\generic_update.sql' file.
+ */
+task runGenericUpdate(dependsOn: runLoadStage, description: project.properties['genericUpdate.description']) << {
+    println '\n\n***********************************************'
+    println '*                                             *'
+    println "*     '${description}' action started...      *"
+    println '*                                             *'
+    println '***********************************************'
+
+    // Start action checkpoint
+    def timeStart = System.currentTimeMillis()
+
+    def logFile = "${tempDir.getPath()}/${project.properties['genericUpdate.logFileName']}"
+    def streamLogFile = "${tempDir.getPath()}/${project.properties['genericUpdate.streamLogFileName']}"
+    def streamErrorFile = "${tempDir.getPath()}/${project.properties['genericUpdate.streamErrFileName']}"
+
+    def db = [un: project.properties['db.userName'],
+              pw: project.properties['db.password'],
+              tns: project.properties['db.tnsName'],
+              sqlfile: "${project.properties['basePath']}/${project.properties['genericUpdate.sqlFileName']}",
+              logfile: logFile]
+    def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
+    def sqlplus = """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
+    sqlplus.consumeProcessOutput(sout, serr)
+    sqlplus.waitFor()
+
+    // Finish action checkpoint
+    def timeFinish = System.currentTimeMillis()
+
+    // Write to console
+    try {
+        // Write compact SQLPlus's spool log
+        System.out.println(StringBuilderWrapper.readFromFile(new File(logFile)))
+    } catch (IOException ioe) {
+        // Write whole SQLPlus's log
+        System.out.println(sout.toString())
+    }
+
+    // Write to logfile
+    File f = new File(streamLogFile)
+    f.write(sout.toString())
+
+    // Write to error file
+    f = new File(streamErrorFile)
+    f.write(serr.toString())
+
+    /* Check for errors */
+    if (project.properties['stop.on.error'].toBoolean() && (sqlplus.exitValue() != 0 || (serr != null && serr.toString().length() > 0))) {
+        throw new GradleException(String.format(project.properties['error.message.with.code'], sqlplus.exitValue(), name))
+    }
+
+    // Measure time execution
+    def timeElapsed = (timeFinish - timeStart) / 1000
+    println "Time elapsed: ${timeElapsed} seconds."
+
+    println "*** '${description}' action done ***"
+}
+
+/**
+ * This task will run scripts which allows to see the vocabulary update results
+ */
+task checkUpdateResults(dependsOn: runGenericUpdate, description: project.properties['checkUpdateResults.description']) << {
+    println '\n\n***********************************************'
+    println '*                                             *'
+    println "*  '${description}' action started...   *"
+    println '*                                             *'
+    println '***********************************************'
+
+    // Start action checkpoint
+    def timeStart = System.currentTimeMillis()
+
+    def logFile = "${tempDir.getPath()}/${project.properties['checkUpdateResults.logFileName']}"
+    def streamLogFile = "${tempDir.getPath()}/${project.properties['checkUpdateResults.streamLogFileName']}"
+    def streamErrorFile = "${tempDir.getPath()}/${project.properties['checkUpdateResults.streamErrFileName']}"
+
+    def db = [un: project.properties['db.userName'],
+              pw: project.properties['db.password'],
+              tns: project.properties['db.tnsName'],
+              sqlfile: "${project.properties['basePath']}/${project.properties['checkUpdateResults.sqlFileName']}",
+              logfile: logFile]
+    def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
+    def sqlplus = """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
+    sqlplus.consumeProcessOutput(sout, serr)
+    sqlplus.waitFor()
+
+    // Finish action checkpoint
+    def timeFinish = System.currentTimeMillis()
+
+    // Write to console
+    try {
+        // Write compact SQLPlus's spool log
+        System.out.println(StringBuilderWrapper.readFromFile(new File(logFile)))
+    } catch (IOException ioe) {
+        // Write whole SQLPlus's log
+        System.out.println(sout.toString())
+    }
+
+    // Write to log file
+    File f = new File(streamLogFile)
+    f.write(sout.toString())
+
+    // Write to error file
+    f = new File(streamErrorFile)
+    f.write(serr.toString())
+
+    /* Check for errors */
+    if (project.properties['stop.on.error'].toBoolean() && (sqlplus.exitValue() != 0 || (serr != null && serr.toString().length() > 0))) {
+        throw new GradleException(String.format(project.properties['error.message.with.code'], sqlplus.exitValue(), name))
+    }
+
+    // Measure time execution
+    def timeElapsed = (timeFinish - timeStart) / 1000
+    println "Time elapsed: ${timeElapsed} seconds."
+
+    println "*** '${description}' action done ***"
+}
+
+/**
+ * Bootstrap action
+ *
+ * TODO: Needs to find solution to measure whole task chain execution.
+ * TODO: This one via doFirst/doLast actions isn't working.
+ */
+task startUpdate(dependsOn: createSourceTable, description: project.properties['startUpdate.description']) {
+    println '\n\n***********************************************'
+    println '*                                             *'
+    println "*      '${description}' action started...       *"
+    println '*                                             *'
+    println '***********************************************'
+
+    println "Updating of '${project.properties['vocabulary.display.name']}' vocabulary on the '${project.properties['db.userName']}' schema..."
+
+    // Start action checkpoint
+    def timeStart = System.currentTimeMillis()
+
+    doLast {
+        // Finish action checkpoint
+        def timeFinish = System.currentTimeMillis()
+
+        // Measure time execution
+        def timeElapsed = (timeFinish - timeStart) / 1000
+        println "\n\nTotal time elapsed: ${timeElapsed} seconds."
+        println "Updating of '${project.properties['vocabulary.display.name']}' vocabulary on the '${project.properties['db.userName']}' schema is completed successfully..."
+        println '***********************************************'
+        println '*                                             *'
+        println "*      '${description}' action is done...       *"
+        println '*                                             *'
+        println '***********************************************\n'
+    }
+}
+
+import java.net.MalformedURLException;
+import java.util.List;
+
+import net.bican.wordpress.FilterPost
+import net.bican.wordpress.Post
+import net.bican.wordpress.*
+import net.bican.wordpress.exceptions.InsufficientRightsException
+import net.bican.wordpress.exceptions.InvalidArgumentsException
+import net.bican.wordpress.exceptions.ObjectNotFoundException
+import redstone.xmlrpc.XmlRpcFault
+
+import java.net.HttpURLConnection
+import java.net.URL
+import java.io.BufferedReader
+import java.io.DataOutputStream
+import java.io.InputStreamReader
+
+
+import org.apache.http.HttpResponse
+import org.apache.http.client.HttpClient
+import org.apache.http.client.methods.HttpPost
+import org.apache.http.impl.client.HttpClientBuilder
+import org.apache.http.NameValuePair
+import org.apache.http.message.BasicNameValuePair
+import org.apache.http.client.entity.UrlEncodedFormEntity
+import org.apache.http.util.EntityUtils
+import org.apache.http.entity.StringEntity
+import org.apache.http.entity.ContentType
+
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody
+import okhttp3.Response
+import okhttp3.MultipartBody
+
+import org.apache.commons.io.IOUtils
+import org.apache.http.impl.client.CloseableHttpClient
+import org.apache.http.client.methods.HttpPost
+import org.apache.http.NameValuePair
+import org.apache.http.message.BasicNameValuePair
+import org.apache.http.client.entity.UrlEncodedFormEntity
+import org.apache.http.client.methods.CloseableHttpResponse
+import org.apache.http.impl.client.HttpClients
+
+task loginLoinc() << {
+    def userName = project.properties['downloadUpdatePack.fullSet.username']
+    def password = project.properties['downloadUpdatePack.fullSet.password']
+    def endPoint = project.properties['downloadUpdatePack.wpXmlRpc']
+
+    def fileUrlLogin = project.properties['downloadUpdatePack.fullSet.fileUrlLogin']
+    def fileUrl = project.properties['downloadUpdatePack.fullSet.fileUrl']
+
+    System.out.println('!!! userName: ' + userName)
+    System.out.println('!!! password: ' + password)
+    System.out.println('!!! endPoint: ' + endPoint)
+
+    System.out.println('!!! fileUrlLogin: ' + fileUrlLogin)
+    System.out.println('!!! fileUrl: ' + fileUrl)
+
+    System.out.println('**************************')
+
+    CloseableHttpClient client = HttpClients.createDefault()
+    HttpPost loginpost = new HttpPost(fileUrlLogin)
+
+    List<NameValuePair> loginParams = new ArrayList<NameValuePair>()
+    loginParams.add(new BasicNameValuePair("log", "ddymshyts"))
+    loginParams.add(new BasicNameValuePair("pwd", "LoincPass123"))
+    loginParams.add(new BasicNameValuePair("wp-submit", "Log In"))
+    loginpost.setEntity(new UrlEncodedFormEntity(loginParams))
+    client.execute(loginpost);
+
+
+    HttpPost downloadPost = new HttpPost(fileUrl)
+    List<NameValuePair> downloadParams = new ArrayList<NameValuePair>()
+    downloadParams.add(new BasicNameValuePair("tc_accepted", "1"))
+    downloadParams.add(new BasicNameValuePair("tc_submit", "Download"))
+    downloadPost.setEntity(new UrlEncodedFormEntity(downloadParams))
+
+    CloseableHttpResponse downloadResponse = client.execute(downloadPost)
+
+    println("stored to: ${tempDir.getPath()}")
+    FileOutputStream fout = new FileOutputStream(new File("${tempDir.getPath()}/test.zip"))
+    IOUtils.copy(downloadResponse.getEntity().getContent(), fout)
+
+    client.close()
+
+    /*
+    println('$$$ login....')
+    Wordpress wp = new Wordpress(userName, password, endPoint)
+    println('!!! wp: ' + wp)
+    */
+
+
+/*    println('$$$ login....')
+    def post = new URL(fileUrlLogin).openConnection()
+    def payload = "{'log': '${userName}', 'pwd': '${password}'}"
+    post.setRequestMethod("POST")
+    post.setDoOutput(true)
+    post.setRequestProperty("Content-Type", "application/json")
+    post.getOutputStream().write(payload.getBytes("UTF-8"))
+    def postRC = post.getResponseCode()
+    println(postRC)
+    if (postRC.equals(200)) {
+        //println(post.getInputStream().getText())
+    }
+*/
+
+    /*println('$$$ accept....')
+    post = new URL(fileUrl).openConnection()
+    payload = "{'tc_accepted': 'true'}"
+    post.setRequestMethod("POST")
+    post.setDoOutput(true)
+    post.setRequestProperty("Content-Type", "application/json")
+    post.getOutputStream().write(payload.getBytes("UTF-8"))
+    postRC = post.getResponseCode()
+    println(postRC)
+    if (postRC.equals(200)) {
+        println(post.getInputStream().getText())
+    }
+
+
+    println('$$$ get file....')
+    def get = new URL(fileUrl).openConnection()
+    def getRC = get.getResponseCode()
+    println(getRC)
+    if (getRC.equals(200)) {
+        println(get.getInputStream().getText())
+    }*/
+
+    /*
+        String UPLOAD_URL = "http://yoururl.com/example.php";
+
+    // Example data
+        String uname = userName;
+        String pwd = password;
+
+    // Create an HTTP client to execute the request
+        OkHttpClient client = new OkHttpClient();
+
+    // Create a multipart request body. Add metadata and files as 'data parts'.
+        RequestBody requestBody = new MultipartBody.Builder()
+                .setType(MultipartBody.FORM)
+                .addFormDataPart("username", uname)
+                .addFormDataPart("password", pwd)
+                .build()
+
+    // Create a POST request to send the data to UPLOAD_URL
+        Request request = new Request.Builder()
+                .url(fileUrl)
+                .post(requestBody)
+                .build();
+
+    // Execute the request and get the response from the server
+        Response response = null;
+
+        try {
+            response = client.newCall(request).execute();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    // Check the response to see if the upload succeeded
+        System.out.println('code: ' + response.code())
+        System.out.println('body: ' + response.body().string())
+        System.out.println('message: ' + response.message())
+        System.out.println('headers: ' + response.headers())
+        if (response == null || !response.isSuccessful()) {
+            System.out.println("Example", "Unable to upload to server.");
+        } else {
+            System.out.println("Example", "Upload was successful.");
+        }
+*/
+
+    /*def http = new groovyx.net.http.HttpBuilder(fileUrl)
+    http.request(POST, JSON) { req ->
+        req.body {
+            "username=${userName}&password=${password}"
+        }
+        response.success = { resp, reader ->
+            println "$resp.statusLine Respond rec"
+        }
+    }*/
+
+    /*HttpClient client = HttpClientBuilder.create().build()
+    HttpPost postRequest = new HttpPost(fileUrl)
+    List<NameValuePair> arguments = new ArrayList<>(3)
+    arguments.add(new BasicNameValuePair('username', userName))
+    arguments.add(new BasicNameValuePair('password', password))
+
+    String payload = "data={'username:' '${userName}', 'password:' '${password}'}"
+    StringEntity entity = new StringEntity(payload, ContentType.APPLICATION_FORM_URLENCODED)
+
+    try {
+        // postRequest.setEntity(new UrlEncodedFormEntity(arguments))
+        postRequest.setEntity(entity)
+        HttpResponse resp = client.execute(postRequest)
+
+        System.out.println('### Response: ' + EntityUtils.toString(resp.getEntity()))
+
+    } catch (IOException ioe) {
+        ioe.printStackTrace()
+    }*/
+
+    /*URL objLink = new URL(fileUrl)
+    HttpURLConnection conn = (java.net.HttpURLConnection) objLink.openConnection()
+    conn.setRequestMethod('POST')
+    conn.setRequestProperty('User-Agent', 'Mozilla/5.0')
+    conn.setRequestProperty('Accept-Language', 'en-US,en;q=0.5')
+    String urlParameters = "username=${userName}&password=${password}"
+    conn.setDoOutput(true)
+    DataOutputStream dos = new DataOutputStream(conn.getOutputStream())
+    dos.writeBytes(urlParameters)
+    dos.flush()
+    dos.close()
+
+    int responseCode = conn.getResponseCode()
+    System.out.println('\nSending \'POST\' request to URL: ' + fileUrl)
+    System.out.println('Post parameters: ' + urlParameters)
+    System.out.println('Response code: ' + responseCode)
+
+    BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream()))
+    String str
+    StringBuffer resp = new StringBuffer()
+    while ((str = br.readLine()) != null) {
+        resp.append(str)
+        System.out.println(str)
+    }
+    br.close()
+    System.out.println('Response: ' + br.toString())*/
+
+
+    System.out.println('**************************')
+
+    /*Wordpress wp = new Wordpress(userName, password, endPoint)
+    System.out.println('!!! wp: ' + wp)
+
+    println new StringBuilderWrapper("${project.properties['downloadUpdatePack.fullSet.description']}...")
+    println new StringBuilderWrapper("stored to: ${tempDir.getPath()}")
+    System.out.println('**************************')
+
+    final FilterPost filter = new FilterPost()
+    //filter.setNumber(10)
+    final List<Post> recentPosts = wp.getPosts(filter)
+    System.out.println("Here are the ten recent posts:")
+    for (final Post page : recentPosts) {
+        System.out.println('#### ' + page.getPost_id() + ":" + page.getPost_title())
+    }
+
+    System.out.println('**************************')
+    println new StringBuilderWrapper('download completed')*/
+}
+
+//import inc.odysses.tasks.*
+
+/*task exampleTask(type: MyCustomTask) {
+    println 'Executed...'
+}*/
+
+task downloadUmls << {
+    System.out.println('**************************')
+
+    CloseableHttpClient client = HttpClients.createDefault()
+    //HttpPost loginpost = new HttpPost('https://utslogin.nlm.nih.gov/cas/login')
+    HttpPost loginpost = new HttpPost('https://utslogin.nlm.nih.gov/cas/login?service=https%3a%2f%2fdownload.nlm.nih.gov%2fumls%2fkss%2f2016AB%2fumls-2016AB-full.zip')
+
+    //https://utslogin.nlm.nih.gov/cas/login?service=https%3a%2f%2fdownload.nlm.nih.gov%2fumls%2fkss%2f2016AB%2fumls-2016AB-full.zip
+
+    List<NameValuePair> loginParams = new ArrayList<NameValuePair>()
+    loginParams.add(new BasicNameValuePair("username", "Ddymshyts"))
+    loginParams.add(new BasicNameValuePair("password", "UMLSPass123!"))
+    loginParams.add(new BasicNameValuePair("submit", "Sign In"))
+    loginpost.setEntity(new UrlEncodedFormEntity(loginParams))
+    client.execute(loginpost)
+
+
+    //HttpPost downloadPost = new HttpPost('https://download.nlm.nih.gov/umls/kss/2016AB/umls-2016AB-full.zip')
+    /*HttpPost downloadPost = new HttpPost('https://utslogin.nlm.nih.gov/cas/login?service=https%3a%2f%2fdownload.nlm.nih.gov%2fumls%2fkss%2f2016AB%2fumls-2016AB-full.zip')
+    List<NameValuePair> downloadParams = new ArrayList<NameValuePair>()
+    downloadParams.add(new BasicNameValuePair("tc_accepted", "1"))
+    downloadParams.add(new BasicNameValuePair("tc_submit", "Download"))
+    downloadPost.setEntity(new UrlEncodedFormEntity(downloadParams))*/
+
+    //CloseableHttpResponse downloadResponse = client.execute(downloadPost)
+
+    CloseableHttpResponse downloadResponse = client.execute(loginpost)
+
+    println("stored to: ${tempDir.getPath()}")
+    FileOutputStream fout = new FileOutputStream(new File("${tempDir.getPath()}/test.zip"))
+    IOUtils.copy(downloadResponse.getEntity().getContent(), fout)
+
+    client.close()
+
+    System.out.println('**************************')
+
+}

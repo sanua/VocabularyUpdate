@@ -2,7 +2,18 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/GradleProject.iml" filepath="$PROJECT_DIR$/.idea/modules/GradleProject.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/HSPCS.iml" filepath="$PROJECT_DIR$/.idea/modules/HSPCS.iml" group="HSPCS" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/HSPCS/HSPCS_main.iml" filepath="$PROJECT_DIR$/.idea/modules/HSPCS/HSPCS_main.iml" group="HSPCS" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/HSPCS/HSPCS_test.iml" filepath="$PROJECT_DIR$/.idea/modules/HSPCS/HSPCS_test.iml" group="HSPCS" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/ICD10CM.iml" filepath="$PROJECT_DIR$/.idea/modules/ICD10CM.iml" group="ICD10CM" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/ICD10CM/ICD10CM_main.iml" filepath="$PROJECT_DIR$/.idea/modules/ICD10CM/ICD10CM_main.iml" group="ICD10CM" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/ICD10CM/ICD10CM_test.iml" filepath="$PROJECT_DIR$/.idea/modules/ICD10CM/ICD10CM_test.iml" group="ICD10CM" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/LOINC.iml" filepath="$PROJECT_DIR$/.idea/modules/LOINC.iml" group="LOINC" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/LOINC/LOINC_main.iml" filepath="$PROJECT_DIR$/.idea/modules/LOINC/LOINC_main.iml" group="LOINC" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/LOINC/LOINC_test.iml" filepath="$PROJECT_DIR$/.idea/modules/LOINC/LOINC_test.iml" group="LOINC" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/VocabularyUpdate.iml" filepath="$PROJECT_DIR$/.idea/modules/VocabularyUpdate.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/VocabularyUpdate_main.iml" filepath="$PROJECT_DIR$/.idea/modules/VocabularyUpdate_main.iml" group="VocabularyUpdate" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/VocabularyUpdate_test.iml" filepath="$PROJECT_DIR$/.idea/modules/VocabularyUpdate_test.iml" group="VocabularyUpdate" />
     </modules>
   </component>
 </project>

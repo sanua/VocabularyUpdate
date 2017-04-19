@@ -1,0 +1,373 @@
+/*
+**************************************
+* ICD10CM Vocabulary update. Part 2  *
+* Version 0.0.6                      *
+**************************************
+*/
+
+
+/*repositories {
+    mavenLocal()
+    mavenCentral()
+}*/
+
+/*dependencies {
+    compile 'org.apache.poi:poi:3.9'
+    compile 'org.apache.poi:poi-ooxml:3.9'
+}*/
+
+
+
+/**
+ * Auxiliary classes. TODO: Further should be used java-defined and compiled only
+ */
+public class StringBuilderWrapper implements java.lang.Appendable {
+    private static final String IDENT_CHAR = " " *4
+    private StringBuilder wrapped
+
+    public StringBuilderWrapper() {
+        wrapped = new StringBuilder()
+    }
+    public StringBuilderWrapper(String value) {
+        this()
+        wrapped.append(IDENT_CHAR).append(value)
+    }
+
+    @Override
+    Appendable append(CharSequence csq) throws IOException {
+        wrapped.append(IDENT_CHAR).append(csq)
+        return this
+    }
+    @Override
+    Appendable append(CharSequence csq, int start, int end) throws IOException {
+        wrapped.append(IDENT_CHAR).append(csq, start, end)
+        return this
+    }
+    @Override
+    Appendable append(char c) throws IOException {
+        wrapped.append(IDENT_CHAR).append(c)
+        return this
+    }
+    @Override
+    String toString() {
+        return wrapped.toString()
+    }
+}
+
+// Load ICD10CM properties
+Properties props = new Properties()
+props.load(new FileInputStream("$project.rootDir/Update_ICD10CM.properties"))
+props.each {prop ->
+    project.ext.set(prop.key, prop.value)
+}
+props.load(new FileInputStream("$project.rootDir/Update_ICD10CM_Part2.properties"))
+props.each {prop ->
+    project.ext.set(prop.key, prop.value)
+}
+
+def tempDir = File.createTempDir()
+tempDir.deleteOnExit()
+
+task prepareManualTable(description: project.properties['prepareTable.description']) << {
+    println '\n\n*****************************************************'
+    println '*                                                   *'
+    println "*     '${description}' action started...      *"
+    println '*                                                   *'
+    println '*****************************************************'
+
+    // Start action checkpoint
+    def timeStart = System.currentTimeMillis()
+
+    def filesBasePath="${projectDir}\\${project.properties['basePath']}"
+    def log_file = "${filesBasePath}\\${project.properties['prepareTable.logFileName']}"
+    def stream_log_file = "${filesBasePath}\\${project.properties['prepareTable.streamLogFileName']}"
+    def stream_error_file = "${filesBasePath}\\${project.properties['prepareTable.streamErrFileName']}"
+
+    def db = [un: project.properties['db.userName'],
+              pw: project.properties['db.password'],
+              tns: project.properties['db.tnsName'],
+              sqlfile: "${filesBasePath}\\${project.properties['prepareTable.sqlFileName']}",
+              tableName: "${project.properties['manualTableName']}",
+              logfile: log_file]
+    def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
+    def sqlplus= """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile} ${db.tableName}""".execute()
+    sqlplus.consumeProcessOutput(sout, serr)
+    sqlplus.waitFor()
+
+    // Finish action checkpoint
+    def timeFinish = System.currentTimeMillis()
+
+    // Write to console
+    System.out.println(sout.toString())
+
+    // Write to logfile
+    File f = new File(stream_log_file)
+    f.write(sout.toString())
+
+    // Write to error file
+    f = new File(stream_error_file)
+    f.write(serr.toString())
+
+    // Measure time execution
+    def timeElapsed = (timeFinish - timeStart) / 1000
+    println "Time elapsed: ${timeElapsed} seconds."
+
+    println "*** '${description}' action done ***"
+}
+
+task importTable (dependsOn: prepareManualTable, description: project.properties['importTable.description']) << {
+    println '\n\n*****************************************************'
+    println '*                                                   *'
+    println "*      '${description}' action started...      *"
+    println '*                                                   *'
+    println '*****************************************************'
+
+    // Start action checkpoint
+    def timeStart = System.currentTimeMillis()
+
+    def filesBasePath="${projectDir}\\${project.properties['basePath']}"
+    def dataFile = "${filesBasePath}\\${project.properties['importTable.dataFileName']}"
+    def logFile = "${filesBasePath}\\${project.properties['importTable.logFileName']}"
+    def discardFile = "${filesBasePath}\\${project.properties['importTable.discardFileName']}"
+    def badFile = "${filesBasePath}\\${project.properties['importTable.badFileName']}"
+    def stream_log_file = "${filesBasePath}\\${project.properties['importTable.streamLogFileName']}"
+    def stream_error_file = "${filesBasePath}\\${project.properties['importTable.streamErrFileName']}"
+
+    def bosOut = new ByteArrayOutputStream(), bosErr = new ByteArrayOutputStream()
+    def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
+
+    exec {
+        executable "sqlldr"
+        args "USERID=${project.properties['db.userName']}/${project.properties['db.password']}@${project.properties['db.tnsName']} " +
+                "CONTROL=${filesBasePath}\\${project.properties['importTable.controlFileName']} DATA=$dataFile LOG=$logFile DISCARD=$discardFile BAD=$badFile"
+        standardOutput = bosOut
+        errorOutput = bosErr
+    }
+    def bisOut = new ByteArrayInputStream(bosOut.toByteArray())
+    bisOut.withReader { out->
+        out.eachLine {
+            sout.append(it).append('\n')
+        }
+    }
+    def bisErr = new ByteArrayInputStream(bosErr.toByteArray())
+    bisErr.withReader { out ->
+        out.eachLine {
+            serr.append(it).append('\n')
+        }
+    }
+
+    // Write to console
+    System.out.println(sout.toString())
+
+    // Write to logfile
+    File f = new File(stream_log_file)
+    f.write(sout.toString())
+
+    // Write to error file
+    f = new File(stream_error_file)
+    f.write(serr.toString())
+
+    // Finish action checkpoint
+    def timeFinish = System.currentTimeMillis()
+
+    // Measure time execution
+    def timeElapsed = (timeFinish - timeStart) / 1000
+    println "Time elapsed: ${timeElapsed} seconds."
+
+    println "*** '${description}' action done ***"
+}
+
+/**
+ * This task will run 'Load stage' script.
+ * Seems it's is specific for each vocabulary.
+ */
+task runLoadStage(dependsOn: importTable, description: project.properties['loadStage.description']) << {
+    println '\n\n***********************************************'
+    println '*                                             *'
+    println "*    '${description}' action started...    *"
+    println '*                                             *'
+    println '***********************************************'
+
+    // Start action checkpoint
+    def timeStart = System.currentTimeMillis()
+
+    def log_file = "${tempDir.getPath()}\\${project.properties['loadStage.logFileName']}"
+    def stream_log_file = "${tempDir.getPath()}\\${project.properties['loadStage.streamLogFileName']}"
+    def stream_error_file = "${tempDir.getPath()}\\${project.properties['loadStage.streamErrFileName']}"
+
+    def db = [un: project.properties['db.userName'],
+              pw: project.properties['db.password'],
+              tns: project.properties['db.tnsName'],
+              sqlfile: "${project.properties['basePath']}\\${project.properties['loadStage.sqlFileName']}",
+              logfile: log_file]
+    def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
+    def sqlplus= """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
+    sqlplus.consumeProcessOutput(sout, serr)
+    sqlplus.waitFor()
+
+    // Finish action checkpoint
+    def timeFinish = System.currentTimeMillis()
+
+    // Write to console
+    System.out.println(sout.toString())
+
+    // Write to logfile
+    File f = new File(stream_log_file)
+    f.write(sout.toString())
+
+    // Write to error file
+    f = new File(stream_error_file)
+    f.write(serr.toString())
+
+    /* Check for errors */
+    if (project.properties['stop.on.error'].toBoolean() && (sqlplus.exitValue() != 0 || (serr != null && serr.toString().length() > 0))) {
+        throw new GradleException(String.format(project.properties['error.message.with.code'], sqlplus.exitValue(), name))
+    }
+
+    // Measure time execution
+    def timeElapsed = (timeFinish - timeStart) / 1000
+    println "Time elapsed: ${timeElapsed} seconds."
+
+    println "*** '${description}' action done ***"
+}
+
+/**
+ * This task will run 'Genetic update' script.
+ * It's common for all updated vocabularies and located in '\Vocabulary-v5.0\working\generic_update.sql' file.
+ */
+task runGenericUpdate(dependsOn: runLoadStage, description: project.properties['genericUpdate.description']) << {
+    println '\n\n***********************************************'
+    println '*                                             *'
+    println "*      '${description}' action started...     *"
+    println '*                                             *'
+    println '***********************************************'
+
+    // Start action checkpoint
+    def timeStart = System.currentTimeMillis()
+
+    def log_file = "${tempDir.getPath()}\\${project.properties['genericUpdate.logFileName']}"
+    def stream_log_file = "${tempDir.getPath()}\\${project.properties['genericUpdate.streamLogFileName']}"
+    def stream_error_file = "${tempDir.getPath()}\\${project.properties['genericUpdate.streamErrFileName']}"
+
+    def db = [un: project.properties['db.userName'],
+              pw: project.properties['db.password'],
+              tns: project.properties['db.tnsName'],
+              sqlfile: "${project.properties['basePath']}\\${project.properties['genericUpdate.sqlFileName']}",
+              logfile: log_file]
+    def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
+    def sqlplus= """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
+    sqlplus.consumeProcessOutput(sout, serr)
+    sqlplus.waitFor()
+
+    // Finish action checkpoint
+    def timeFinish = System.currentTimeMillis()
+
+    // Write to console
+    System.out.println(sout.toString())
+
+    // Write to logfile
+    File f = new File(stream_log_file)
+    f.write(sout.toString())
+
+    // Write to error file
+    f = new File(stream_error_file)
+    f.write(serr.toString())
+
+    /* Check for errors */
+    if (project.properties['stop.on.error'].toBoolean() && (sqlplus.exitValue() != 0 || (serr != null && serr.toString().length() > 0))) {
+        throw new GradleException(String.format(project.properties['error.message.with.code'], sqlplus.exitValue(), name))
+    }
+
+    // Measure time execution
+    def timeElapsed = (timeFinish - timeStart) / 1000
+    println "Time elapsed: ${timeElapsed} seconds."
+
+    println "*** '${description}' action done ***"
+}
+
+/**
+ * This task will run scripts which allows to see the vocabulary update results
+ */
+task checkUpdateResults(dependsOn: runGenericUpdate, description: project.properties['checkUpdateResults.description']) << {
+    println '\n\n***********************************************'
+    println '*                                             *'
+    println "*   '${description}' action started...  *"
+    println '*                                             *'
+    println '***********************************************'
+
+    // Start action checkpoint
+    def timeStart = System.currentTimeMillis()
+
+    def log_file = "${tempDir.getPath()}\\${project.properties['checkUpdateResults.logFileName']}"
+    def stream_log_file = "${tempDir.getPath()}\\${project.properties['checkUpdateResults.streamLogFileName']}"
+    def stream_error_file = "${tempDir.getPath()}\\${project.properties['checkUpdateResults.streamErrFileName']}"
+
+    def db = [un: project.properties['db.userName'],
+              pw: project.properties['db.password'],
+              tns: project.properties['db.tnsName'],
+              sqlfile: "${project.properties['basePath']}\\${project.properties['checkUpdateResults.sqlFileName']}",
+              logfile: log_file]
+    def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
+    def sqlplus= """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
+    sqlplus.consumeProcessOutput(sout, serr)
+    sqlplus.waitFor()
+
+    // Finish action checkpoint
+    def timeFinish = System.currentTimeMillis()
+
+    // Write to console
+    System.out.println(sout.toString())
+
+    // Write to logfile
+    File f = new File(stream_log_file)
+    f.write(sout.toString())
+
+    // Write to error file
+    f = new File(stream_error_file)
+    f.write(serr.toString())
+
+    /* Check for errors */
+    if (project.properties['stop.on.error'].toBoolean() && (sqlplus.exitValue() != 0 || (serr != null && serr.toString().length() > 0))) {
+        throw new GradleException(String.format(project.properties['error.message.with.code'], sqlplus.exitValue(), name))
+    }
+
+    // Measure time execution
+    def timeElapsed = (timeFinish - timeStart) / 1000
+    println "Time elapsed: ${timeElapsed} seconds."
+
+    println "*** '${description}' action done ***"
+}
+
+/**
+ * Bootstrap action
+ *
+ * TODO: Needs to find solution to measure whole task chain execution.
+ * TODO: This one via doFirst/doLast actions isn't working.
+ */
+task startUpdate(dependsOn: checkUpdateResults, description: project.properties['startUpdate.description']) {
+    println '\n\n***********************************************'
+    println '*                                             *'
+    println "*      '${description}' action started...       *"
+    println '*                                             *'
+    println '***********************************************'
+
+    println "Continue updating of '${project.properties['vocabulary.display.name']}' vocabulary..."
+
+    // Start action checkpoint
+    def timeStart = System.currentTimeMillis()
+
+    doLast {
+        // Finish action checkpoint
+        def timeFinish = System.currentTimeMillis()
+
+        // Measure time execution
+        def timeElapsed = (timeFinish - timeStart) / 1000
+        println "\n\nTotal time elapsed: ${timeElapsed} seconds."
+        println "Updating of '${project.properties['vocabulary.display.name']}' vocabulary completed successfully..."
+        println '***********************************************'
+        println '*                                             *'
+        println "*      '${description}' action is done...       *"
+        println '*                                             *'
+        println '***********************************************\n'
+    }
+}
