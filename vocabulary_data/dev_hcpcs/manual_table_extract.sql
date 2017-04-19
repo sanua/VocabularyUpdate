@@ -43,7 +43,7 @@ SELECT 'CONCEPT_CODE_1' || ','
     || 'VALID_START_DATE' || ','
     || 'VALID_END_DATE' || ','
     || 'PRECEDENCE' || ','
-    || 'CONVERSION_FACTOR' AS "&3 DATA"
+    || 'CONVERSION_FACTOR' || CHR(13)||CHR(10) AS "&3 DATA"
 FROM DUAL
 UNION ALL
 SELECT '"' || mt.CONCEPT_CODE_1  || '",'
@@ -56,7 +56,7 @@ SELECT '"' || mt.CONCEPT_CODE_1  || '",'
     || '"' || mt.VALID_START_DATE || '",'
     || '"' || mt.VALID_END_DATE || '",'
     || '"' || mt.PRECEDENCE || '",'
-    || '"' || mt.CONVERSION_FACTOR || '"'
+    || '"' || mt.CONVERSION_FACTOR || '"' || CHR(13)||CHR(10)
 FROM mt
 ;
 

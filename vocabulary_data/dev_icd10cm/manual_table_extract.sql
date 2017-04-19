@@ -49,7 +49,7 @@ SELECT 'CONCEPT_CODE_1' || ','
     || 'RELATIONSHIP_ID' || ','
     || 'VALID_START_DATE' || ','
     || 'VALID_END_DATE' || ','
-    || 'INVALID_REASON' AS "&3 DATA"
+    || 'INVALID_REASON' || CHR(13)||CHR(10) AS "&3 DATA"
 FROM DUAL
 UNION ALL
 SELECT '"' || mt.CONCEPT_CODE_1  || '",'
@@ -64,7 +64,7 @@ SELECT '"' || mt.CONCEPT_CODE_1  || '",'
     || '"' || mt.RELATIONSHIP_ID || '",'
     || '"' || mt.VALID_START_DATE || '",'
     || '"' || mt.VALID_END_DATE || '",'
-    || '"' || mt.INVALID_REASON || '"'
+    || '"' || mt.INVALID_REASON || '"' || CHR(13)||CHR(10)
 FROM mt
 ;
 
