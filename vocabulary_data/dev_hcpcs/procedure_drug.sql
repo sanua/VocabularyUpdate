@@ -28,6 +28,7 @@ WHENEVER SQLERROR EXIT SQL.SQLCODE
 */
 SPOOL &1
 
+ALTER SESSION SET NLS_NUMERIC_CHARACTERS = ',.';
 /*********************************************
 * Script to create input tables according to *
 * http://www.ohdsi.org/web/wiki/doku.php?id=documentation:international_drugs *
@@ -1982,7 +1983,7 @@ select distinct
   null as box_size
 from (
   select concept_code, 
-    case trim(v) when 'per' then 1 when '-' then null else cast(nvl(trim(translate(v, 'a,-', 'a')), 0) as float) end as v,
+    case v when 'per' then 1 else cast(translate(v, 'a,', 'a') as float) end as v,
     u
   from (
     select concept_code, -- dose,
