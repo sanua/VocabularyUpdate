@@ -24,7 +24,19 @@ WITH mt AS (SELECT CONCEPT_CODE_1,
                    TO_CHAR(VALID_END_DATE, 'YYYY-MM-DD HH24:MI:SS') AS VALID_END_DATE,
                    INVALID_REASON
             FROM &3
-            ORDER BY CONCEPT_CODE_1, CONCEPT_NAME_1, VOCABULARY_ID_1, CONCEPT_CODE_2, CONCEPT_NAME_2, CONCEPT_CLASS_ID_2, VOCABULARY_ID_2, VALID_START_DATE, VALID_END_DATE)
+            ORDER BY CONCEPT_CODE_1,
+                     CONCEPT_NAME_1,
+                     VOCABULARY_ID_1,
+                     INVALID_REASON_1,
+                     CONCEPT_CODE_2,
+                     CONCEPT_NAME_2,
+                     CONCEPT_CLASS_ID_2,
+                     VOCABULARY_ID_2,
+                     INVALID_REASON_2,
+                     RELATIONSHIP_ID,
+                     VALID_START_DATE,
+                     VALID_END_DATE,
+                     INVALID_REASON)
 SELECT 'CONCEPT_CODE_1' || ','
     || 'CONCEPT_NAME_1' || ','
     || 'VOCABULARY_ID_1' || ','

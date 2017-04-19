@@ -22,7 +22,17 @@ WITH mt AS (SELECT CONCEPT_CODE_1,
                    PRECEDENCE,
                    CONVERSION_FACTOR
             FROM &3
-            ORDER BY CONCEPT_CODE_1, CONCEPT_NAME_1, CONCEPT_ID_2, CONCEPT_NAME_2, DOMAIN_ID, VOCABULARY_ID, VALID_START_DATE, VALID_END_DATE)
+            ORDER BY CONCEPT_CODE_1,
+                     CONCEPT_NAME_1,
+                     CONCEPT_ID_2,
+                     CONCEPT_NAME_2,
+                     DOMAIN_ID,
+                     VOCABULARY_ID,
+                     INVALID_REASON,
+                     VALID_START_DATE,
+                     VALID_END_DATE,
+                     PRECEDENCE,
+                     CONVERSION_FACTOR)
 SELECT 'CONCEPT_CODE_1' || ','
     || 'CONCEPT_NAME_1' || ','
     || 'CONCEPT_ID_2' || ','
