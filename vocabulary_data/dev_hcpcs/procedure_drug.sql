@@ -1940,7 +1940,7 @@ PROMPT Start of debug 2
 PROMPT *******************
 
  select concept_code,
-    to_char(case v when 'per' then 1 when '-' then null else '!' || translate(v, 'a,-', 'a') || '!' end) as v,
+    to_char(case v when 'per' then 1 else cast(translate(v, 'a,', 'a') as float) end as v) as v,
     to_char(u) as u
   from (
     select concept_code, -- dose,
