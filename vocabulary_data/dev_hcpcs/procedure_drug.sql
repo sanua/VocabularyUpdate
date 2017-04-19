@@ -28,7 +28,6 @@ WHENEVER SQLERROR EXIT SQL.SQLCODE
 */
 SPOOL &1
 
-ALTER SESSION SET NLS_NUMERIC_CHARACTERS = ',.';
 /*********************************************
 * Script to create input tables according to *
 * http://www.ohdsi.org/web/wiki/doku.php?id=documentation:international_drugs *
@@ -1903,6 +1902,7 @@ end;
 /
 commit;
 
+ALTER SESSION SET NLS_NUMERIC_CHARACTERS = ',.';
 PROMPT *******************
 PROMPT Start of debug
 PROMPT *******************
