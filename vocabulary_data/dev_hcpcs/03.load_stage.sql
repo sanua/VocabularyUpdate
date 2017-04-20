@@ -764,7 +764,7 @@ COMMIT;
 PROMPT ***
 PROMPT * 7 Run HCPCS/procedure_drug.sql. This will create all the input files for MapDrugVocabulary.sql
 PROMPT ***
-@&2/procedure_drug.sql '&3'
+@&2/procedure_drug.sql &3
 PROMPT ***
 PROMPT * 7 Run of HCPCS/procedure_drug.sql is done...
 PROMPT ***
@@ -773,7 +773,7 @@ PROMPT ***
 PROMPT ***
 PROMPT * 8 Run the generic working/MapDrugVocabulary.sql. This will produce a concept_relationship_stage with HCPCS to RxNorm relatoinships
 PROMPT ***
-@&2/MapDrugVocabulary.sql '&4'
+@&2/MapDrugVocabulary.sql &4
 PROMPT ***
 PROMPT * 8 Run the generic working/MapDrugVocabulary.sql is done...
 PROMPT ***

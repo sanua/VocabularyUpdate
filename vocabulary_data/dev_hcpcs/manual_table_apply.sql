@@ -9,18 +9,25 @@ WHENEVER SQLERROR EXIT SQL.SQLCODE
 */
 SPOOL &1
 
--- Delete sysnonym for '&2' table if exists
-PROMPT Delete synonym for '&2' table if exists...
+-- Create synonym for '&2' table
+PROMPT Create synonym for '&2' table, if need...
+DECLARE
+  l_cnt NUMBER := 0;
+BEGIN
+  -- Check if need synonym
+  SELECT COUNT(1) INTO l_cnt FROM USER_OBJECTS WHERE LOWER(object_name) = LOWER('&2') and LOWER(object_type) = 'table';
+  IF (l_cnt < 1) THEN
+    -- Drop if exists
 BEGIN
    EXECUTE IMMEDIATE 'DROP SYNONYM &2';
 EXCEPTION WHEN OTHERS THEN NULL;
 END;
+    -- Create synonym
+    EXECUTE IMMEDIATE 'CREATE SYNONYM &2 FOR &3.&2';
+  END IF;
+END;
 /
 COMMIT;
-
--- Create synonym for '&2' table
-PROMPT  Create synonym for '&2' table...
-CREATE SYNONYM &2 FOR DEV_HCPCS.&2; 
 
 PROMPT Applying &2 data to RELATIONSHIP_TO_CONCEPT table...
 MERGE INTO RELATIONSHIP_TO_CONCEPT r2c

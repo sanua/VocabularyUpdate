@@ -53,7 +53,7 @@ BEGIN
    DEVV5.VOCABULARY_PACK.SetLatestUpdate (pVocabularyName        => 'HCPCS',
                                           pVocabularyDate        => TO_DATE ('20161128', 'yyyymmdd'),
                                           pVocabularyVersion     => '2016 Alpha Numeric HCPCS File',
-                                          pVocabularyDevSchema   => 'DEV_HCPCS');
+                                          pVocabularyDevSchema   => '&4');
 END;
 /
 COMMIT;
@@ -764,7 +764,7 @@ COMMIT;
 PROMPT ***
 PROMPT * 7 Run HCPCS/procedure_drug.sql. This will create all the input files for MapDrugVocabulary.sql
 PROMPT ***
-@&2/procedure_drug.sql '&3'
+@&2/procedure_drug.sql &3
 PROMPT ***
 PROMPT * 7 Run of HCPCS/procedure_drug.sql is done...
 PROMPT ***

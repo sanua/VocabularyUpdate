@@ -125,14 +125,15 @@ task fastRecreateSchema(description: project.properties['fastRecreate.descriptio
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()
 
-    def logFile = "${tempDir.getPath()}/${project.properties['fastRecreate.logFileName']}"
-    def streamLogFile = "${tempDir.getPath()}/${project.properties['fastRecreate.streamLogFileName']}"
-    def streamErrorFile = "${tempDir.getPath()}/${project.properties['fastRecreate.streamErrFileName']}"
+    def sqlFile = "${project.properties['basePath']}/${project.properties['fastRecreate.sqlFileName']}"
+    def logFile = "${project.properties['logPath']}/${project.properties['fastRecreate.logFileName']}"
+    def streamLogFile = "${project.properties['logPath']}/${project.properties['fastRecreate.streamLogFileName']}"
+    def streamErrorFile = "${project.properties['logPath']}/${project.properties['fastRecreate.streamErrFileName']}"
 
     def db = [un: project.properties['db.userName'],
               pw: project.properties['db.password'],
               tns: project.properties['db.tnsName'],
-              sqlfile: "${project.properties['basePath']}/${project.properties['fastRecreate.sqlFileName']}",
+              sqlfile: sqlFile,
               logfile: logFile]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
     def sqlplus = """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
@@ -185,14 +186,15 @@ task createSourceTable(dependsOn: fastRecreateSchema, description: project.prope
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()
 
-    def logFile = "${tempDir.getPath()}/${project.properties['createSourceTable.logFileName']}"
-    def streamLogFile = "${tempDir.getPath()}/${project.properties['createSourceTable.streamLogFileName']}"
-    def streamErrorFile = "${tempDir.getPath()}/${project.properties['createSourceTable.streamErrFileName']}"
+    def sqlFile = "${project.properties['basePath']}/${project.properties['createSourceTable.sqlFileName']}"
+    def logFile = "${project.properties['logPath']}/${project.properties['createSourceTable.logFileName']}"
+    def streamLogFile = "${project.properties['logPath']}/${project.properties['createSourceTable.streamLogFileName']}"
+    def streamErrorFile = "${project.properties['logPath']}/${project.properties['createSourceTable.streamErrFileName']}"
 
     def db = [un: project.properties['db.userName'],
               pw: project.properties['db.password'],
               tns: project.properties['db.tnsName'],
-              sqlfile: "${project.properties['basePath']}/${project.properties['createSourceTable.sqlFileName']}",
+              sqlfile: sqlFile,
               logfile: logFile]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
     def sqlplus = """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
@@ -435,11 +437,11 @@ task importData(dependsOn: xls2Csv, description: project.properties['import.desc
     def timeStart = System.currentTimeMillis()
 
     def dataFile = "${tempDir.getPath()}/${project.properties['importData.dataFileName']}"
-    def logFile = "${tempDir.getPath()}/${project.properties['importData.logFileName']}"
-    def discardFile = "${tempDir.getPath()}/${project.properties['importData.discardFileName']}"
-    def badFile = "${tempDir.getPath()}/${project.properties['importData.badFileName']}"
-    def streamLogFile = "${tempDir.getPath()}/${project.properties['importData.streamLogFileName']}"
-    def streamErrorFile = "${tempDir.getPath()}/${project.properties['importData.streamErrFileName']}"
+    def logFile = "${project.properties['logPath']}/${project.properties['importData.logFileName']}"
+    def discardFile = "${project.properties['logPath']}/${project.properties['importData.discardFileName']}"
+    def badFile = "${project.properties['logPath']}/${project.properties['importData.badFileName']}"
+    def streamLogFile = "${project.properties['logPath']}/${project.properties['importData.streamLogFileName']}"
+    def streamErrorFile = "${project.properties['logPath']}/${project.properties['importData.streamErrFileName']}"
 
     def bosOut = new ByteArrayOutputStream(), bosErr = new ByteArrayOutputStream()
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
@@ -501,16 +503,17 @@ task loadStage(dependsOn: importData, description: project.properties['loadStage
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()
 
-    def logFile = "${tempDir.getPath()}/${project.properties['loadStage.logFileName']}"
-    def streamLogFile = "${tempDir.getPath()}/${project.properties['loadStage.streamLogFileName']}"
-    def streamErrorFile = "${tempDir.getPath()}/${project.properties['loadStage.streamErrFileName']}"
-    def logFileProcedureDrug = "${tempDir.getPath()}/${project.properties['loadStage.logProcedureDrugFileName']}"
-    def logFileMapDrugVocabulary = "${tempDir.getPath()}/${project.properties['loadStage.logMapDrugVocabularyFileName']}"
+    def sqlFile = "${project.properties['basePath']}/${project.properties['loadStage.sqlFileName']}"
+    def logFile = "${project.properties['logPath']}/${project.properties['loadStage.logFileName']}"
+    def streamLogFile = "${project.properties['logPath']}/${project.properties['loadStage.streamLogFileName']}"
+    def streamErrorFile = "${project.properties['logPath']}/${project.properties['loadStage.streamErrFileName']}"
+    def logFileProcedureDrug = "${project.properties['logPath']}/${project.properties['loadStage.logProcedureDrugFileName']}"
+    def logFileMapDrugVocabulary = "${project.properties['logPath']}/${project.properties['loadStage.logMapDrugVocabularyFileName']}"
 
     def db = [un: project.properties['db.userName'],
               pw: project.properties['db.password'],
               tns: project.properties['db.tnsName'],
-              sqlfile: "${project.properties['basePath']}/${project.properties['loadStage.sqlFileName']}",
+              sqlfile: sqlFile,
               logfile: logFile,
               contextPath: "${project.properties['basePath']}",
               logfileProcedureDrug: logFileProcedureDrug,
@@ -566,14 +569,15 @@ task genericUpdate(dependsOn: loadStage, description: project.properties['generi
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()
 
-    def logFile = "${tempDir.getPath()}/${project.properties['genericUpdate.logFileName']}"
-    def streamLogFile = "${tempDir.getPath()}/${project.properties['genericUpdate.streamLogFileName']}"
-    def streamErrorFile = "${tempDir.getPath()}/${project.properties['genericUpdate.streamErrFileName']}"
+    def sqlFile = "${project.properties['basePath']}/${project.properties['genericUpdate.sqlFileName']}"
+    def logFile = "${project.properties['logPath']}/${project.properties['genericUpdate.logFileName']}"
+    def streamLogFile = "${project.properties['logPath']}/${project.properties['genericUpdate.streamLogFileName']}"
+    def streamErrorFile = "${project.properties['logPath']}/${project.properties['genericUpdate.streamErrFileName']}"
 
     def db = [un: project.properties['db.userName'],
               pw: project.properties['db.password'],
               tns: project.properties['db.tnsName'],
-              sqlfile: "${project.properties['basePath']}/${project.properties['genericUpdate.sqlFileName']}",
+              sqlfile: sqlFile,
               logfile: logFile]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
     def sqlplus = """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
@@ -625,14 +629,15 @@ task checkUpdateResults(dependsOn: genericUpdate, description: project.propertie
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()
 
-    def logFile = "${tempDir.getPath()}/${project.properties['checkUpdateResults.logFileName']}"
-    def streamLogFile = "${tempDir.getPath()}/${project.properties['checkUpdateResults.streamLogFileName']}"
-    def streamErrorFile = "${tempDir.getPath()}/${project.properties['checkUpdateResults.streamErrFileName']}"
+    def sqlFile = "${project.properties['basePath']}/${project.properties['checkUpdateResults.sqlFileName']}"
+    def logFile = "${project.properties['logPath']}/${project.properties['checkUpdateResults.logFileName']}"
+    def streamLogFile = "${project.properties['logPath']}/${project.properties['checkUpdateResults.streamLogFileName']}"
+    def streamErrorFile = "${project.properties['logPath']}/${project.properties['checkUpdateResults.streamErrFileName']}"
 
     def db = [un: project.properties['db.userName'],
               pw: project.properties['db.password'],
               tns: project.properties['db.tnsName'],
-              sqlfile: "${project.properties['basePath']}/${project.properties['checkUpdateResults.sqlFileName']}",
+              sqlfile: sqlFile,
               logfile: logFile]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
     def sqlplus = """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
@@ -683,6 +688,16 @@ task startUpdate(dependsOn: checkUpdateResults, description: project.properties[
     println "*      '${description}' action started...       *"
     println '*                                             *'
     println '***********************************************'
+
+    project.ext['logPath'] = "${project.properties['basePath']}/${project.properties['baseLogPath']}"
+    def folder = new File(project.properties['logPath'])
+    if (!folder.exists()) {
+        folder.mkdirs()
+        println "Log directory is created: ${folder.getPath()}"
+    } else {
+        FileUtils.cleanDirectory(folder)
+        println "Log directory is cleaned: ${folder.getPath()}"
+    }
 
     println "Updating of '${project.properties['vocabulary.display.name']}' vocabulary on the '${project.properties['db.userName']}' schema..."
 
