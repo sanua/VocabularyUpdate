@@ -30,6 +30,8 @@ buildscript {
         classpath 'commons-io:commons-io:2.5'
         classpath 'org.apache.httpcomponents:httpclient:4.5.3'
         classpath 'org.apache.httpcomponents:httpcore:4.4.6'
+
+        classpath group: 'commons-io', name: 'commons-io', version: '2.5'
     }
 }
 /*
@@ -52,6 +54,7 @@ import org.apache.poi.ss.usermodel.Workbook
 import org.apache.poi.ss.usermodel.WorkbookFactory
 import org.apache.poi.ss.usermodel.Sheet
 import net.bican.wordpress.*
+import org.apache.commons.io.FileUtils
 
 /*
 task compileOne(type: JavaCompile) {

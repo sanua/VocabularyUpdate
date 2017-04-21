@@ -21,9 +21,11 @@ buildscript {
     dependencies {
         classpath 'org.apache.poi:poi:3.9'
         classpath 'org.apache.poi:poi-ooxml:3.9'
+        classpath group: 'commons-io', name: 'commons-io', version: '2.5'
     }
 }
 
+/*
 repositories {
     mavenLocal()
     mavenCentral()
@@ -32,6 +34,7 @@ dependencies {
     compile 'org.apache.poi:poi:3.9'
     compile 'org.apache.poi:poi-ooxml:3.9'
 }
+*/
 
 import groovy.io.FileType
 import org.apache.poi.ss.usermodel.Cell
@@ -39,6 +42,7 @@ import org.apache.poi.ss.usermodel.Row
 import org.apache.poi.ss.usermodel.Workbook
 import org.apache.poi.ss.usermodel.WorkbookFactory
 import org.apache.poi.ss.usermodel.Sheet
+import org.apache.commons.io.FileUtils
 
 /*
 task compileOne(type: JavaCompile) {

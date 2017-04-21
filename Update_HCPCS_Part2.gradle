@@ -21,7 +21,6 @@ buildscript {
         classpath 'org.apache.poi:poi:3.9'
         classpath 'org.apache.poi:poi-ooxml:3.9'
         classpath group: 'commons-io', name: 'commons-io', version: '2.5'
-
     }
 }
 
@@ -512,7 +511,7 @@ task startUpdate(dependsOn: checkUpdateResults, description: project.properties[
         println "Log directory is cleaned: ${folder.getPath()}"
     }
 
-    println "Updating of '${project.properties['vocabulary.display.name']}' vocabulary on the '${project.properties['db.userName']}' schema..."
+    println "Continue updating of '${project.properties['vocabulary.display.name']}' vocabulary on the '${project.properties['db.userName']}' schema..."
 
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()

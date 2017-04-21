@@ -30,8 +30,11 @@ buildscript {
     dependencies {
         classpath 'org.apache.poi:poi:3.9'
         classpath 'org.apache.poi:poi-ooxml:3.9'
+        classpath group: 'commons-io', name: 'commons-io', version: '2.5'
     }
 }
+
+import org.apache.commons.io.FileUtils
 
 /**
  * Auxiliary classes. TODO: Further should be used java-defined and compiled only

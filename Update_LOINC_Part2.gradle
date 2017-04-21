@@ -30,8 +30,11 @@ buildscript {
     dependencies {
         classpath 'org.apache.poi:poi:3.9'
         classpath 'org.apache.poi:poi-ooxml:3.9'
+        classpath group: 'commons-io', name: 'commons-io', version: '2.5'
     }
 }
+
+import org.apache.commons.io.FileUtils
 
 /**
  * Auxiliary classes. TODO: Further should be used java-defined and compiled only
@@ -368,7 +371,17 @@ task startUpdate(dependsOn: checkUpdateResults, description: project.properties[
     println '*                                             *'
     println '***********************************************'
 
-    println "Continue updating of '${project.properties['vocabulary.display.name']}' vocabulary..."
+    project.ext['logPath'] = "${project.properties['basePath']}/${project.properties['baseLogPath']}"
+    def folder = new File(project.properties['logPath'])
+    if (!folder.exists()) {
+        folder.mkdirs()
+        println "Log directory is created: ${folder.getPath()}"
+    } else {
+        FileUtils.cleanDirectory(folder)
+        println "Log directory is cleaned: ${folder.getPath()}"
+    }
+
+    println "Continue updating of '${project.properties['vocabulary.display.name']}' vocabulary on the '${project.properties['db.userName']}' schema..."
 
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()
@@ -380,7 +393,7 @@ task startUpdate(dependsOn: checkUpdateResults, description: project.properties[
         // Measure time execution
         def timeElapsed = (timeFinish - timeStart) / 1000
         println "\n\nTotal time elapsed: ${timeElapsed} seconds."
-        println "Updating of '${project.properties['vocabulary.display.name']}' vocabulary completed successfully..."
+        println "Updating of '${project.properties['vocabulary.display.name']}' vocabulary on the '${project.properties['db.userName']}' schema is completed successfully..."
         println '***********************************************'
         println '*                                             *'
         println "*      '${description}' action is done...       *"

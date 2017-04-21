@@ -21,8 +21,10 @@ buildscript {
         classpath 'org.apache.poi:poi:3.9'
         classpath 'org.apache.poi:poi-ooxml:3.9'
         classpath 'javax.mail:javax.mail-api:1.5.5'
+        classpath group: 'commons-io', name: 'commons-io', version: '2.5'
     }
 }
+
 
 repositories {
     mavenLocal()
@@ -43,6 +45,7 @@ import org.apache.poi.ss.usermodel.Row
 import org.apache.poi.ss.usermodel.Workbook
 import org.apache.poi.ss.usermodel.WorkbookFactory
 import org.apache.poi.ss.usermodel.Sheet
+import org.apache.commons.io.FileUtils
 
 /*
 task compileOne(type: JavaCompile) {
