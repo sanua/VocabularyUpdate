@@ -26,7 +26,7 @@ WHENEVER SQLERROR EXIT SQL.SQLCODE
  *  Log to file...    
  *****************************
 */
-SPOOL '&1'
+SPOOL '&1' APPEND
 
 PROMPT Change the decimal marker and thousands group marker for the session...
 ALTER SESSION SET NLS_NUMERIC_CHARACTERS = '.,';
