@@ -476,7 +476,7 @@ task createManualTable(dependsOn: loadStage, description: project.properties['cr
               tableName: "${project.properties['manualTableName']}",
               logfile  : logFile]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
-    def sqlplus= """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile} ${db.tableName}""".execute()
+    def sqlplus = """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile} ${db.tableName}""".execute()
 
     sqlplus.consumeProcessOutput(sout, serr)
     sqlplus.waitFor()
@@ -530,7 +530,7 @@ task extractManualTable(/*dependsOn: [createManualTable, loadStage]*/dependsOn: 
               tableName : "${project.properties['manualTableName']}",
               logfile   : logFile]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
-    def sqlplus= """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.expPath} ${db.expcsvfile} ${db.tableName} > ${db.logfile}""".execute()
+    def sqlplus = """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.expPath} ${db.expcsvfile} ${db.tableName} > ${db.logfile}""".execute()
     
     println new StringBuilderWrapper('extracting table...')
 

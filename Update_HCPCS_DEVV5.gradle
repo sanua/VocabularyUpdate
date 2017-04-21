@@ -332,7 +332,7 @@ task loadStage(dependsOn: applyManualTable, description: project.properties['loa
               logfileProcedureDrug    : logFileProcedureDrug,
               logfileMapDrugVocabulary: logFileMapDrugVocabulary]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
-    def sqlplus= """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile} ${db.contextPath} ${db.logfileProcedureDrug} ${db.logfileMapDrugVocabulary}""".execute()
+    def sqlplus = """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile} ${db.contextPath} ${db.logfileProcedureDrug} ${db.logfileMapDrugVocabulary}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)
     sqlplus.waitFor()
 
@@ -341,8 +341,9 @@ task loadStage(dependsOn: applyManualTable, description: project.properties['loa
 
     // Write to console
     try {
-        // Write full stream lof of SQLPlus's, because of sub calls from the script
-        System.out.println(StringBuilderWrapper.readFromFile(new File(streamLogFile)))
+        System.out.println(StringBuilderWrapper.readFromFile(new File(logFile)))
+        System.out.println(StringBuilderWrapper.readFromFile(new File(logFileProcedureDrug)))
+        System.out.println(StringBuilderWrapper.readFromFile(new File(logFileMapDrugVocabulary)))
     } catch (IOException ioe) {
         // Write whole SQLPlus's log
     System.out.println(sout.toString())
@@ -393,7 +394,7 @@ task genericUpdate(dependsOn: loadStage, description: project.properties['generi
               sqlfile: sqlFile,
               logfile: logFile]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
-    def sqlplus= """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
+    def sqlplus = """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)
     sqlplus.waitFor()
 
@@ -453,7 +454,7 @@ task checkUpdateResults(dependsOn: genericUpdate, description: project.propertie
               sqlfile: sqlFile,
               logfile: logFile]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
-    def sqlplus= """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
+    def sqlplus = """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)
     sqlplus.waitFor()
 

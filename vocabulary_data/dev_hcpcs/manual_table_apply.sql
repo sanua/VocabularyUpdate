@@ -7,7 +7,7 @@ WHENEVER SQLERROR EXIT SQL.SQLCODE
  *  Log to file...    
  *****************************
 */
-SPOOL &1
+SPOOL '&1'
 
 -- Create synonym for '&2' table
 PROMPT Create synonym for '&2' table, if need...

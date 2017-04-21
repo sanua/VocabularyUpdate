@@ -6,7 +6,7 @@ WHENEVER SQLERROR EXIT SQL.SQLCODE
  *  Log to file...    
  *****************************
 */
-SPOOL &1
+SPOOL '&1'
 
 PROMPT
 PROMPT 'Create Source Table' is starting...

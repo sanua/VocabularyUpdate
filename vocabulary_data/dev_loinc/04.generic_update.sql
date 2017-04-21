@@ -25,7 +25,7 @@ WHENEVER SQLERROR EXIT SQL.SQLCODE
  *  Log to file...    
  *****************************
 */
-SPOOL &1
+SPOOL '&1'
 
 -- Prerequisites:
 -- Update concept_id in concept_stage from concept for existing concepts

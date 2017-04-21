@@ -26,8 +26,9 @@ WHENEVER SQLERROR EXIT SQL.SQLCODE
  *  Log to file...    
  *****************************
 */
-SPOOL &1
+SPOOL '&1'
 
+PROMPT Change the decimal marker and thousands group marker for the session...
 ALTER SESSION SET NLS_NUMERIC_CHARACTERS = '.,';
 /*********************************************
 * Script to create input tables according to *
@@ -2127,5 +2128,3 @@ PROMPT Remove dose forms from concept_stage table
 alter table drug_concept_stage drop column dose_form;
 drop table drug_concept_stage_tmp purge;
 drop table brandname purge;
-
-SPOOL OFF

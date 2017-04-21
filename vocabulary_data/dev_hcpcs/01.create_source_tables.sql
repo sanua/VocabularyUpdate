@@ -26,7 +26,7 @@ WHENEVER SQLERROR EXIT SQL.SQLCODE
  *  Log to file...    
  *****************************
 */
-SPOOL &1
+SPOOL '&1'
 
 /* Delete import-data table if it exists, to avoid build process errors */
 PROMPT Delete import-data table if it exists, to avoid build process errors...

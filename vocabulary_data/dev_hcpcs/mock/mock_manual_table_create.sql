@@ -7,8 +7,7 @@ WHENEVER SQLERROR EXIT SQL.SQLCODE
  *  Log to file...    
  *****************************
 */
-
-SPOOL &1
+SPOOL '&1'
 
 /* Delete Manual Table is exist */
 PROMPT Delete 'Manual Table' if exist...

@@ -7,7 +7,7 @@ WHENEVER SQLERROR EXIT SQL.SQLCODE
  *  Log to file...    
  *****************************
 */
-SPOOL &1
+SPOOL '&1'
 
 /* Delete from '&2' */
 PROMPT Delete from '&2'... 

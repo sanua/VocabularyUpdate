@@ -26,7 +26,7 @@ WHENEVER SQLERROR EXIT SQL.SQLCODE
  *  Log to file...    
  *****************************
 */
-SPOOL &1
+SPOOL '&1'
 
 /*
 use this script to recreate main tables (concept, concept_relationship, concept_synonym) without dropping your schema

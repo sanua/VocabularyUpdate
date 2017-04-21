@@ -147,7 +147,7 @@ task fastRecreateSchema(description: project.properties['fastRecreate.descriptio
               sqlfile: sqlFile,
               logfile: logFile]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
-    def sqlplus= """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
+    def sqlplus = """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)
     sqlplus.waitFor()
 
@@ -208,7 +208,7 @@ task createSourceTable(dependsOn: fastRecreateSchema, description: project.prope
               sqlfile: sqlFile,
               logfile: logFile]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
-    def sqlplus= """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
+    def sqlplus = """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)
     sqlplus.waitFor()
 
@@ -529,7 +529,7 @@ task loadStage(dependsOn: importData, description: project.properties['loadStage
               contextPath: "${project.properties['basePath']}",
               logfileProcedureDrug: logFileProcedureDrug]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
-    def sqlplus= """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile} ${db.contextPath} ${db.logfileProcedureDrug} ${db.devSchema}""".execute()
+    def sqlplus = """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile} ${db.contextPath} ${db.logfileProcedureDrug} ${db.devSchema}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)
     sqlplus.waitFor()
 
@@ -538,8 +538,8 @@ task loadStage(dependsOn: importData, description: project.properties['loadStage
 
     // Write to console
     try {
-        // Write full stream lof of SQLPlus's, because of sub calls from the script
         System.out.println(StringBuilderWrapper.readFromFile(new File(logFile)))
+        System.out.println(StringBuilderWrapper.readFromFile(new File(logFileProcedureDrug)))
     } catch (IOException ioe) {
         // Write whole SQLPlus's log
     System.out.println(sout.toString())
@@ -590,7 +590,7 @@ task createManualTable(dependsOn: loadStage, description: project.properties['cr
               tableName: "${project.properties['manualTableName']}",
               logfile: logFile]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
-    def sqlplus= """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile} ${db.tableName}""".execute()
+    def sqlplus = """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile} ${db.tableName}""".execute()
 
     sqlplus.consumeProcessOutput(sout, serr)
     sqlplus.waitFor()
@@ -644,7 +644,7 @@ task extractManualTable(/*dependsOn: [createManualTable, loadStage]*/dependsOn: 
               tableName: "${project.properties['manualTableName']}",
               logfile: logFile]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
-    def sqlplus= """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.expPath} ${db.expcsvfile} ${db.tableName} > ${db.logfile}""".execute()
+    def sqlplus = """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.expPath} ${db.expcsvfile} ${db.tableName} > ${db.logfile}""".execute()
 
     println new StringBuilderWrapper('extracting table...')
 

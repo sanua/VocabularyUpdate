@@ -7,7 +7,7 @@ WHENEVER SQLERROR EXIT SQL.SQLCODE
  *  Log to file...    
  *****************************
 */
-SPOOL &1
+SPOOL '&1'
 
 PROMPT Update &2's dates...
 update &2 set valid_start_date = sysdate 

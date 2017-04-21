@@ -27,7 +27,7 @@ WHENEVER SQLERROR EXIT SQL.SQLCODE
  *  Log to file...    
  *****************************
 */
-SPOOL &1
+SPOOL '&1'
 
 /* Clean up from last unsuccessful load stage run, to avoid build process errors */
 PROMPT Clean up from last unsuccessful load stage run, to avoid build process errors...
