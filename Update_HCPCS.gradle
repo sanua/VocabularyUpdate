@@ -529,7 +529,7 @@ task loadStage(dependsOn: importData, description: project.properties['loadStage
     // Write to console
     try {
         // Write full stream lof of SQLPlus's, because of sub calls from the script
-        System.out.println(StringBuilderWrapper.readFromFile(new File(streamLogFile)))
+        System.out.println(StringBuilderWrapper.readFromFile(new File(logFile)))
     } catch (IOException ioe) {
         // Write whole SQLPlus's log
         System.out.println(sout.toString())
