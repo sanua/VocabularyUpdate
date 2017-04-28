@@ -41,7 +41,8 @@ select CONCEPT_CODE_1,CONCEPT_CODE_2,VOCABULARY_ID_1,VOCABULARY_ID_2,RELATIONSHI
 commit
 ;
 
-/* This is WORKAROUND-HACK.TODO: should be checked later */
+/* 
+-- This is WORKAROUND-HACK.TODO: should be checked later 
 delete from concept_relationship_manual where (CONCEPT_CODE_1, CONCEPT_CODE_2) in
 (select CONCEPT_CODE_1, CONCEPT_CODE_2
   FROM concept_relationship_manual  crm
@@ -61,7 +62,8 @@ delete from concept_relationship_manual where (CONCEPT_CODE_1, CONCEPT_CODE_2) i
              OR crm.valid_end_date < crm.valid_start_date
              OR (crm.invalid_reason IS NULL AND crm.valid_end_date <> TO_DATE ('20991231', 'yyyymmdd')));
 COMMIT;
-/*End of WORKAROUND-HACK*/
+-- End of WORKAROUND-HACK
+*/
 
 SPOOL OFF
 EXIT
