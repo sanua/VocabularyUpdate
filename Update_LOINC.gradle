@@ -735,7 +735,7 @@ task startUpdate(dependsOn: createSourceTable, description: project.properties['
         println "Log directory is cleaned: ${folder.getPath()}"
     }
 
-    println "Updating of '${project.properties['vocabulary.display.name']}' vocabulary on the '${project.properties['db.userName']}' schema..."
+    println "Updating of '${project.properties['vocabulary.display.name']}' vocabulary on the '${project.properties['db.userName']}@${project.properties['db.tnsName']}' schema..."
 
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()
@@ -747,7 +747,7 @@ task startUpdate(dependsOn: createSourceTable, description: project.properties['
         // Measure time execution
         def timeElapsed = (timeFinish - timeStart) / 1000
         println "\n\nTotal time elapsed: ${timeElapsed} seconds."
-        println "Updating of '${project.properties['vocabulary.display.name']}' vocabulary on the '${project.properties['db.userName']}' schema is completed successfully..."
+        println "Updating of '${project.properties['vocabulary.display.name']}' vocabulary on the '${project.properties['db.userName']}@${project.properties['db.tnsName']}' schema is completed successfully..."
         println '***********************************************'
         println '*                                             *'
         println "*      '${description}' action is done...       *"

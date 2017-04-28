@@ -625,7 +625,7 @@ task startUpdate(dependsOn: sendMail, description: project.properties['startUpda
         createManualTable.enabled = false
     }*/
 
-    println "Updating of '${project.properties['vocabulary.display.name']}' vocabulary on the '${project.properties['db.userName']}' schema...\n"
+    println "Updating of '${project.properties['vocabulary.display.name']}' vocabulary on the '${project.properties['db.userName']}@${project.properties['db.tnsName']}' schema...\n"
 
     project.ext['logPath'] = "${project.properties['basePath']}/${project.properties['baseLogPath']}"
     def folder = new File(project.properties['logPath'])
@@ -647,7 +647,7 @@ task startUpdate(dependsOn: sendMail, description: project.properties['startUpda
         // Measure time execution
         def timeElapsed = (timeFinish - timeStart) / 1000
         println "\n\nTotal time elapsed: ${timeElapsed} seconds."
-        println "Updating of '${project.properties['vocabulary.display.name']}' vocabulary on the '${project.properties['db.userName']}' schema is completed successfully..."
+        println "Updating of '${project.properties['vocabulary.display.name']}' vocabulary on the '${project.properties['db.userName']}@${project.properties['db.tnsName']}' schema is completed successfully..."
         println '***********************************************'
         println '*                                             *'
         println "*      '${description}' action is done...       *"
