@@ -63,7 +63,7 @@ task compileOne(type: JavaCompile) {
     classpath = sourceSets.main.output.classesDir
     destinationDir = sourceSets.main.output.classesDir
 }
-compileOne.options.compilerArgs = ["-sourcepath", "$projectDir/src/main/java"]
+compileOne.options.compilerArgs = ["-sourcepath", "${projectDir}/src/main/java"]
 */
 
 /**

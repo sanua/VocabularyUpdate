@@ -546,6 +546,8 @@ task startUpdate(dependsOn: checkUpdateResults, description: project.properties[
     println '*                                             *'
     println '***********************************************'
 
+    println "Updating of '${project.properties['vocabulary.display.name']}' vocabulary on the '${project.properties['db.userName']}' schema...\n"
+
     project.ext['logPath'] = "${project.properties['basePath']}/${project.properties['baseLogPath']}"
     def folder = new File(project.properties['logPath'])
     if (!folder.exists()) {
@@ -555,8 +557,6 @@ task startUpdate(dependsOn: checkUpdateResults, description: project.properties[
         FileUtils.cleanDirectory(folder)
         println "Log directory is cleaned: ${folder.getPath()}"
     }
-
-    println "Updating of '${project.properties['vocabulary.display.name']}' vocabulary on the '${project.properties['db.userName']}' schema..."
 
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()

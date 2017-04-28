@@ -39,7 +39,7 @@ task compileOne(type: JavaCompile) {
     classpath = sourceSets.main.output.classesDir
     destinationDir = sourceSets.main.output.classesDir
 }
-compileOne.options.compilerArgs = ["-sourcepath", "$projectDir/src/main/java"]
+compileOne.options.compilerArgs = ["-sourcepath", "${projectDir}/src/main/java"]
 */
 
 /**
@@ -96,7 +96,7 @@ public class StringBuilderWrapper implements java.lang.Appendable {
 
 // Load HCPCS properties
 Properties props = new Properties()
-props.load(new FileInputStream("$project.rootDir/Update_HCPCS.properties"))
+props.load(new FileInputStream("${project.rootDir}/Update_HCPCS.properties"))
 props.each {prop ->
     project.ext.set(prop.key, prop.value)
 }
@@ -264,13 +264,13 @@ task applyManualTable(dependsOn: importManualTable, description: project.propert
     def streamLogFile = "${project.properties['logPath']}/${project.properties['applyManualTable.streamLogFileName']}"
     def streamErrorFile = "${project.properties['logPath']}/${project.properties['applyManualTable.streamErrFileName']}"
 
-    def db = [un: project.properties['db.userName'],
-              pw: project.properties['db.password'],
-              tns: project.properties['db.tnsName'],
+    def db = [un       : project.properties['db.userName'],
+              pw       : project.properties['db.password'],
+              tns      : project.properties['db.tnsName'],
               devSchema: project.properties['vocabulary.dev.schema'],
-              sqlfile: sqlFile,
+              sqlfile  : sqlFile,
               tableName: "${project.properties['manualTableName']}",
-              logfile: logFile]
+              logfile  : logFile]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
     def sqlplus = """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile} ${db.tableName} ${db.devSchema}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)
@@ -323,12 +323,12 @@ task loadStage(dependsOn: applyManualTable, description: project.properties['loa
     def streamErrorFile = "${project.properties['logPath']}/${project.properties['loadStage.streamErrFileName']}"
     def logFileMapDrugVocabulary = "${project.properties['logPath']}/${project.properties['loadStage.logMapDrugVocabularyFileName']}"
 
-    def db = [un: project.properties['db.userName'],
-              pw: project.properties['db.password'],
-              tns: project.properties['db.tnsName'],
-              sqlfile: sqlFile,
-              logfile: logFile,
-              contextPath: "${project.properties['basePath']}",
+    def db = [un                      : project.properties['db.userName'],
+              pw                      : project.properties['db.password'],
+              tns                     : project.properties['db.tnsName'],
+              sqlfile                 : sqlFile,
+              logfile                 : logFile,
+              contextPath             : "${project.properties['basePath']}",
               logfileMapDrugVocabulary: logFileMapDrugVocabulary]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
     def sqlplus = """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile} ${db.contextPath} ${db.logfileMapDrugVocabulary}""".execute()
@@ -386,9 +386,9 @@ task genericUpdate(dependsOn: loadStage, description: project.properties['generi
     def streamLogFile = "${project.properties['logPath']}/${project.properties['genericUpdate.streamLogFileName']}"
     def streamErrorFile = "${project.properties['logPath']}/${project.properties['genericUpdate.streamErrFileName']}"
 
-    def db = [un: project.properties['db.userName'],
-              pw: project.properties['db.password'],
-              tns: project.properties['db.tnsName'],
+    def db = [un     : project.properties['db.userName'],
+              pw     : project.properties['db.password'],
+              tns    : project.properties['db.tnsName'],
               sqlfile: sqlFile,
               logfile: logFile]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
@@ -446,9 +446,9 @@ task checkUpdateResults(dependsOn: genericUpdate, description: project.propertie
     def streamLogFile = "${project.properties['logPath']}/${project.properties['checkUpdateResults.streamLogFileName']}"
     def streamErrorFile = "${project.properties['logPath']}/${project.properties['checkUpdateResults.streamErrFileName']}"
 
-    def db = [un: project.properties['db.userName'],
-              pw: project.properties['db.password'],
-              tns: project.properties['db.tnsName'],
+    def db = [un     : project.properties['db.userName'],
+              pw     : project.properties['db.password'],
+              tns    : project.properties['db.tnsName'],
               sqlfile: sqlFile,
               logfile: logFile]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
@@ -501,6 +501,8 @@ task startUpdate(dependsOn: checkUpdateResults, description: project.properties[
     println '*                                             *'
     println '***********************************************'
 
+    println "Continue updating of '${project.properties['vocabulary.display.name']}' vocabulary on the '${project.properties['db.userName']}' schema...\n"
+
     project.ext['logPath'] = "${project.properties['basePath']}/${project.properties['baseLogPath']}"
     def folder = new File(project.properties['logPath'])
     if (!folder.exists()) {
@@ -510,8 +512,6 @@ task startUpdate(dependsOn: checkUpdateResults, description: project.properties[
         FileUtils.cleanDirectory(folder)
         println "Log directory is cleaned: ${folder.getPath()}"
     }
-
-    println "Continue updating of '${project.properties['vocabulary.display.name']}' vocabulary on the '${project.properties['db.userName']}' schema..."
 
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()

@@ -125,7 +125,7 @@ public class StringBuilderWrapper implements java.lang.Appendable {
 
 // Load ICD10CM properties
 Properties props = new Properties()
-props.load(new FileInputStream("$project.rootDir/Update_ICD10CM.properties"))
+props.load(new FileInputStream("${project.rootDir}/Update_ICD10CM.properties"))
 props.each {prop ->
     project.ext.set(prop.key, prop.value)
 }
@@ -465,7 +465,7 @@ task createManualTable(dependsOn: loadStage, description: project.properties['cr
     def timeStart = System.currentTimeMillis()
 
     def sqlFile = "${project.properties['basePath']}/${project.properties['createManualTable.sqlFileName']}"
-    def logFile = "$project.properties['logPath']}/${project.properties['createManualTable.logFileName']}"
+    def logFile = "${project.properties['logPath']}/${project.properties['createManualTable.logFileName']}"
     def streamLogFile = "${project.properties['logPath']}/${project.properties['createManualTable.streamLogFileName']}"
     def streamErrorFile = "${project.properties['logPath']}/${project.properties['createManualTable.streamErrFileName']}"
 
@@ -515,9 +515,11 @@ task extractManualTable(/*dependsOn: [createManualTable, loadStage]*/dependsOn: 
     println '*                                             *'
     println '***********************************************'
 
+    // Start action checkpoint
+    def timeStart = System.currentTimeMillis()
+
     // TODO: Need to deeply check why piped output does not works here (the > operator below)
     def sqlFile = "${project.properties['basePath']}/${project.properties['extractManualTable.sqlFileName']}"
-    def logFile = "${project.properties['logPath']}/${project.properties['extractManualTable.logFileName']}"
     def streamLogFile = "${project.properties['logPath']}/${project.properties['extractManualTable.streamLogFileName']}"
     def streamErrorFile = "${project.properties['logPath']}/${project.properties['extractManualTable.streamErrFileName']}"
 
@@ -527,10 +529,9 @@ task extractManualTable(/*dependsOn: [createManualTable, loadStage]*/dependsOn: 
               expPath   : "${project.properties['basePath']}",
               sqlfile   : sqlFile,
               expcsvfile: "${project.properties['manualTableFileName']}",
-              tableName : "${project.properties['manualTableName']}",
-              logfile   : logFile]
+              tableName : "${project.properties['manualTableName']}"]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
-    def sqlplus = """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.expPath} ${db.expcsvfile} ${db.tableName} > ${db.logfile}""".execute()
+    def sqlplus = """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.expPath} ${db.expcsvfile} ${db.tableName}""".execute()
     
     println new StringBuilderWrapper('extracting table...')
 
@@ -538,12 +539,24 @@ task extractManualTable(/*dependsOn: [createManualTable, loadStage]*/dependsOn: 
     sqlplus.waitFor()
 
     // Write to logfile
+    /*
+    Skip writing log file because it size could be so big.
+    Only error stream should be written.
+
     File f = new File(streamLogFile)
     f.write(sout.toString())
+    */
 
     // Write to error file
-    f = new File(streamErrorFile)
+    File f = new File(streamErrorFile)
     f.write(serr.toString())
+
+    // Finish action checkpoint
+    def timeFinish = System.currentTimeMillis()
+
+    // Measure time execution
+    def timeElapsed = (timeFinish - timeStart) / 1000
+    println "Time elapsed: ${timeElapsed} seconds."
 
     println "*** '${description}' action done ***"
 }
@@ -562,11 +575,11 @@ task sendMail(dependsOn: extractManualTable, description: project.properties['se
     def timeStart = System.currentTimeMillis()
 
     def mailParams = [
-            mailhost: project.properties['sendMail.mailHost'],
-            subject: project.properties['sendMail.Subject'],
+            mailhost       : project.properties['sendMail.mailHost'],
+            subject        : project.properties['sendMail.Subject'],
             messagemimetype: "text/plain",
-            user: project.properties['sendMail.user'],
-            password: project.properties['sendMail.password']
+            user           : project.properties['sendMail.user'],
+            password       : project.properties['sendMail.password']
     ]
 
     println new StringBuilderWrapper('sending mail...')
@@ -612,6 +625,8 @@ task startUpdate(dependsOn: sendMail, description: project.properties['startUpda
         createManualTable.enabled = false
     }*/
 
+    println "Updating of '${project.properties['vocabulary.display.name']}' vocabulary on the '${project.properties['db.userName']}' schema...\n"
+
     project.ext['logPath'] = "${project.properties['basePath']}/${project.properties['baseLogPath']}"
     def folder = new File(project.properties['logPath'])
     if (!folder.exists()) {
@@ -621,8 +636,6 @@ task startUpdate(dependsOn: sendMail, description: project.properties['startUpda
         FileUtils.cleanDirectory(folder)
         println "Log directory is cleaned: ${folder.getPath()}"
     }
-
-    println "Updating of '${project.properties['vocabulary.display.name']}' vocabulary on the '${project.properties['db.userName']}' schema..."
 
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()

@@ -39,7 +39,7 @@ task compileOne(type: JavaCompile) {
     classpath = sourceSets.main.output.classesDir
     destinationDir = sourceSets.main.output.classesDir
 }
-compileOne.options.compilerArgs = ["-sourcepath", "$projectDir/src/main/java"]
+compileOne.options.compilerArgs = ["-sourcepath", "${projectDir}/src/main/java"]
 */
 
 /**
@@ -96,7 +96,7 @@ public class StringBuilderWrapper implements java.lang.Appendable {
 
 // Load HCPCS properties
 Properties props = new Properties()
-props.load(new FileInputStream("$project.rootDir/Update_HCPCS.properties"))
+props.load(new FileInputStream("${project.rootDir}/Update_HCPCS.properties"))
 props.each {prop ->
     project.ext.set(prop.key, prop.value)
 }
@@ -503,6 +503,8 @@ task startUpdate(dependsOn: checkUpdateResults, description: project.properties[
     println '*                                             *'
     println '***********************************************'
 
+    println "Updating of '${project.properties['vocabulary.display.name']}' vocabulary on the '${project.properties['db.userName']}' schema...\n"
+
     project.ext['logPath'] = "${project.properties['basePath']}/${project.properties['baseLogPath']}"
     def folder = new File(project.properties['logPath'])
     if (!folder.exists()) {
@@ -512,8 +514,6 @@ task startUpdate(dependsOn: checkUpdateResults, description: project.properties[
         FileUtils.cleanDirectory(folder)
         println "Log directory is cleaned: ${folder.getPath()}"
     }
-
-    println "Updating of '${project.properties['vocabulary.display.name']}' vocabulary on the '${project.properties['db.userName']}' schema..."
 
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()

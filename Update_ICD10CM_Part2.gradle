@@ -160,7 +160,7 @@ task prepareManualTable(description: project.properties['prepareManualTable.desc
         into dest
     }
     if (result.getDidWork()) {
-	    println new StringBuilderWrapper('file copied')
+	    println new StringBuilderWrapper('file is copied')
     } else {
 		println new StringBuilderWrapper('file isn\'t copied')
     }
@@ -190,7 +190,7 @@ task importManualTable (dependsOn: prepareManualTable, description: project.prop
     def logFile = "${project.properties['logPath']}/${project.properties['importManualTable.logFileName']}"
     def discardFile = "${project.properties['logPath']}/${project.properties['importManualTable.discardFileName']}"
     def badFile = "${project.properties['logPath']}/${project.properties['importManualTable.badFileName']}"
-    def streamLogFile = "${}/${project.properties['importManualTable.streamLogFileName']}"
+    def streamLogFile = "${project.properties['logPath']}/${project.properties['importManualTable.streamLogFileName']}"
     def streamErrorFile = "${project.properties['logPath']}/${project.properties['importManualTable.streamErrFileName']}"
 
     def bosOut = new ByteArrayOutputStream(), bosErr = new ByteArrayOutputStream()
@@ -491,6 +491,8 @@ task startUpdate(dependsOn: checkUpdateResults, description: project.properties[
     println '*                                             *'
     println '***********************************************'
 
+    println "Continue updating of '${project.properties['vocabulary.display.name']}' vocabulary on the '${project.properties['db.userName']}' schema...\n"
+
     project.ext['logPath'] = "${project.properties['basePath']}/${project.properties['baseLogPath']}"
     def folder = new File(project.properties['logPath'])
     if (!folder.exists()) {
@@ -500,8 +502,6 @@ task startUpdate(dependsOn: checkUpdateResults, description: project.properties[
         FileUtils.cleanDirectory(folder)
         println "Log directory is cleaned: ${folder.getPath()}"
     }
-
-    println "Continue updating of '${project.properties['vocabulary.display.name']}' vocabulary on the '${project.properties['db.userName']}' schema..."
 
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()

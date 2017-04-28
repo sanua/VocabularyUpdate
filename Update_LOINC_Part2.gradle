@@ -74,7 +74,7 @@ public class StringBuilderWrapper implements java.lang.Appendable {
 
 // Load ICD10CM properties
 Properties props = new Properties()
-props.load(new FileInputStream("$project.rootDir/Update_LOINC.properties"))
+props.load(new FileInputStream("${project.rootDir}/Update_LOINC.properties"))
 props.each {prop ->
     project.ext.set(prop.key, prop.value)
 }
@@ -209,7 +209,7 @@ task runLoadStage(dependsOn: importTable, description: project.properties['loadS
     def timeStart = System.currentTimeMillis()
 
     def sqlFile = "${project.properties['basePath']}/${project.properties['loadStage.sqlFileName']}"
-    def logFile = "$project.properties['logPath']}/${project.properties['loadStage.logFileName']}"
+    def logFile = "${project.properties['logPath']}/${project.properties['loadStage.logFileName']}"
     def streamLogFile = "${project.properties['logPath']}/${project.properties['loadStage.streamLogFileName']}"
     def streamErrorFile = "${project.properties['logPath']}/${project.properties['loadStage.streamErrFileName']}"
 
@@ -371,6 +371,8 @@ task startUpdate(dependsOn: checkUpdateResults, description: project.properties[
     println '*                                             *'
     println '***********************************************'
 
+    println "Continue updating of '${project.properties['vocabulary.display.name']}' vocabulary on the '${project.properties['db.userName']}' schema...\n"
+
     project.ext['logPath'] = "${project.properties['basePath']}/${project.properties['baseLogPath']}"
     def folder = new File(project.properties['logPath'])
     if (!folder.exists()) {
@@ -380,8 +382,6 @@ task startUpdate(dependsOn: checkUpdateResults, description: project.properties[
         FileUtils.cleanDirectory(folder)
         println "Log directory is cleaned: ${folder.getPath()}"
     }
-
-    println "Continue updating of '${project.properties['vocabulary.display.name']}' vocabulary on the '${project.properties['db.userName']}' schema..."
 
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()

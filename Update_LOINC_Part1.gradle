@@ -109,7 +109,7 @@ public class StringBuilderWrapper implements java.lang.Appendable {
 
 // Load ICD10CM properties
 Properties props = new Properties()
-props.load(new FileInputStream("$project.rootDir/Update_LOINC.properties"))
+props.load(new FileInputStream("${project.rootDir}/Update_LOINC.properties"))
 props.each {prop ->
     project.ext.set(prop.key, prop.value)
 }
@@ -619,6 +619,8 @@ task startUpdate(dependsOn: sendMail, description: project.properties['startUpda
     println '*                                             *'
     println '***********************************************'
 
+    println "Updating of '${project.properties['vocabulary.display.name']}' vocabulary...\n"
+
     project.ext['logPath'] = "${project.properties['basePath']}/${project.properties['baseLogPath']}"
     def folder = new File(project.properties['logPath'])
     if (!folder.exists()) {
@@ -628,8 +630,6 @@ task startUpdate(dependsOn: sendMail, description: project.properties['startUpda
         FileUtils.cleanDirectory(folder)
         println "Log directory is cleaned: ${folder.getPath()}"
     }
-
-    println "Updating of '${project.properties['vocabulary.display.name']}' vocabulary..."
 
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()
