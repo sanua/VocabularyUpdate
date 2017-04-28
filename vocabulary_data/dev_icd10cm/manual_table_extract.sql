@@ -20,8 +20,8 @@ WITH mt AS (SELECT CONCEPT_CODE_1,
                    VOCABULARY_ID_2,
                    INVALID_REASON_2,
                    RELATIONSHIP_ID ,
-                   TO_CHAR(VALID_START_DATE, 'YYYY-MM-DD HH24:MI:SS') AS VALID_START_DATE,
-                   TO_CHAR(VALID_END_DATE, 'YYYY-MM-DD HH24:MI:SS') AS VALID_END_DATE,
+                   TO_CHAR(VALID_START_DATE, 'YYYY-MM-DD') AS VALID_START_DATE,
+                   TO_CHAR(VALID_END_DATE, 'YYYY-MM-DD') AS VALID_END_DATE,
                    INVALID_REASON
             FROM &3
             ORDER BY CONCEPT_CODE_1,
