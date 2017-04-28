@@ -48,7 +48,7 @@ END;
 /
 
 --1. Update latest_update field to new date 
-PROMPT Update latest_update field to new date 
+PROMPT 1. Update latest_update field to new date 
 BEGIN
    DEVV5.VOCABULARY_PACK.SetLatestUpdate (pVocabularyName        => 'HCPCS',
                                           pVocabularyDate        => TO_DATE ('20161128', 'yyyymmdd'),
