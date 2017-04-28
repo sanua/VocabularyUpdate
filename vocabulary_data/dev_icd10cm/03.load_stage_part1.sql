@@ -44,7 +44,7 @@ BEGIN
       EXECUTE IMMEDIATE 'DROP TABLE ' || l_str;
     END IF;
   END LOOP;
-;
+END;
 /
 
 -- 1. Update latest_update field to new date 
