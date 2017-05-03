@@ -153,16 +153,35 @@ task prepareManualTable(description: project.properties['prepareManualTable.desc
 
     // Get Manual Table from editors
     println new StringBuilderWrapper('\'Manual Table\' copy started...')
+    boolean isZipped = false
     def srcFile = "${project.properties['basePath']}/${project.properties['prepareManualTable.manualWorkResultPath']}/${project.properties['manualTableFileName']}"
-    def dest = "${project.properties['basePath']}"
-    def result = copy {
-        from srcFile
-        into dest
+    if (!new File(srcFile).exists()) {
+        srcFile = "${project.properties['basePath']}/${project.properties['prepareManualTable.manualWorkResultPath']}/${project.properties['manualTableFileName'].replace('.csv', '.zip')}"
+        if (!new File(srcFile).exists()) {
+            throw new GradleException(String.format(project.properties['error.message'], 'There is no .csv/.zip of Manual Mapping data found', name))
+        } else {
+            isZipped = true
+        }
+    }
+
+    def result, message, dest = "${project.properties['basePath']}"
+    if (!isZipped) {
+        result = copy {
+            from srcFile
+            into dest
+        }
+        message = new StringBuilderWrapper('\tfile is copied')
+    } else {
+        result = copy {
+            from zipTree(srcFile)
+            into dest
+        }
+        message = new StringBuilderWrapper('\tfile is extracted')
     }
     if (result.getDidWork()) {
-	    println new StringBuilderWrapper('file is copied')
+        println message
     } else {
-		println new StringBuilderWrapper('file isn\'t copied')
+        println new StringBuilderWrapper('file isn\'t copied')
     }
     println new StringBuilderWrapper('\'Manual Table\' copy done...')
 
