@@ -9,7 +9,7 @@ WHENEVER SQLERROR EXIT SQL.SQLCODE
 */
 SPOOL '&1'
 
-/* Delete Manual Table is exist */
+/* Delete '&2' if exist */
 PROMPT Delete '&2' if exist...
 DECLARE
 	TYPE TStringArray IS TABLE OF VARCHAR2(255);

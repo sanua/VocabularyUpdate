@@ -10,9 +10,8 @@ SPOOL '&1'
 
 PROMPT
 PROMPT 'Generic Update' is starting...
-EXEC DBMS_LOCK.sleep(1);
+EXECUTE DBMS_LOCK.sleep(1);
 PROMPT 'Generic Update' is done...
 PROMPT
 
-SPOOL OFF
 EXIT

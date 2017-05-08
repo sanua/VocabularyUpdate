@@ -10,9 +10,8 @@ SPOOL '&1'
 
 PROMPT
 PROMPT 'Update Results' is starting...
-EXEC DBMS_LOCK.sleep(1);
+EXECUTE DBMS_LOCK.sleep(1);
 PROMPT 'Update Results' is done...
 PROMPT
 
-SPOOL OFF
 EXIT
