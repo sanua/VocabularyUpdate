@@ -1246,7 +1246,6 @@ insert into relationship_to_concept (concept_code_1, concept_id_2, precedence) v
 insert into drug_concept_stage (concept_code, vocabulary_id, concept_class_id) values ('avibactam', 'HCPCS', 'Ingredient');
 insert into relationship_to_concept (concept_code_1, concept_id_2, precedence) values ('ceftolozane', 45892599, null);
 insert into drug_concept_stage (concept_code, vocabulary_id, concept_class_id) values ('ceftolozane', 'HCPCS', 'Ingredient');
-insert into relationship_to_concept (concept_code_1, concept_id_2, precedence) values ('netupitant', 45774966, null);
 insert into drug_concept_stage (concept_code, vocabulary_id, concept_class_id) values ('netupitant', 'HCPCS', 'Ingredient');
 insert into relationship_to_concept (concept_code_1, concept_id_2, precedence) values ('sulfamethoxazole', 1836430, null);
 insert into drug_concept_stage (concept_code, vocabulary_id, concept_class_id) values ('sulfamethoxazole', 'HCPCS', 'Ingredient');
