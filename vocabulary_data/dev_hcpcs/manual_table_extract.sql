@@ -11,7 +11,8 @@ COLUMN exp_file_name new_val exp_file_name
 SELECT '&1'|| '/' || '&2' AS exp_file_name FROM dual;
 SPOOL &&exp_file_name
 
-WITH mt AS (SELECT CONCEPT_CODE_1,
+WITH mt AS (SELECT LABEL_TEXT,
+                   CONCEPT_CODE_1,
                    CONCEPT_NAME_1,
                    CONCEPT_ID_2,
                    CONCEPT_NAME_2,
@@ -24,7 +25,8 @@ WITH mt AS (SELECT CONCEPT_CODE_1,
                    PRECEDENCE,
                    CONVERSION_FACTOR
             FROM &3
-            ORDER BY CONCEPT_CODE_1,
+            ORDER BY LABEL_TEXT,
+                     CONCEPT_CODE_1,
                      CONCEPT_NAME_1,
                      CONCEPT_ID_2,
                      CONCEPT_NAME_2,
@@ -36,7 +38,8 @@ WITH mt AS (SELECT CONCEPT_CODE_1,
                      VALID_END_DATE,
                      PRECEDENCE,
                      CONVERSION_FACTOR)
-SELECT 'CONCEPT_CODE_1' || ','
+SELECT 'LABEL_TEXT' || ','
+    || 'CONCEPT_CODE_1' || ','
     || 'CONCEPT_NAME_1' || ','
     || 'CONCEPT_ID_2' || ','
     || 'CONCEPT_NAME_2' || ','
@@ -50,7 +53,8 @@ SELECT 'CONCEPT_CODE_1' || ','
     || 'CONVERSION_FACTOR' || CHR(13)||CHR(10) AS "&3 DATA"
 FROM DUAL
 UNION ALL
-SELECT '"' || mt.CONCEPT_CODE_1  || '",'
+SELECT '"' || mt.LABEL_TEXT  || '",'
+    || '"' || mt.CONCEPT_CODE_1  || '",'
     || '"' || mt.CONCEPT_NAME_1 || '",'
     || '"' || mt.CONCEPT_ID_2 || '",'
     || '"' || mt.CONCEPT_NAME_2 || '",'

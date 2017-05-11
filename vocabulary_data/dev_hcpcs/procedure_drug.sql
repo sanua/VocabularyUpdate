@@ -1651,7 +1651,6 @@ insert into relationship_to_concept (concept_code_1, concept_id_2, precedence) v
 insert into relationship_to_concept (concept_code_1, concept_id_2, precedence) values ('Topical', 19082225, 7);
 insert into relationship_to_concept (concept_code_1, concept_id_2, precedence) values ('Topical', 19095972, 8);
 insert into relationship_to_concept (concept_code_1, concept_id_2, precedence) values ('Topical', 19095973, 9);
-insert into relationship_to_concept (concept_code_1, concept_id_2, precedence) values ('Topical', 19095912, 10);
 insert into relationship_to_concept (concept_code_1, concept_id_2, precedence) values ('Topical', 19082628, 11);
 insert into relationship_to_concept (concept_code_1, concept_id_2, precedence) values ('Topical', 19135438, 12);
 insert into relationship_to_concept (concept_code_1, concept_id_2, precedence) values ('Topical', 19135446, 13);
@@ -1675,7 +1674,6 @@ insert into relationship_to_concept (concept_code_1, concept_id_2, precedence) v
 insert into relationship_to_concept (concept_code_1, concept_id_2, precedence) values ('Topical', 19082166, 31);
 insert into relationship_to_concept (concept_code_1, concept_id_2, precedence) values ('Topical', 19095916, 32);
 insert into relationship_to_concept (concept_code_1, concept_id_2, precedence) values ('Topical', 19095917, 33);
-insert into relationship_to_concept (concept_code_1, concept_id_2, precedence) values ('Topical', 19095973, 34);
 insert into relationship_to_concept (concept_code_1, concept_id_2, precedence) values ('Topical', 19095974, 35);
 insert into relationship_to_concept (concept_code_1, concept_id_2, precedence) values ('Topical', 19010880, 36);
 insert into relationship_to_concept (concept_code_1, concept_id_2, precedence) values ('Topical', 19011932, 37);
