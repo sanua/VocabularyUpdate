@@ -17,6 +17,7 @@ WITH mt AS (SELECT CONCEPT_CODE_1,
                    CONCEPT_NAME_2,
                    DOMAIN_ID,
                    VOCABULARY_ID,
+                   CONCEPT_CLASS_ID,
                    INVALID_REASON,
                    TO_CHAR(VALID_START_DATE, 'YYYY-MM-DD') AS VALID_START_DATE,
                    TO_CHAR(VALID_END_DATE, 'YYYY-MM-DD') AS VALID_END_DATE,
@@ -29,6 +30,7 @@ WITH mt AS (SELECT CONCEPT_CODE_1,
                      CONCEPT_NAME_2,
                      DOMAIN_ID,
                      VOCABULARY_ID,
+                     CONCEPT_CLASS_ID,
                      INVALID_REASON,
                      VALID_START_DATE,
                      VALID_END_DATE,
@@ -40,6 +42,7 @@ SELECT 'CONCEPT_CODE_1' || ','
     || 'CONCEPT_NAME_2' || ','
     || 'DOMAIN_ID' || ','
     || 'VOCABULARY_ID' || ','
+    || 'CONCEPT_CLASS_ID' || ','
     || 'INVALID_REASON' || ','
     || 'VALID_START_DATE' || ','
     || 'VALID_END_DATE' || ','
@@ -53,6 +56,7 @@ SELECT '"' || mt.CONCEPT_CODE_1  || '",'
     || '"' || mt.CONCEPT_NAME_2 || '",'
     || '"' || mt.DOMAIN_ID || '",'
     || '"' || mt.VOCABULARY_ID || '",'
+    || '"' || mt.CONCEPT_CLASS_ID || '",'
     || '"' || mt.INVALID_REASON || '",'
     || '"' || mt.VALID_START_DATE || '",'
     || '"' || mt.VALID_END_DATE || '",'

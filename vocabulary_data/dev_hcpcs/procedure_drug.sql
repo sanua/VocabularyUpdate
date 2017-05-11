@@ -81,7 +81,8 @@ create table relationship_to_concept (
   concept_code_1 varchar2(255),
   concept_id_2 integer,
   precedence integer,
-  conversion_factor float
+  conversion_factor float,
+  constraint R2C_UQ_CC1_CID2 UNIQUE(concept_code_1, concept_id_2)
 )
 NOLOGGING;
 
