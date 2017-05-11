@@ -26,7 +26,11 @@ BEGIN
 	END LOOP;
 END;
 /
+COMMIT;
 
+PROMPT Empty the 'concept_relationship_manual' table. 
+PROMPT It''s not used in HCPCS but can lead to faulire in 'CheckManualTable'...
+TRUNCATE TABLE concept_relationship_manual;
 COMMIT;
 
 SPOOL OFF
