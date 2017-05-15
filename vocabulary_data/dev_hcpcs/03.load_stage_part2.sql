@@ -14,7 +14,7 @@ SPOOL '&1'
 PROMPT ***
 PROMPT * 8 Run the generic working/MapDrugVocabulary.sql. This will produce a concept_relationship_stage with HCPCS to RxNorm relatoinships
 PROMPT ***
-@&2/MapDrugVocabulary.sql &3
+@&2/MapDrugVocabulary.sql '&3'
 PROMPT ***
 PROMPT * 8 Run the generic working/MapDrugVocabulary.sql is done...
 PROMPT ***

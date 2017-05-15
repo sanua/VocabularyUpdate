@@ -48,11 +48,11 @@ END;
 /
 
 --1. Update latest_update field to new date 
-PROMPT Update latest_update field to new date 
+PROMPT 1. Update latest_update field to new date 
 BEGIN
    DEVV5.VOCABULARY_PACK.SetLatestUpdate (pVocabularyName        => 'HCPCS',
-                                          pVocabularyDate        => TO_DATE ('20161128', 'yyyymmdd'),
-                                          pVocabularyVersion     => '2016 Alpha Numeric HCPCS File',
+                                          pVocabularyDate        => TO_DATE ('20161117', 'yyyymmdd'),
+                                          pVocabularyVersion     => '2017 Alpha Numeric HCPCS File',
                                           pVocabularyDevSchema   => 'DEV_HCPCS');
 END;
 /
@@ -764,7 +764,7 @@ COMMIT;
 PROMPT ***
 PROMPT * 7 Run HCPCS/procedure_drug.sql. This will create all the input files for MapDrugVocabulary.sql
 PROMPT ***
-@&2/procedure_drug.sql &3
+@&2/procedure_drug.sql '&3'
 PROMPT ***
 PROMPT * 7 Run of HCPCS/procedure_drug.sql is done...
 PROMPT ***
@@ -773,7 +773,7 @@ PROMPT ***
 PROMPT ***
 PROMPT * 8 Run the generic working/MapDrugVocabulary.sql. This will produce a concept_relationship_stage with HCPCS to RxNorm relatoinships
 PROMPT ***
-@&2/MapDrugVocabulary.sql &4
+@&2/MapDrugVocabulary.sql '&4'
 PROMPT ***
 PROMPT * 8 Run the generic working/MapDrugVocabulary.sql is done...
 PROMPT ***
@@ -1091,7 +1091,6 @@ UPDATE concept_stage cs
                       AND c2.domain_id = 'Drug')
        AND cs.standard_concept IS NOT NULL;
 COMMIT;
-
 
 -- At the end, the three tables concept_stage, concept_relationship_stage and concept_synonym_stage should be ready to be fed into the generic_update.sql script
 PROMPT At the end, the three tables concept_stage, concept_relationship_stage and concept_synonym_stage should be ready to be fed into the generic_update.sql script

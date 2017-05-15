@@ -162,7 +162,7 @@ BEGIN
   END;	
 	SELECT concept_id + 1 INTO ex FROM (
 		SELECT concept_id, next_id, next_id - concept_id - 1 free_concept_ids
-		FROM (SELECT concept_id, LEAD (concept_id) OVER (ORDER BY concept_id) next_id FROM concept where concept_id >= 1000 and concept_id < 500000000)
+		FROM (SELECT concept_id, LEAD (concept_id) OVER (ORDER BY concept_id) next_id FROM concept where concept_id >= 581480 and concept_id < 500000000)
 		WHERE concept_id <> next_id - 1 AND next_id - concept_id > (SELECT COUNT (*) FROM concept_stage WHERE concept_id IS NULL)
 		ORDER BY next_id - concept_id
 		FETCH FIRST 1 ROW ONLY
@@ -664,8 +664,7 @@ MERGE INTO concept_relationship r
                                AND r.invalid_reason IS NULL
                                AND c1.concept_id = r.concept_id_1
                                AND c2.concept_id = r.concept_id_2
-                               AND c1.vocabulary_id = c2.vocabulary_id
-							   AND c1.vocabulary_id IN (SELECT vocabulary_id FROM vocabulary WHERE latest_update IS NOT NULL)
+							   AND EXISTS (SELECT 1 FROM vocabulary WHERE latest_update IS NOT NULL AND vocabulary_id IN (c1.vocabulary_id,c2.vocabulary_id))
                                AND c2.concept_code <> 'OMOP generated'
                                AND r.concept_id_1 <> r.concept_id_2)
                 SELECT u.concept_id_1, u.concept_id_2, u.relationship_id

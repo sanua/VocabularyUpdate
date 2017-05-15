@@ -51,8 +51,8 @@ END;
 PROMPT 1. Update latest_update field to new date 
 BEGIN
    DEVV5.VOCABULARY_PACK.SetLatestUpdate (pVocabularyName        => 'HCPCS',
-                                          pVocabularyDate        => TO_DATE ('20161128', 'yyyymmdd'),
-                                          pVocabularyVersion     => '2016 Alpha Numeric HCPCS File',
+                                          pVocabularyDate        => TO_DATE ('20161117', 'yyyymmdd'),
+                                          pVocabularyVersion     => '2017 Alpha Numeric HCPCS File',
                                           pVocabularyDevSchema   => '&4');
 END;
 /

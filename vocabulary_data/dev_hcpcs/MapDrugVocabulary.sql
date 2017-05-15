@@ -49,7 +49,7 @@ BEGIN
 	  l_str := t_names(i);
     SELECT COUNT(1) INTO l_cnt FROM user_tables WHERE UPPER(table_name) = UPPER(l_str);
     IF l_cnt > 0 THEN
-      EXECUTE IMMEDIATE 'DROP TABLE ' || l_str;
+      EXECUTE IMMEDIATE 'DROP TABLE ' || l_str || ' PURGE';
     END IF;
 	END LOOP;
 END;
@@ -143,6 +143,8 @@ where concept_relationship.invalid_reason is null and relationship_id='Has brand
 and c.concept_class_id !='Ingredient' and c.invalid_reason is null and c.vocabulary_id like 'RxNorm%'
 and bd.invalid_reason is null and bn.invalid_reason is null
 ;
+
+create index x_r_bn on r_bn(concept_id_1) nologging;
 exec DBMS_STATS.GATHER_TABLE_STATS (ownname=> USER, tabname => 'r_bn', estimate_percent => null, cascade => true)
 ;
 exec DBMS_STATS.GATHER_TABLE_STATS (ownname=> USER, tabname => 'shared_ing', estimate_percent => null, cascade => true)
@@ -152,7 +154,7 @@ create index x_shared_ing on shared_ing(q_dcode, r_did) nologging
 -- Create table that matches drugs q to r, based on Ingredient, Dose Form and Brand Name (if exist). Dose, box size or quantity are not yet compared
 PROMPT Create table that matches drugs q to r, based on Ingredient, Dose Form and Brand Name (if exist). Dose, box size or quantity are not yet compared
 --drop table q_to_r_anydose;
-create table q_to_r_anydose nologging as -- took 3.5 hours to finish it
+create table q_to_r_anydose nologging as 
 -- create table with all query drug codes q_dcode mapped to standard drug concept ids r_did, irrespective of the correct dose
 with m as (
 select distinct m.*, rc.cnt as rc_cnt, r.precedence as i_prec
@@ -507,8 +509,9 @@ from drug_concept_stage
 where concept_class_id in ('Procedure Drug') -- but no Unit
   and nvl(domain_id, 'Drug')='Drug'
 ;
+commit;
 */
---commit;
+
 /*
 --uncomment when it's a part of a drug vocabulary when creating concept_stage with this script
 -- Write source devices as standard (unless deprecated)
@@ -531,19 +534,23 @@ commit;
 */
 --Clean up
 PROMPT Clean up
-drop table r_drug_ing;
-drop table r_ing_count;
-drop table q_drug_ing;
-drop table q_ing_count;
-drop table match;
-drop table shared_ing;
-drop table r_bn;
-drop table q_to_r_anydose;
-drop table q_to_r_wdose;
-drop table q_to_r;
-drop table poss_map;
-drop table cnc_rel_class; 
-drop table attrib_cnt;
-drop table Q_DCODE_to_hlc;
-drop table dupl;
-drop table best_map;
+drop table r_drug_ing purge;
+drop table r_ing_count purge;
+drop table q_drug_ing purge;
+drop table q_ing_count purge;
+drop table match purge;
+drop table shared_ing purge;
+drop table r_bn purge;
+drop table q_to_r_anydose purge;
+drop table q_to_r_wdose purge;
+drop table q_to_r purge;
+drop table poss_map purge;
+drop table cnc_rel_class purge; 
+drop table attrib_cnt purge;
+drop table Q_DCODE_to_hlc purge;
+drop table dupl purge;
+drop table best_map purge;
+drop table drug_concept_stage purge;
+drop table relationship_to_concept purge;
+drop table internal_relationship_stage purge;
+drop table ds_stage purge;
