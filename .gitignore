@@ -3,7 +3,7 @@
 *scratch.*
 vocabulary_data/dev_*/*.csv
 vocabulary_data/dev_*/.log?
-vocabulary_data/dev_*/**/_*
+#vocabulary_data/dev_*/**/_*
 vocabulary_data/**/*.txt
 vocabulary_data/**/test*.sql
 vocabulary_data/**/_test*.sql
