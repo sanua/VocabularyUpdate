@@ -112,7 +112,7 @@ INSERT INTO &2 (LABEL_TEXT,
       WHERE r2cv.CONCEPT_CODE_1 IS NULL
     UNION ALL
     SELECT DISTINCT
-           'From R2C',
+           'From R2C' AS LABEL_TEXT,
            r2cv.CONCEPT_CODE_1,
            dcsv.CONCEPT_NAME AS CONCEPT_NAME_1, 
            r2cv.CONCEPT_ID_2, 
