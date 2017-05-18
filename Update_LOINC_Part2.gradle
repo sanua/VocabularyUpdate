@@ -1,6 +1,6 @@
 /*
 **************************************
-* ICD10CM Vocabulary update. Part 2  *
+* LOINC Vocabulary update. Part 2  *
 * Version 0.0.6                      *
 **************************************
 */
@@ -51,6 +51,22 @@ public class StringBuilderWrapper implements java.lang.Appendable {
         wrapped.append(IDENT_CHAR).append(value)
     }
 
+    public static StringBuilderWrapper getBuilder() {
+        return new StringBuilderWrapper()
+    }
+
+    public static String readFromFile(File file) {
+        if (file == null)
+            return ''
+        def builder = getBuilder()
+        def br = new BufferedReader(new FileReader(file))
+        def strLine
+        while ((strLine = br.readLine()) != null) {
+            builder.append('\n').append(strLine)
+        }
+        return builder.toString()
+    }
+
     @Override
     Appendable append(CharSequence csq) throws IOException {
         wrapped.append(IDENT_CHAR).append(csq)
@@ -72,7 +88,7 @@ public class StringBuilderWrapper implements java.lang.Appendable {
     }
 }
 
-// Load ICD10CM properties
+// Load LOINC properties
 Properties props = new Properties()
 props.load(new FileInputStream("${project.rootDir}/Update_LOINC.properties"))
 props.each {prop ->
@@ -86,7 +102,10 @@ props.each {prop ->
 def tempDir = File.createTempDir()
 tempDir.deleteOnExit()
 
-task prepareManualTable(description: project.properties['prepareTable.description']) << {
+/**
+ * Prepare 'Manual Table' to load data with 'Manual Mapping'
+ */
+task prepareManualTable(description: project.properties['prepareManualTable.description']) << {
     println '\n\n*****************************************************'
     println '*                                                   *'
     println "*     '${description}' action started...      *"
@@ -96,10 +115,10 @@ task prepareManualTable(description: project.properties['prepareTable.descriptio
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()
 
-    def sqlFile = "${project.properties['basePath']}/${project.properties['prepareTable.sqlFileName']}"
-    def logFile = "${project.properties['logPath']}/${project.properties['prepareTable.logFileName']}"
-    def streamLogFile = "${project.properties['logPath']}/${project.properties['prepareTable.streamLogFileName']}"
-    def streamErrorFile = "${project.properties['logPath']}/${project.properties['prepareTable.streamErrFileName']}"
+    def sqlFile = "${project.properties['basePath']}/${project.properties['prepareManualTable.sqlFileName']}"
+    def logFile = "${project.properties['logPath']}/${project.properties['prepareManualTable.logFileName']}"
+    def streamLogFile = "${project.properties['logPath']}/${project.properties['prepareManualTable.streamLogFileName']}"
+    def streamErrorFile = "${project.properties['logPath']}/${project.properties['prepareManualTable.streamErrFileName']}"
 
     def db = [un       : project.properties['db.userName'],
               pw       : project.properties['db.password'],
@@ -116,7 +135,13 @@ task prepareManualTable(description: project.properties['prepareTable.descriptio
     def timeFinish = System.currentTimeMillis()
 
     // Write to console
+    try {
+        // Write compact SQLPlus's spool log
+        System.out.println(StringBuilderWrapper.readFromFile(new File(logFile)))
+    } catch (IOException ioe) {
+        // Write whole SQLPlus's log
     System.out.println(sout.toString())
+    }
 
     // Write to logfile
     File f = new File(streamLogFile)
@@ -126,6 +151,40 @@ task prepareManualTable(description: project.properties['prepareTable.descriptio
     f = new File(streamErrorFile)
     f.write(serr.toString())
 
+    // Get Manual Table from editors
+    println new StringBuilderWrapper('\'Manual Table\' copy started...')
+    boolean isZipped = false
+    def srcFile = "${project.properties['basePath']}/${project.properties['prepareManualTable.manualWorkResultPath']}/${project.properties['manualTableFileName']}"
+    if (!new File(srcFile).exists()) {
+        srcFile = "${project.properties['basePath']}/${project.properties['prepareManualTable.manualWorkResultPath']}/${project.properties['manualTableFileName'].replace('.csv', '.zip')}"
+        if (!new File(srcFile).exists()) {
+            throw new GradleException(String.format(project.properties['error.message'], 'There is no .csv/.zip of Manual Mapping data found', name))
+        } else {
+            isZipped = true
+        }
+    }
+
+    def result, message, dest = "${project.properties['basePath']}"
+    if (!isZipped) {
+        result = copy {
+        from srcFile
+        into dest
+    }
+        message = new StringBuilderWrapper('\tfile is copied')
+    } else {
+        result = copy {
+            from zipTree(srcFile)
+            into dest
+        }
+        message = new StringBuilderWrapper('\tfile is extracted')
+    }
+    if (result.getDidWork()) {
+        println message
+    } else {
+        println new StringBuilderWrapper('file isn\'t copied')
+    }
+    println new StringBuilderWrapper('\'Manual Table\' copy done...')
+
     // Measure time execution
     def timeElapsed = (timeFinish - timeStart) / 1000
     println "Time elapsed: ${timeElapsed} seconds."
@@ -133,7 +192,10 @@ task prepareManualTable(description: project.properties['prepareTable.descriptio
     println "*** '${description}' action done ***"
 }
 
-task importTable (dependsOn: prepareManualTable, description: project.properties['importTable.description']) << {
+/**
+ * Import data of 'Manual Mapping' into 'Manual Table'
+ */
+task importManualTable (dependsOn: prepareManualTable, description: project.properties['importManualTable.description']) << {
     println '\n\n*****************************************************'
     println '*                                                   *'
     println "*      '${description}' action started...      *"
@@ -143,20 +205,19 @@ task importTable (dependsOn: prepareManualTable, description: project.properties
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()
 
-    def dataFile = "${project.properties['basePath']}/${project.properties['importTable.dataFileName']}"
-    def logFile = "${project.properties['logPath']}/${project.properties['importTable.logFileName']}"
-    def discardFile = "${project.properties['logPath']}/${project.properties['importTable.discardFileName']}"
-    def badFile = "${project.properties['logPath']}/${project.properties['importTable.badFileName']}"
-    def streamLogFile = "${project.properties['logPath']}/${project.properties['importTable.streamLogFileName']}"
-    def streamErrorFile = "${project.properties['logPath']}/${project.properties['importTable.streamErrFileName']}"
+    def dataFile = "${project.properties['basePath']}/${project.properties['manualTableFileName']}"
+    def logFile = "${project.properties['logPath']}/${project.properties['importManualTable.logFileName']}"
+    def discardFile = "${project.properties['logPath']}/${project.properties['importManualTable.discardFileName']}"
+    def badFile = "${project.properties['logPath']}/${project.properties['importManualTable.badFileName']}"
+    def streamLogFile = "${project.properties['logPath']}/${project.properties['importManualTable.streamLogFileName']}"
+    def streamErrorFile = "${project.properties['logPath']}/${project.properties['importManualTable.streamErrFileName']}"
 
     def bosOut = new ByteArrayOutputStream(), bosErr = new ByteArrayOutputStream()
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
-
     exec {
         executable "sqlldr"
         args "USERID=${project.properties['db.userName']}/${project.properties['db.password']}@${project.properties['db.tnsName']} " +
-                "CONTROL=${project.properties['basePath']}/${project.properties['importTable.controlFileName']} DATA=$dataFile LOG=$logFile DISCARD=$discardFile BAD=$badFile"
+                "CONTROL=${project.properties['basePath']}/${project.properties['importManualTable.controlFileName']} DATA=$dataFile LOG=$logFile DISCARD=$discardFile BAD=$badFile"
         standardOutput = bosOut
         errorOutput = bosErr
     }
@@ -174,6 +235,9 @@ task importTable (dependsOn: prepareManualTable, description: project.properties
     }
 
     // Write to console
+    /*
+     *  When import prefer to write stream log to console (it's shorter)
+     * */
     System.out.println(sout.toString())
 
     // Write to logfile
@@ -192,13 +256,71 @@ task importTable (dependsOn: prepareManualTable, description: project.properties
     println "Time elapsed: ${timeElapsed} seconds."
 
     println "*** '${description}' action done ***"
+
+}
+
+/**
+ * Apply data from 'Manual Mapping' to be ready for further processing in 'Load Stage'
+ */
+task applyManualTable(dependsOn: importManualTable, description: project.properties['applyManualTable.description']) << {
+    println '\n\n*****************************************************'
+    println '*                                                   *'
+    println "*      '${description}' action started...       *"
+    println '*                                                   *'
+    println '*****************************************************'
+
+    // Start action checkpoint
+    def timeStart = System.currentTimeMillis()
+
+    def sqlFile = "${project.properties['basePath']}/${project.properties['applyManualTable.sqlFileName']}"
+    def logFile = "${project.properties['logPath']}/${project.properties['applyManualTable.logFileName']}"
+    def streamLogFile = "${project.properties['logPath']}/${project.properties['applyManualTable.streamLogFileName']}"
+    def streamErrorFile = "${project.properties['logPath']}/${project.properties['applyManualTable.streamErrFileName']}"
+
+    def db = [un       : project.properties['db.userName'],
+              pw       : project.properties['db.password'],
+              tns      : project.properties['db.tnsName'],
+              devSchema: project.properties['vocabulary.dev.schema'],
+              sqlfile  : sqlFile,
+              tableName: "${project.properties['manualTableName']}",
+              logfile  : logFile]
+    def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
+    def sqlplus = """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile} ${db.tableName} ${db.devSchema}""".execute()
+    sqlplus.consumeProcessOutput(sout, serr)
+    sqlplus.waitFor()
+
+    // Finish action checkpoint
+    def timeFinish = System.currentTimeMillis()
+
+    // Write to console
+    try {
+        // Write compact SQLPlus's spool log
+        System.out.println(StringBuilderWrapper.readFromFile(new File(logFile)))
+    } catch (IOException ioe) {
+        // Write whole SQLPlus's log
+        System.out.println(sout.toString())
+    }
+
+    // Write to logfile
+    File f = new File(streamLogFile)
+    f.write(sout.toString())
+
+    // Write to error file
+    f = new File(streamErrorFile)
+    f.write(serr.toString())
+
+    // Measure time execution
+    def timeElapsed = (timeFinish - timeStart) / 1000
+    println "Time elapsed: ${timeElapsed} seconds."
+
+    println "*** '${description}' action done ***"
 }
 
 /**
  * This task will run 'Load stage' script.
  * Seems it's is specific for each vocabulary.
  */
-task runLoadStage(dependsOn: importTable, description: project.properties['loadStage.description']) << {
+task loadStage(dependsOn: applyManualTable, description: project.properties['loadStage.description']) << {
     println '\n\n***********************************************'
     println '*                                             *'
     println "*    '${description}' action started...    *"
@@ -227,7 +349,13 @@ task runLoadStage(dependsOn: importTable, description: project.properties['loadS
     def timeFinish = System.currentTimeMillis()
 
     // Write to console
+    try {
+        System.out.println(StringBuilderWrapper.readFromFile(new File(logFile)))
+        System.out.println(StringBuilderWrapper.readFromFile(new File(logFileMapDrugVocabulary)))
+    } catch (IOException ioe) {
+        // Write whole SQLPlus's log
     System.out.println(sout.toString())
+    }
 
     // Write to logfile
     File f = new File(streamLogFile)
@@ -253,7 +381,7 @@ task runLoadStage(dependsOn: importTable, description: project.properties['loadS
  * This task will run 'Genetic update' script.
  * It's common for all updated vocabularies and located in '\Vocabulary-v5.0\working\generic_update.sql' file.
  */
-task runGenericUpdate(dependsOn: runLoadStage, description: project.properties['genericUpdate.description']) << {
+task genericUpdate(dependsOn: loadStage, description: project.properties['genericUpdate.description']) << {
     println '\n\n***********************************************'
     println '*                                             *'
     println "*      '${description}' action started...     *"
@@ -282,7 +410,13 @@ task runGenericUpdate(dependsOn: runLoadStage, description: project.properties['
     def timeFinish = System.currentTimeMillis()
 
     // Write to console
+    try {
+        // Write compact SQLPlus's spool log
+        System.out.println(StringBuilderWrapper.readFromFile(new File(logFile)))
+    } catch (IOException ioe) {
+        // Write whole SQLPlus's log
     System.out.println(sout.toString())
+    }
 
     // Write to logfile
     File f = new File(streamLogFile)
@@ -307,7 +441,7 @@ task runGenericUpdate(dependsOn: runLoadStage, description: project.properties['
 /**
  * This task will run scripts which allows to see the vocabulary update results
  */
-task checkUpdateResults(dependsOn: runGenericUpdate, description: project.properties['checkUpdateResults.description']) << {
+task checkUpdateResults(dependsOn: genericUpdate, description: project.properties['checkUpdateResults.description']) << {
     println '\n\n***********************************************'
     println '*                                             *'
     println "*   '${description}' action started...  *"
@@ -336,7 +470,13 @@ task checkUpdateResults(dependsOn: runGenericUpdate, description: project.proper
     def timeFinish = System.currentTimeMillis()
 
     // Write to console
+    try {
+        // Write compact SQLPlus's spool log
+        System.out.println(StringBuilderWrapper.readFromFile(new File(logFile)))
+    } catch (IOException ioe) {
+        // Write whole SQLPlus's log
     System.out.println(sout.toString())
+    }
 
     // Write to logfile
     File f = new File(streamLogFile)

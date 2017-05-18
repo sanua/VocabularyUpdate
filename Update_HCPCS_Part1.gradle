@@ -417,7 +417,7 @@ task xls2Csv(dependsOn: extractFiles, description: project.properties['xls2Csv.d
         fos.close()
 
         // Finish action checkpoint
-        timeFinish = System.currentTimeMillis()
+        def timeFinish = System.currentTimeMillis()
 
     }
     catch (FileNotFoundException e) {

@@ -10,9 +10,8 @@ SPOOL '&1'
 
 PROMPT
 PROMPT 'Create Source Table' is starting...
-EXEC DBMS_LOCK.sleep(1);
+EXECUTE DBMS_LOCK.sleep(1);
 PROMPT 'Create Source Table' is done...
 PROMPT
 
-SPOOL OFF
 EXIT

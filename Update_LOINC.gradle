@@ -351,99 +351,99 @@ task xls2Csv(dependsOn: extractFiles, description: project.properties['xls2Csv.d
     def timeFinish = timeStart
 
     // For storing data into CSV files
-    StringBuffer data = new StringBuffer();
+    StringBuffer data = new StringBuffer()
     try {
-        FileOutputStream fos = new FileOutputStream(outputFile);
+        FileOutputStream fos = new FileOutputStream(outputFile)
 
         // Get the workbook object for XLS file
-        Workbook workbook = WorkbookFactory.create(new FileInputStream(inputFile));
+        Workbook workbook = WorkbookFactory.create(new FileInputStream(inputFile))
         // Get first sheet from the workbook
-        Sheet sheet = workbook.getSheetAt(0);
-//        Cell cell;
-//        Row row;
+        Sheet sheet = workbook.getSheetAt(0)
+//        Cell cell
+//        Row row
 
         for (int i = 0; i < sheet.getLastRowNum(); i++){
-            Row row = sheet.getRow(i);
+            Row row = sheet.getRow(i)
 
             if (row!= null){
                 for (int j = 0; j < row.getLastCellNum(); j++){
-                    Cell cell = row.getCell(j);
+                    Cell cell = row.getCell(j)
                     if (cell == null){
-                        data.append(";");
+                        data.append(";")
                     } else {
                         cell.setCellType(Cell.CELL_TYPE_STRING)
-                        data.append("\"" + cell. toString().trim().replaceAll("\"", "'") + "\"" + ";");
+                        data.append("\"" + cell. toString().trim().replaceAll("\"", "'") + "\"" + ";")
 //                        switch (cell.getCellType()) {
 //                            case Cell.CELL_TYPE_BOOLEAN:
-//                                data.append("\"" + cell.getBooleanCellValue() + "\"" + ";");
-//                                break;
+//                                data.append("\"" + cell.getBooleanCellValue() + "\"" + ";")
+//                                break
 //
 //                            case Cell.CELL_TYPE_NUMERIC:
-//                                data.append("\"" + cell.cgetNumericCellValue() + "\"" + ";");
-//                                break;
+//                                data.append("\"" + cell.cgetNumericCellValue() + "\"" + ";")
+//                                break
 //
 //                            case Cell.CELL_TYPE_STRING:
 ////                                if (!cell.getStringCellValue().contains("\"")){
 //                                println cell.toString()
-//                                    data.append("\"" + cell.getStringCellValue().trim().replaceAll("\"", "'") + "\"" + ";");
+//                                    data.append("\"" + cell.getStringCellValue().trim().replaceAll("\"", "'") + "\"" + ";")
 ////                                } else {
-////                                    data.append(";");
+////                                    data.append(";")
 ////                                }
-//                                break;
+//                                break
 //
 //                            case Cell.CELL_TYPE_BLANK:
-//                                data.append("" + ";");
-//                                break;
+//                                data.append("" + ";")
+//                                break
 //
 //                            default:
-//                                data.append(cell + ";");
+//                                data.append(cell + ";")
 //                        }
 
 
 
                     }
                 }
-                data.append('\n');
+                data.append('\n')
             } else {
 
             }
         }
 
         // Iterate through each rows from first sheet
-//        Iterator<Row> rowIterator = sheet.iterator();
+//        Iterator<Row> rowIterator = sheet.iterator()
 //        while (rowIterator.hasNext()) {
-//            row = rowIterator.next();
+//            row = rowIterator.next()
 //            // For each row, iterate through each columns
-//            Iterator<Cell> cellIterator = row.cellIterator();
+//            Iterator<Cell> cellIterator = row.cellIterator()
 //            while (cellIterator.hasNext()) {
-//                cell = cellIterator.next();
+//                cell = cellIterator.next()
 //
 //                switch (cell.getCellType()) {
 //                    case Cell.CELL_TYPE_BOOLEAN:
-//                        data.append("\"" + cell.getBooleanCellValue() + "\"" + ";");
-//                        break;
+//                        data.append("\"" + cell.getBooleanCellValue() + "\"" + ";")
+//                        break
 //
 //                    case Cell.CELL_TYPE_NUMERIC:
-//                        data.append("\"" + cell.getNumericCellValue() + "\"" + ";");
-//                        break;
+//                        data.append("\"" + cell.getNumericCellValue() + "\"" + ";")
+//                        break
 //
 //                    case Cell.CELL_TYPE_STRING:
-//                        data.append("\"" + cell.getStringCellValue().trim() + "\"" + ";");
-//                        break;
+//                        data.append("\"" + cell.getStringCellValue().trim() + "\"" + ";")
+//                        break
 //
 //                    case Cell.CELL_TYPE_BLANK:
-//                        data.append("" + ";");
-//                        break;
+//                        data.append("" + ";")
+//                        break
 //
 //                    default:
-//                        data.append(cell + ";");
+//                        data.append(cell + ";")
 //                }
 //
 //            }
 //
 //        }
         println new StringBuilderWrapper('files converted...')
-        fos.write(data.toString().getBytes());
+        fos.write(data.toString().getBytes())
         fos.close()
 
         // Finish action checkpoint
@@ -451,10 +451,10 @@ task xls2Csv(dependsOn: extractFiles, description: project.properties['xls2Csv.d
 
     }
     catch (FileNotFoundException e) {
-        e.printStackTrace();
+        e.printStackTrace()
     }
     catch (IOException e) {
-        e.printStackTrace();
+        e.printStackTrace()
     }
 
     // Measure time execution
@@ -534,7 +534,7 @@ task importData(dependsOn: xls2Csv, description: project.properties['import.desc
  * This task will run 'Load stage' script.
  * Seems it's is specific for each vocabulary.
  */
-task runLoadStage(dependsOn: importData, description: project.properties['loadStage.description']) << {
+task loadStage(dependsOn: importData, description: project.properties['loadStage.description']) << {
     println '\n\n***********************************************'
     println '*                                             *'
     println "*        '${description}' action started...       *"
@@ -595,7 +595,7 @@ task runLoadStage(dependsOn: importData, description: project.properties['loadSt
  * This task will run 'Genetic update' script.
  * It's common for all updated vocabularies and located in '\Vocabulary-v5.0\working\generic_update.sql' file.
  */
-task runGenericUpdate(dependsOn: runLoadStage, description: project.properties['genericUpdate.description']) << {
+task genericUpdate(dependsOn: loadStage, description: project.properties['genericUpdate.description']) << {
     println '\n\n***********************************************'
     println '*                                             *'
     println "*     '${description}' action started...      *"
@@ -655,7 +655,7 @@ task runGenericUpdate(dependsOn: runLoadStage, description: project.properties['
 /**
  * This task will run scripts which allows to see the vocabulary update results
  */
-task checkUpdateResults(dependsOn: runGenericUpdate, description: project.properties['checkUpdateResults.description']) << {
+task checkUpdateResults(dependsOn: genericUpdate, description: project.properties['checkUpdateResults.description']) << {
     println '\n\n***********************************************'
     println '*                                             *'
     println "*  '${description}' action started...   *"
@@ -718,12 +718,14 @@ task checkUpdateResults(dependsOn: runGenericUpdate, description: project.proper
  * TODO: Needs to find solution to measure whole task chain execution.
  * TODO: This one via doFirst/doLast actions isn't working.
  */
-task startUpdate(dependsOn: createSourceTable, description: project.properties['startUpdate.description']) {
+task startUpdate(dependsOn: checkUpdateResults, description: project.properties['startUpdate.description']) {
     println '\n\n***********************************************'
     println '*                                             *'
     println "*      '${description}' action started...       *"
     println '*                                             *'
     println '***********************************************'
+
+    println "Updating of '${project.properties['vocabulary.display.name']}' vocabulary on the '${project.properties['db.userName']}@${project.properties['db.tnsName']}' schema...\n"
 
     project.ext['logPath'] = "${project.properties['basePath']}/${project.properties['baseLogPath']}"
     def folder = new File(project.properties['logPath'])
@@ -734,8 +736,6 @@ task startUpdate(dependsOn: createSourceTable, description: project.properties['
         FileUtils.cleanDirectory(folder)
         println "Log directory is cleaned: ${folder.getPath()}"
     }
-
-    println "Updating of '${project.properties['vocabulary.display.name']}' vocabulary on the '${project.properties['db.userName']}@${project.properties['db.tnsName']}' schema..."
 
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()
