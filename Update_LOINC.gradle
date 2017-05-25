@@ -23,7 +23,7 @@ buildscript {
         classpath 'org.apache.poi:poi:3.9'
         classpath 'org.apache.poi:poi-ooxml:3.9'
         classpath 'net.bican:jwordpress:0.6.5'
-        // classpath 'org.apache.httpcomponents:httpclient:4.5.3'
+        classpath 'org.apache.httpcomponents:httpclient:4.5.3'
         classpath 'org.codehaus.groovy.modules.http-builder:http-builder:0.5.2'
         classpath 'com.squareup.okhttp3:okhttp:3.5.0'
 
@@ -117,6 +117,329 @@ public class StringBuilderWrapper implements java.lang.Appendable {
         return wrapped.toString()
     }
 }
+
+import org.apache.http.client.CookieStore;
+import org.apache.http.impl.cookie.BasicClientCookie
+import org.apache.http.client.CookieStore
+import org.apache.http.impl.client.HttpClientBuilder
+import org.apache.http.impl.client.BasicCookieStore
+
+import org.apache.http.client.*
+import org.apache.http.impl.client.*
+import org.apache.http.*
+import org.apache.http.message.*
+import org.apache.http.client.protocol.*
+import org.apache.http.impl.auth.*
+import org.apache.http.auth.*
+import org.apache.http.cookie.*
+import org.apache.http.client.methods.*
+
+public class DownloadHelper {
+    private String userName
+    private String password
+    private String loginUrl
+    private String fileUrl
+    private String workDir
+    private String defaultFileName
+    private String buildScript
+    
+    private Header cookieHeader
+
+    private CloseableHttpClient client
+    private CloseableHttpResponse downloadResponse
+
+    private Properties messageResources
+
+    private DownloadHelper() {
+        //client = HttpClients.createDefault()
+        // client.setDefaultCookieStore(cookieStore)
+        BasicCookieStore cookieStore = new BasicCookieStore()
+        client = HttpClients.custom().setDefaultCookieStore(cookieStore) .build()
+        println '$$$$$$$$$$client' + client.getCookieStore()
+        throw new GradleException("!!!!!!!!!!!!!!!!!")
+        //client = HttlClientBuilder.create()
+        this.messageResources = new Properties()
+    }
+
+    private DownloadHelper(String userName, String password, String loginUrl, String fileUrl, String workDir, String defaultFileName, String buildScript) {
+        this()
+        this.userName = userName
+        this.password = password
+        this.loginUrl = loginUrl
+        this.fileUrl = fileUrl
+        this.workDir = workDir
+        this.defaultFileName = defaultFileName
+        this.buildScript = buildScript
+        def filePath = "${this.buildScript.substring(0, this.buildScript.lastIndexOf(File.separator) + 1)}gradle.properties"
+        this.messageResources.load(new FileInputStream(filePath))
+
+        println "\n!!!!! userName: ${userName}"
+        println "!!!!! password: ${password}"
+        println "!!!!! loginUrl: ${loginUrl}"
+        println "!!!!! fileUrl: ${fileUrl}"
+        println "!!!!! workDir: ${workDir}"
+        println "!!!!! defaultFileName: ${defaultFileName}"
+        println "!!!!! buildScript: ${buildScript}"
+        println "!!!!! messageResources: ${messageResources}"
+    }
+
+    public DownloadHelper loginLoinc() {
+        return this.loginLoinc(this.loginUrl, this.userName, this.password)
+    }
+
+    public DownloadHelper loginLoinc(String loginUrl, String userName, String password) {
+        // Authenticate LOINC web resource
+        HttpPost loginPost = new HttpPost(loginUrl)
+        List<NameValuePair> loginParams = new ArrayList<NameValuePair>()
+        loginParams.add(new BasicNameValuePair("log", "${userName}"))
+        loginParams.add(new BasicNameValuePair("pwd", "${password}"))
+        loginParams.add(new BasicNameValuePair("wp-submit", "Log In"))
+        loginPost.setEntity(new UrlEncodedFormEntity(loginParams))
+        client.execute(loginPost)
+        return this
+    }
+
+    public DownloadHelper loginUmls() {
+        return this.loginUmls(this.loginUrl, this.userName, this.password)
+    }
+
+    public DownloadHelper loginUmls(String loginUrl, String userName, String password) {
+        // Authenticate UMLS web resource
+        //def loginUrlParams = "${loginUrl}?username=\"${username}\"&password=\"${password}\"&submit=\"{}\""
+        HttpPost loginRequest = new HttpPost(loginUrl)
+        List<NameValuePair> loginParams = new ArrayList<NameValuePair>()
+        loginParams.add(new BasicNameValuePair("username", userName))
+        loginParams.add(new BasicNameValuePair("password", password))
+        //loginParams.add(new BasicNameValuePair("lt", "e3s1"))
+        loginParams.add(new BasicNameValuePair("lt", "e1s1"))
+        //loginParams.add(new BasicNameValuePair(_eventId, "submit"))
+        loginParams.add(new BasicNameValuePair("submit", "Sign In"))
+        loginRequest.setEntity(new UrlEncodedFormEntity(loginParams))
+        client.execute(loginRequest)
+        return this
+    }
+
+    public DownloadHelper loginUmls2(String loginUrl, String userName, String password) {
+        // Authenticate UMLS web resource
+        def loginUrlParams = "${loginUrl}?username=${URLEncoder.encode(userName,'UTF-8')}&password=${URLEncoder.encode(password,'UTF-8')}&submit=${URLEncoder.encode('Sign In', 'UTF-8')}"
+        println "!!!!! loginUrlParams: ${loginUrlParams}"
+        HttpGet loginRequest = new HttpGet(loginUrlParams)
+        //List<NameValuePair> loginParams = new ArrayList<NameValuePair>()
+        //loginParams.add(new BasicNameValuePair("username", "${userName}"))
+        //loginParams.add(new BasicNameValuePair("password", "${password}"))
+        //loginParams.add(new BasicNameValuePair("lt", "e3s1"))
+        //loginParams.add(new BasicNameValuePair("_eventId", "submit"))
+        //loginParams.add(new BasicNameValuePair("submit", "Sign In"))
+        //loginPost.setEntity(new UrlEncodedFormEntity(loginParams))
+        HttpResponse response = client.execute(loginRequest)
+        Object o = response.getHeaders('Set-Cookie')
+        //println "########## ${o}, ${o.getClass()}"
+        //throw new GradleException("QQQQQQQQQQQQQQ")
+        //println "########## ${o.getName()}"
+        //println "########## ${o.getValue()}"
+        //return this
+    }
+
+    public umlsFormBasedLogin() {
+        /*
+        works with UMLS
+        * */
+        BasicCookieStore cookieStore = new BasicCookieStore();
+        CloseableHttpClient httpclient = HttpClients.custom()
+                .setDefaultCookieStore(cookieStore)
+                .build();
+        try {
+            HttpGet httpget = new HttpGet("https://utslogin.nlm.nih.gov/cas/login");
+            CloseableHttpResponse response1 = httpclient.execute(httpget);
+            try {
+                HttpEntity entity = response1.getEntity();
+
+                System.out.println("Login form get: " + response1.getStatusLine());
+                EntityUtils.consume(entity);
+
+                System.out.println("Initial set of cookies:");
+                List<Cookie> cookies = cookieStore.getCookies();
+                if (cookies.isEmpty()) {
+                    System.out.println("None");
+                } else {
+                    for (int i = 0; i < cookies.size(); i++) {
+                        System.out.println("- " + cookies.get(i).toString());
+                    }
+                }
+            } finally {
+                response1.close();
+            }
+
+            HttpUriRequest login = RequestBuilder.post()
+                    .setUri(new URI("https://utslogin.nlm.nih.gov/cas/login#"))
+                    .addParameter("username", "Ddymshyts")
+                    .addParameter("password", "UMLSPass123!")
+                    .addParameter("submit", "Sign In")
+                    .addParameter("lt", "e1s1")
+                    .addParameter("_eventId", "submit")
+                    .build();
+            CloseableHttpResponse response2 = httpclient.execute(login);
+            try {
+                HttpEntity entity = response2.getEntity();
+
+                System.out.println("Login form get: " + response2.getStatusLine());
+                EntityUtils.consume(entity);
+
+                System.out.println("Post logon cookies:");
+                List<Cookie> cookies = cookieStore.getCookies();
+                if (cookies.isEmpty()) {
+                    System.out.println("None");
+                } else {
+                    for (int i = 0; i < cookies.size(); i++) {
+                        System.out.println("- " + cookies.get(i).toString());
+                    }
+                }
+            } finally {
+                response2.close();
+            }
+
+
+            for (Cookie c: cookieStore.getCookies()) {
+                if (c.getName().equalsIgnoreCase("JSESSIONID")) {
+                    c.setDomain(".nlm.nih.gov")
+                    c.setPath("/")
+                }
+            }
+
+
+            /*BasicClientCookie cookie = new BasicClientCookie("CASTGC", "TGT-84481-MHzJldNaK1DtMHV3pSWdQrXS44dCLfuIbKqboko324MG4dj9er-cas")
+            cookie.setDomain(".nlm.nih.gov")
+            cookie.setPath("/")
+            cookieStore.addCookie(cookie)*/
+
+            System.out.println("*********")
+            List<Cookie> cookies = cookieStore.getCookies();
+            if (cookies.isEmpty()) {
+                System.out.println("None");
+            } else {
+                for (int i = 0; i < cookies.size(); i++) {
+                    System.out.println("- " + cookies.get(i).toString());
+                }
+            }
+            System.out.println("*********")
+
+            HttpGet downloadRequest = new HttpGet('https://download.nlm.nih.gov/umls/kss/mappings/LNC215_TO_CPT2005/LNC215_TO_CPT2005_MAPPINGS.zip')
+            //List<NameValuePair> loginParams = new ArrayList<NameValuePair>()
+            //loginParams.add(new BasicNameValuePair("username", "Ddymshyts"))
+            //loginParams.add(new BasicNameValuePair("password", "UMLSPass123!"))
+            //loginParams.add(new BasicNameValuePair("submit", "Sign In"))
+            //downloadRequest.setEntity(new UrlEncodedFormEntity(loginParams))
+            CloseableHttpResponse downloadResponse = httpclient.execute(downloadRequest)
+
+            String downloadPath = String.format("%s/%s", this.workDir, this.defaultFileName)
+            System.out.println("*** Stored to:" + downloadPath)
+            FileOutputStream fOut = new FileOutputStream(new File(downloadPath))
+            IOUtils.copy(downloadResponse.getEntity().getContent(), fOut)
+
+
+        } finally {
+            httpclient.close();
+        }
+    }
+    
+    public void downloadUmls() {
+        HttpHost target = new HttpHost("nlm.nih.gov", 443, "https");
+        CredentialsProvider credsProvider = new BasicCredentialsProvider();
+        credsProvider.setCredentials(
+                new AuthScope(target.getHostName(), target.getPort()),
+                new UsernamePasswordCredentials("Ddymshyts", "UMLSPass123!"));
+        CloseableHttpClient httpclient = HttpClients.custom()
+                .setDefaultCredentialsProvider(credsProvider).build();
+        try {
+
+            // Create AuthCache instance
+            AuthCache authCache = new BasicAuthCache();
+            // Generate BASIC scheme object and add it to the local
+            // auth cache
+            BasicScheme basicAuth = new BasicScheme();
+            authCache.put(target, basicAuth);
+
+            // Add AuthCache to the execution context
+            HttpClientContext localContext = HttpClientContext.create();
+            localContext.setAuthCache(authCache);
+
+            HttpGet httpget = new HttpGet("/cas/login");
+
+            System.out.println("Executing request " + httpget.getRequestLine() + " to target " + target);
+            for (int i = 0; i < 3; i++) {
+                CloseableHttpResponse response = httpclient.execute(target, httpget, localContext);
+                try {
+                    System.out.println("----------------------------------------");
+                    System.out.println(response.getStatusLine());
+                    System.out.println(EntityUtils.toString(response.getEntity()));
+                } finally {
+                    response.close();
+                }
+            }
+        } finally {
+            httpclient.close();
+        }
+    }
+
+    public String downloadResource(String fileUrl) {
+        // Download update pack
+        HttpPost downloadPost = new HttpPost(fileUrl)
+
+        /*
+        CookieStore cookieStore = new BasicCookieStore()
+        BasicClientCookie cookie = new BasicClientCookie("JSESSIONID", '8B34FAA9DF3F823DD24A3C98FC0CF746')
+        cookie.setDomain('.nih.gov')
+        cookie. setPath("/")
+        cookieStore.addCookie(cookie)
+        HttpClient client = HttpClientBuilder.create().setDefaultCookieStore(cookieStore).build()
+        client.setDefaultCookieStore(cookieStore)
+        */
+
+        List<NameValuePair> downloadParams = new ArrayList<NameValuePair>()
+        downloadParams.add(new BasicNameValuePair("tc_accepted", "1"))
+        downloadParams.add(new BasicNameValuePair("tc_submit", "Download"))
+        downloadPost.setEntity(new UrlEncodedFormEntity(downloadParams))
+        downloadResponse = client.execute(downloadPost)
+
+        def content = downloadResponse.getEntity().getContent()
+
+        // Check response headers
+        def responseCode = (downloadResponse.getStatusLine().toString().split(' '))[1].toInteger()
+        println "!!!!!!! responseCode: ${responseCode}"
+        println "!!!!!!! headers: ${downloadResponse.getAllHeaders()}"
+
+        // Save update pack
+        def resPath = "${this.workDir}/test.file"
+        FileOutputStream ostr = new FileOutputStream(new File("${resPath}"))
+        IOUtils.copy(content, ostr)
+        println "!!!!!!! saved: ${resPath}"
+
+        if (responseCode != 200) {
+            throw new GradleException(String.format(messageResources.getProperty('error.message'), "Unable to get Full Set data pack, return code: ${responseCode}", 'Download resources'))
+        }
+        def contentType = downloadResponse.getLastHeader('Content-Type').getValue()
+        if (contentType.indexOf('zip') < 0) {
+            throw new GradleException(String.format(messageResources.getProperty('error.message'), 'Full Set data pack is not ZIP archive', 'Download resources'))
+        }
+        def cdHeader = downloadResponse.getLastHeader('Content-Disposition').getValue()
+        def fileName = cdHeader.substring(cdHeader.lastIndexOf('filename') + 9)
+        if (fileName && fileName.empty) {
+            fileName = this.defaultFileName
+        } else {
+            fileName = fileName.replace("\"", "").replace(";", "")
+        }
+
+        // Save update pack
+        def saveResourcePath = "${this.workDir}/${fileName}"
+        FileOutputStream fOut = new FileOutputStream(new File("${saveResourcePath}"))
+        IOUtils.copy(content, fOut)
+        client.close()
+
+        return saveResourcePath
+    }
+
+}
+
 
 // Load LOINC properties
 Properties props = new Properties()
@@ -776,7 +1099,6 @@ import java.io.InputStreamReader
 
 import org.apache.http.HttpResponse
 import org.apache.http.client.HttpClient
-import org.apache.http.client.methods.HttpPost
 import org.apache.http.impl.client.HttpClientBuilder
 import org.apache.http.NameValuePair
 import org.apache.http.message.BasicNameValuePair
@@ -794,53 +1116,164 @@ import okhttp3.MultipartBody
 import org.apache.commons.io.IOUtils
 import org.apache.http.impl.client.CloseableHttpClient
 import org.apache.http.client.methods.HttpPost
+import org.apache.http.client.methods.HttpGet
 import org.apache.http.NameValuePair
 import org.apache.http.message.BasicNameValuePair
 import org.apache.http.client.entity.UrlEncodedFormEntity
 import org.apache.http.client.methods.CloseableHttpResponse
 import org.apache.http.impl.client.HttpClients
+import org.apache.http.Header
 
-task loginLoinc() << {
+task downloadResources() << {
+    def userName = project.properties['downloadUpdatePack.loinc.username']
+    def password = project.properties['downloadUpdatePack.loinc.password']
+    def loginUrl = project.properties['downloadUpdatePack.loinc.loginUrl']
+    def buildScript = project.getBuildFile().toString()
+
+    /****************************
+     * Download 'Full Set' package
+     * **************************/
+    //def fileUrl = project.properties['downloadUpdatePack.fullSet.fileUrl']
+    //def defaultFileName = project.properties['downloadUpdatePack.fullSet.fileName']
+    //def savedPath = new DownloadHelper(userName, password, loginUrl, fileUrl, tempDir.getPath(), defaultFileName, buildScript).loginLoinc().downloadResource(fileUrl)
+    //println "Update of 'Full Set' is saved to: ${savedPath}"
+
+    /*************************************************************
+     * Download 'Multiaxial Hierarchy' package (from LOINC portal)
+     * ***********************************************************/
+    //fileUrl = project.properties['downloadUpdatePack.multiaxialHierarchy.fileUrl']
+    //defaultFileName = project.properties['downloadUpdatePack.multiaxialHierarchy.fileName']
+    //savedPath = new DownloadHelper(userName, password, loginUrl, fileUrl, tempDir.getPath(), defaultFileName, buildScript).loginLoinc().downloadResource(fileUrl)
+    //println "Update of 'Multiaxial Hierarchy' is saved to: ${savedPath}"
+
+    /*********************************************************
+     * Download 'Panels and Forms' package (from LOINC portal)
+     * *******************************************************/
+    //fileUrl = project.properties['downloadUpdatePack.panelsForms.fileUrl']
+    //defaultFileName = project.properties['downloadUpdatePack.panelsForms.fileName']
+    //savedPath = new DownloadHelper(userName, password, loginUrl, fileUrl, tempDir.getPath(), defaultFileName, buildScript).loginLoinc().downloadResource(fileUrl)
+    //println "Update of 'Panels and Forms' is saved to: ${savedPath}"
+
+    /******************************************************************
+     * Download 'CT Expression Association' package (from LOINC portal)
+     * ****************************************************************/
+    //fileUrl = project.properties['downloadUpdatePack.expressionAssociation.fileUrl']
+    //defaultFileName = project.properties['downloadUpdatePack.expressionAssociation.fileName']
+    //savedPath = new DownloadHelper(userName, password, loginUrl, fileUrl, tempDir.getPath(), defaultFileName, buildScript).loginLoinc().downloadResource(fileUrl)
+    //println "Update of 'CT Expression Association' is saved to: ${savedPath}"
+
+    /****************************************************
+     * Download 'CPT Mappings' package (from UMLS portal)
+     * **************************************************/
+    userName = project.properties['downloadUpdatePack.umls.username']
+    password = project.properties['downloadUpdatePack.umls.password']
+    loginUrl = project.properties['downloadUpdatePack.umls.loginUrl']
+    def fileUrl = project.properties['downloadUpdatePack.cptMappings.fileUrl']
+    def defaultFileName = project.properties['downloadUpdatePack.cptMappings.fileName']
+    def savedPath = new DownloadHelper(userName, password, loginUrl, fileUrl, tempDir.getPath(), defaultFileName, buildScript).loginUmls().downloadResource(fileUrl)
+    //def savedPath = new DownloadHelper(userName, password, loginUrl, fileUrl, tempDir.getPath(), defaultFileName, buildScript).umlsFormBasedLogin()
+
+    println "Update of 'CT Expression Association' is saved to: ${savedPath}"
+}
+
+task downloadUpdatePackFullSet() << {
     def userName = project.properties['downloadUpdatePack.fullSet.username']
     def password = project.properties['downloadUpdatePack.fullSet.password']
-    def endPoint = project.properties['downloadUpdatePack.wpXmlRpc']
-
     def fileUrlLogin = project.properties['downloadUpdatePack.fullSet.fileUrlLogin']
+
     def fileUrl = project.properties['downloadUpdatePack.fullSet.fileUrl']
-
-    System.out.println('!!! userName: ' + userName)
-    System.out.println('!!! password: ' + password)
-    System.out.println('!!! endPoint: ' + endPoint)
-
-    System.out.println('!!! fileUrlLogin: ' + fileUrlLogin)
-    System.out.println('!!! fileUrl: ' + fileUrl)
-
-    System.out.println('**************************')
-
+    /****************************
+    * Download 'Full Set' package
+     * **************************/
+    println "!!! : ${project.properties['downloadUpdatePack.fullSet.description']}"
+    println "!!! userName: ${userName}"
+    println "!!! userName: ${password}"
+    println "!!! userName: ${fileUrlLogin}"
+    println "!!! userName: ${fileUrl}"
     CloseableHttpClient client = HttpClients.createDefault()
-    HttpPost loginpost = new HttpPost(fileUrlLogin)
-
+    // Authentificate LOINC web resource
+    HttpPost loginPost = new HttpPost(fileUrlLogin)
     List<NameValuePair> loginParams = new ArrayList<NameValuePair>()
-    loginParams.add(new BasicNameValuePair("log", "ddymshyts"))
-    loginParams.add(new BasicNameValuePair("pwd", "LoincPass123"))
+    loginParams.add(new BasicNameValuePair("log", "${userName}"))
+    loginParams.add(new BasicNameValuePair("pwd", "${password}"))
     loginParams.add(new BasicNameValuePair("wp-submit", "Log In"))
-    loginpost.setEntity(new UrlEncodedFormEntity(loginParams))
-    client.execute(loginpost);
-
-
+    loginPost.setEntity(new UrlEncodedFormEntity(loginParams))
+    client.execute(loginPost)
+    // Download update pack
     HttpPost downloadPost = new HttpPost(fileUrl)
     List<NameValuePair> downloadParams = new ArrayList<NameValuePair>()
     downloadParams.add(new BasicNameValuePair("tc_accepted", "1"))
     downloadParams.add(new BasicNameValuePair("tc_submit", "Download"))
     downloadPost.setEntity(new UrlEncodedFormEntity(downloadParams))
-
     CloseableHttpResponse downloadResponse = client.execute(downloadPost)
-
-    println("stored to: ${tempDir.getPath()}")
-    FileOutputStream fout = new FileOutputStream(new File("${tempDir.getPath()}/test.zip"))
-    IOUtils.copy(downloadResponse.getEntity().getContent(), fout)
-
+    // Check response headers
+    def responseCode = (downloadResponse.getStatusLine().toString().split(' '))[1].toInteger()
+    if (responseCode != 200) {
+        throw new GradleException(String.format(project.properties['error.message'], 'Unable to get \'Full Set\' data pack', name))
+    }
+    def contentType = downloadResponse.getLastHeader('Content-Type').getValue()
+    if (contentType.indexOf('zip') < 0) {
+        throw new GradleException(String.format(project.properties['error.message'], '\'Full Set\' data pack is not ZIP archive', name))
+    }
+    def cdHeader = downloadResponse.getLastHeader('Content-Disposition').getValue()
+    def fileName = cdHeader.substring(cdHeader.lastIndexOf('filename') + 9)
+    fileName = fileName.replace("\"", "").replace(";", "")
+    if (fileName && fileName.empty) {
+        fileName = "${project.properties['downloadUpdatePack.fullSet.fileName']}"
+    }
+    // Save update pack
+    println("1) stored to: ${tempDir.getPath()}/${fileName}")
+    FileOutputStream fOut = new FileOutputStream(new File("${tempDir.getPath()}/${fileName}"))
+    IOUtils.copy(downloadResponse.getEntity().getContent(), fOut)
     client.close()
+
+    fileUrl = project.properties['downloadUpdatePack.multiaxialHierarchy.fileUrl']
+    /*****************************************
+    * Download 'Multiaxial Hierarchy' package
+    * *****************************************/
+    println "\n\n!!! : ${project.properties['downloadUpdatePack.multiaxialHierarchy.description']}"
+    println "!!! userName: ${userName}"
+    println "!!! userName: ${password}"
+    println "!!! userName: ${fileUrlLogin}"
+    println "!!! userName: ${fileUrl}"
+    client = HttpClients.createDefault()
+    // Authenticate LOINC web resource
+    loginPost = new HttpPost(fileUrlLogin)
+    loginParams = new ArrayList<NameValuePair>()
+    loginParams.add(new BasicNameValuePair("log", "${userName}"))
+    loginParams.add(new BasicNameValuePair("pwd", "${password}"))
+    loginParams.add(new BasicNameValuePair("wp-submit", "Log In"))
+    loginPost.setEntity(new UrlEncodedFormEntity(loginParams))
+    client.execute(loginPost)
+    // Download update pack
+    downloadPost = new HttpPost(fileUrl)
+    downloadParams = new ArrayList<NameValuePair>()
+    downloadParams.add(new BasicNameValuePair("tc_accepted", "1"))
+    downloadParams.add(new BasicNameValuePair("tc_submit", "Download"))
+    downloadPost.setEntity(new UrlEncodedFormEntity(downloadParams))
+    downloadResponse = client.execute(downloadPost)
+    // Check response headers
+    responseCode = (downloadResponse.getStatusLine().toString().split(' '))[1].toInteger()
+    if (responseCode != 200) {
+        throw new GradleException(String.format(project.properties['error.message'], 'Unable to get \'Full Set\' data pack', name))
+    }
+    contentType = downloadResponse.getLastHeader('Content-Type').getValue()
+    if (contentType.indexOf('zip') < 0) {
+        throw new GradleException(String.format(project.properties['error.message'], '\'Full Set\' data pack is not ZIP archive', name))
+    }
+    cdHeader = downloadResponse.getLastHeader('Content-Disposition').getValue()
+    fileName = cdHeader.substring(cdHeader.lastIndexOf('filename') + 9)
+    fileName = fileName.replace("\"", "").replace(";", "")
+    if (fileName && fileName.empty) {
+        fileName = "${project.properties['downloadUpdatePack.multiaxialHierarchy.fileName']}"
+    }
+    // Save update pack
+    println("2) stored to: ${tempDir.getPath()}/${fileName}")
+    fOut = new FileOutputStream(new File("${tempDir.getPath()}/${fileName}"))
+    IOUtils.copy(downloadResponse.getEntity().getContent(), fOut)
+    client.close()
+
+
 
     /*
     println('$$$ login....')

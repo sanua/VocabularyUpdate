@@ -1,4 +1,4 @@
-package inc.odysses.tasks
+package inc.odysseus.tasks
 
 class MyCustomTask extends DefaultTask {
     @Input
