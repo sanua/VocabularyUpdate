@@ -342,7 +342,7 @@ task xls2Csv(dependsOn: extractFiles, description: project.properties['xls2Csv.d
 //                                break
 //
 //                            case Cell.CELL_TYPE_NUMERIC:
-//                                data.append("\"" + cell.cgetNumericCellValue() + "\"" + ";")
+//                                data.append("\"" + cell.getNumericCellValue() + "\"" + ";")
 //                                break
 //
 //                            case Cell.CELL_TYPE_STRING:
