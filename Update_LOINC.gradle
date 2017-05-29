@@ -102,10 +102,21 @@ import org.apache.http.Consts;
 import org.apache.http.util.EntityUtils;
 
 import java.io.*;
-import java.net.URISyntaxException;
+import java.net.URISyntaxException
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.poi.ss.usermodel.*;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.File;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 /**
  * Created by Sanders on 5/23/2017.
@@ -159,9 +170,8 @@ public class DownloadResourceHelper {
                 // Prepare temporary storage for content
                 this.downloadPath = Files.createTempDir();
                 this.tempDir.deleteOnExit();
-            } else {
+            } else
                 this.downloadPath = downloadPath;
-            }
 
             this.localCookieStore = new ArrayList<Cookie>();
 
@@ -412,7 +422,7 @@ public class DownloadResourceHelper {
     }
 
     // Login and download resource
-    public boolean downloadResourceUmls(String loginUrl, String userName, String password, String fileUrl, String fileName) throws IOException {
+    public String downloadResourceUmls(String loginUrl, String userName, String password, String fileUrl, String fileName) throws IOException {
         CloseableHttpResponse response = null;
         // REQUEST 1
         // Just to get first JSESSION cookie
@@ -524,6 +534,8 @@ public class DownloadResourceHelper {
             outputStream = new FileOutputStream(new File(filePath));
             IOUtils.copy(bufEntity.getContent(), outputStream);
             outputStream.flush();
+            
+            return fileName;
         } catch (Exception e) {
             System.out.println("Error occurs: " + e.getMessage());
             e.printStackTrace();
@@ -536,7 +548,6 @@ public class DownloadResourceHelper {
                 outputStream.close();
             }
         }
-        return true;
     }
 
     public boolean loginLoinc(String loginUrl, String userName, String password) throws IOException {
@@ -562,7 +573,7 @@ public class DownloadResourceHelper {
         }
     }
 
-    public void downloadResourceLoinc(String fileUrl, String fileName, String packageDescription) throws IOException {
+    public String downloadResourceLoinc(String fileUrl, String fileName, String packageDescription) throws IOException {
         OutputStream outputStream = null;
         CloseableHttpResponse response = null;
         try {
@@ -600,7 +611,8 @@ public class DownloadResourceHelper {
             outputStream = new FileOutputStream(new File(filePath));
             IOUtils.copy(bufEntity.getContent(), outputStream);
             outputStream.flush();
-
+            
+            return fileName;
         } catch (Exception e) {
             System.out.println("Error occurs: " + e.getMessage());
             e.printStackTrace();
@@ -615,6 +627,181 @@ public class DownloadResourceHelper {
     }
 }
 
+/**
+ * Created by Sanders on 5/26/2017.
+ */
+public class Xls2CsvHelper {
+    
+    private File convertPath;
+    private static Xls2CsvHelper singleInstance;
+
+    private Xls2CsvHelper() {
+        this(null);
+    }
+
+    private Xls2CsvHelper(File convertPath) {
+        if (convertPath == null || !convertPath.exists()) {
+            this.convertPath = Files.createTempDir()
+        } else
+            this.convertPath = convertPath;
+    }
+
+    public static Xls2CsvHelper getXls2CsvHelper(File convertPath) {
+        if (singleInstance == null) {
+            singleInstance = new Xls2CsvHelper(convertPath);
+        }
+        return singleInstance;
+    }
+
+    private String convertSheetByName(Workbook workbook) {
+        return convertSheetByName(workbook, null, null);
+    }
+
+    private String convertSheetByName(Workbook workbook, String name, String skipColumnsAfterName) {
+        /**
+         * Get Sheet by name of first sheet is name is not specified.
+         */
+        Sheet sheet = null;
+        if (StringUtils.isNotBlank(name)) {
+            for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
+                sheet = workbook.getSheetAt(i);
+                if (sheet.getSheetName().equalsIgnoreCase(name)) {
+                    break;
+                }
+            }
+            if (sheet == null)
+                throw new IllegalArgumentException(String.format("No Excel Sheet found for name: %s", name));
+        } else
+            sheet = workbook.getSheetAt(0);
+        /**
+         * Read data from cells
+         */
+        int skipColumnNumber = Integer.MAX_VALUE;
+        StringBuffer data = new StringBuffer();
+        for (int i = 0; i <= sheet.getLastRowNum(); i++) {
+            Row row = sheet.getRow(i);
+            boolean isCheckColumnsSkip = (i ==0 && StringUtils.isNotBlank(skipColumnsAfterName));
+            if (row != null) {
+                cell_loop:
+                for (int j = 0; j < row.getLastCellNum(); j++) {
+                    Cell cell = row.getCell(j);
+                    if (cell == null) {
+                        data.append(";");
+                    } else {
+                        cell.setCellType(Cell.CELL_TYPE_STRING);
+                        String cellText = cell.toString().trim();
+                        if (isCheckColumnsSkip  && cellText.equalsIgnoreCase(skipColumnsAfterName)) {
+                            skipColumnNumber = j;
+                        }
+                        if (j <= skipColumnNumber) {
+                            data.append("\"" + cellText.replaceAll("\"", "'").replaceAll("[\\n\\r]", " ") + "\"");
+                            if (j < skipColumnNumber && (j < sheet.getLastRowNum())) {
+                                data.append(";");
+                            }
+                        } else
+                            break cell_loop;
+                    }
+                }
+                data.append('\n');
+            }
+        }
+        return data.toString();
+    }
+
+
+    public void convertHcpcs(String inputFile, String outputFile) throws IOException {
+        System.out.println("\n\tConversion of HCPCS data started");
+        File f = new File(outputFile.substring(0, outputFile.lastIndexOf(File.separator) + 1));
+        if (!f.exists()) {
+            f.mkdir();
+        } else {
+            FileUtils.cleanDirectory(f);
+        }
+        /**
+         * For storing data into CSV files
+         */
+        String data;
+        FileOutputStream fos = null;
+        try {
+            fos = new FileOutputStream(outputFile);
+            /**
+             * Get the workbook object for XLS file
+             */
+            Workbook workbook = WorkbookFactory.create(new FileInputStream(inputFile));
+            /**
+             * Get data from default (first) sheet and save to file
+             */
+            data = convertSheetByName(workbook);
+            fos.write(data.getBytes());
+            fos.flush();
+            System.out.println("\tConversion of HCPCS data done");
+        } catch (Exception e) {
+            System.out.println("Error occurs: " + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            if (fos != null) {
+                fos.close();
+            }
+        }
+    }
+
+    public void convertLoinc(String inputFile, String destFolder, Map<String, String> sheetNameFilePathMap, Map<String, String> sheetNameSkiptColumnsAfterNameMap) throws IOException {
+        System.out.println("\n\tConversion of LOINC data started");
+        /**
+         * Check if input Except file exists
+         */
+        File inputFileFullPath = new File(this.convertPath, inputFile);
+        if (!inputFileFullPath.exists()) {
+            throw new IOException(String.format("No input excel file found by name: %s", inputFileFullPath));
+        }
+        /**
+         * Check output folder exists, if not - create it, otherwise - clean it
+         */
+        File outPath = new File(this.convertPath, destFolder);
+        if (!outPath.exists()) {
+            outPath.mkdir();
+        } else {
+            FileUtils.cleanDirectory(outPath);
+        }
+
+        String data;
+        FileOutputStream fos = null;
+        try {
+            /**
+             * Get the workbook object for XLS file
+             */
+            Workbook workbook = WorkbookFactory.create(new FileInputStream(inputFileFullPath));
+
+            Iterator<Map.Entry<String, String>> it = sheetNameFilePathMap.entrySet().iterator();
+            while (it.hasNext()) {
+                Map.Entry<String, String> sheetPathEntry = it.next();
+                String sheetName = sheetPathEntry.getKey();
+                String fileName = sheetPathEntry.getValue();
+                String skipColumnsAfterName = sheetNameSkiptColumnsAfterNameMap.get(sheetName);
+                /**
+                 * Get data from first sheet "ANSWERS" and save to file
+                 */
+                data = convertSheetByName(workbook, sheetName, skipColumnsAfterName);
+                StringBuilder savedFileFullPath = new StringBuilder(outPath.getPath());
+                if (!outPath.getPath().endsWith(File.separator))
+                    savedFileFullPath.append(File.separator);
+                savedFileFullPath.append(fileName);
+                System.out.println(String.format("\tConversion of Sheet '%s' done. Saved to: '%s'.", sheetName, savedFileFullPath.toString()));
+                fos = new FileOutputStream(savedFileFullPath.toString());
+                fos.write(data.getBytes());
+                fos.flush();
+            }
+            System.out.println("\tConversion of LOINC data done");
+        } catch (Exception e) {
+            System.out.println("Error occurs: " + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            if (fos != null) {
+                fos.close();
+            }
+        }
+    }
+}
 /**
  * Auxiliary classes. TODO: Further should be used java-defined and compiled only
  */
@@ -831,7 +1018,8 @@ task downloadUpdatePack(dependsOn: createSourceTable, description: project.prope
     println new StringBuilderWrapper("\nDownloading ${packageDescription}...")
     String fileUrl = project.properties['downloadUpdatePack.fullSet.fileUrl']
     String defaultFileName = project.properties['downloadUpdatePack.fullSet.fileName']
-    downloadHelper.downloadResourceLoinc(fileUrl, defaultFileName, packageDescription)
+    String downloadedFileName = downloadHelper.downloadResourceLoinc(fileUrl, defaultFileName, packageDescription)
+    project.ext.set('downloadUpdatePack.fullSet.fileName', downloadedFileName);
 
     /*************************************************************
      * Download 'Multiaxial Hierarchy' package (from LOINC portal)
@@ -840,7 +1028,8 @@ task downloadUpdatePack(dependsOn: createSourceTable, description: project.prope
     println new StringBuilderWrapper("\nDownloading ${packageDescription}...")
     fileUrl = project.properties['downloadUpdatePack.multiaxialHierarchy.fileUrl']
     defaultFileName = project.properties['downloadUpdatePack.multiaxialHierarchy.fileName']
-    downloadHelper.downloadResourceLoinc(fileUrl, defaultFileName, packageDescription)
+    downloadedFileName = downloadHelper.downloadResourceLoinc(fileUrl, defaultFileName, packageDescription)
+    project.ext.set('downloadUpdatePack.multiaxialHierarchy.fileName', downloadedFileName);
 
     /*********************************************************
      * Download 'Panels and Forms' package (from LOINC portal)
@@ -849,7 +1038,8 @@ task downloadUpdatePack(dependsOn: createSourceTable, description: project.prope
     println new StringBuilderWrapper("\nDownloading ${packageDescription}...")
     fileUrl = project.properties['downloadUpdatePack.panelsForms.fileUrl']
     defaultFileName = project.properties['downloadUpdatePack.panelsForms.fileName']
-    downloadHelper.downloadResourceLoinc(fileUrl, defaultFileName, packageDescription)
+    downloadedFileName = downloadHelper.downloadResourceLoinc(fileUrl, defaultFileName, packageDescription)
+    project.ext.set('downloadUpdatePack.panelsForms.fileName', downloadedFileName);
 
     /******************************************************************
      * Download 'CT Expression Association' package (from LOINC portal)
@@ -858,7 +1048,8 @@ task downloadUpdatePack(dependsOn: createSourceTable, description: project.prope
     println new StringBuilderWrapper("\nDownloading ${packageDescription}...")
     fileUrl = project.properties['downloadUpdatePack.expressionAssociation.fileUrl']
     defaultFileName = project.properties['downloadUpdatePack.expressionAssociation.fileName']
-    downloadHelper.downloadResourceLoinc(fileUrl, defaultFileName, packageDescription)
+    downloadedFileName = downloadHelper.downloadResourceLoinc(fileUrl, defaultFileName, packageDescription)
+    project.ext.set('downloadUpdatePack.expressionAssociation.fileName', downloadedFileName);
 
     /****************************************************
      * Download 'CPT Mappings' package (from UMLS portal)
@@ -870,7 +1061,8 @@ task downloadUpdatePack(dependsOn: createSourceTable, description: project.prope
     password = project.properties['downloadUpdatePack.umls.password']
     fileUrl = project.properties['downloadUpdatePack.cptMappings.fileUrl']
     defaultFileName = project.properties['downloadUpdatePack.cptMappings.fileName']
-    downloadHelper.downloadResourceUmls(loginUrl, userName, password, fileUrl,defaultFileName)
+    downloadedFileName = downloadHelper.downloadResourceUmls(loginUrl, userName, password, fileUrl,defaultFileName)
+    project.ext.set('downloadUpdatePack.cptMappings.fileName', downloadedFileName);
 
     println new StringBuilderWrapper("Downloaded complete.\nUpdate packages are saved to the: ${tempDir.getPath()}")
 
@@ -917,119 +1109,44 @@ task extractFiles(dependsOn: downloadUpdatePack, description: project.properties
 /**
  * This task will com.odysseusinc.convert a XLS data file to CSV format.
  */
-task xls2Csv(dependsOn: extractFiles, description: project.properties['xls2Csv.description']) << {
+task convertData(dependsOn: extractFiles, description: project.properties['convertData.description']) << {
     println '\n\n*************************************************'
     println '*                                               *'
     println "*  '${description}' action started...  *"
     println '*                                               *'
     println '*************************************************'
 
-    def inputFile = "${tempDir.getPath()}/${project.properties['xls2Csv.srcFileName']}"
-    def outputFile = "${tempDir.getPath()}/${project.properties['xls2Csv.destFileName']}"
-
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()
     def timeFinish = timeStart
+    Xls2CsvHelper convertHelper = Xls2CsvHelper.getXls2CsvHelper(tempDir);
 
-    // For storing data into CSV files
-    StringBuffer data = new StringBuffer()
     try {
-        FileOutputStream fos = new FileOutputStream(outputFile)
+        String inputFile = project.properties['downloadUpdatePack.panelsForms.fileName']
 
-        // Get the workbook object for XLS file
-        Workbook workbook = WorkbookFactory.create(new FileInputStream(inputFile))
-        // Get first sheet from the workbook
-        Sheet sheet = workbook.getSheetAt(0)
-//        Cell cell
-//        Row row
-
-        for (int i = 0; i < sheet.getLastRowNum(); i++){
-            Row row = sheet.getRow(i)
-
-            if (row!= null){
-                for (int j = 0; j < row.getLastCellNum(); j++){
-                    Cell cell = row.getCell(j)
-                    if (cell == null){
-                        data.append(";")
-                    } else {
-                        cell.setCellType(Cell.CELL_TYPE_STRING)
-                        data.append("\"" + cell. toString().trim().replaceAll("\"", "'") + "\"" + ";")
-//                        switch (cell.getCellType()) {
-//                            case Cell.CELL_TYPE_BOOLEAN:
-//                                data.append("\"" + cell.getBooleanCellValue() + "\"" + ";")
-//                                break
-//
-//                            case Cell.CELL_TYPE_NUMERIC:
-//                                data.append("\"" + cell.getNumericCellValue() + "\"" + ";")
-//                                break
-//
-//                            case Cell.CELL_TYPE_STRING:
-////                                if (!cell.getStringCellValue().contains("\"")){
-//                                println cell.toString()
-//                                    data.append("\"" + cell.getStringCellValue().trim().replaceAll("\"", "'") + "\"" + ";")
-////                                } else {
-////                                    data.append(";")
-////                                }
-//                                break
-//
-//                            case Cell.CELL_TYPE_BLANK:
-//                                data.append("" + ";")
-//                                break
-//
-//                            default:
-//                                data.append(cell + ";")
-//                        }
-
-
-
-                    }
-                }
-                data.append('\n')
-            } else {
-
+        File[] matchedFiles = tempDir.listFiles(new FilenameFilter() {
+            @Override
+            boolean accept(File dir, String name) {
+                return name.toLowerCase().indexOf("panelsandforms") >= 0 && !name.endsWith(".zip");
             }
-        }
+        })
 
-        // Iterate through each rows from first sheet
-//        Iterator<Row> rowIterator = sheet.iterator()
-//        while (rowIterator.hasNext()) {
-//            row = rowIterator.next()
-//            // For each row, iterate through each columns
-//            Iterator<Cell> cellIterator = row.cellIterator()
-//            while (cellIterator.hasNext()) {
-//                cell = cellIterator.next()
-//
-//                switch (cell.getCellType()) {
-//                    case Cell.CELL_TYPE_BOOLEAN:
-//                        data.append("\"" + cell.getBooleanCellValue() + "\"" + ";")
-//                        break
-//
-//                    case Cell.CELL_TYPE_NUMERIC:
-//                        data.append("\"" + cell.getNumericCellValue() + "\"" + ";")
-//                        break
-//
-//                    case Cell.CELL_TYPE_STRING:
-//                        data.append("\"" + cell.getStringCellValue().trim() + "\"" + ";")
-//                        break
-//
-//                    case Cell.CELL_TYPE_BLANK:
-//                        data.append("" + ";")
-//                        break
-//
-//                    default:
-//                        data.append(cell + ";")
-//                }
-//
-//            }
-//
-//        }
-        println new StringBuilderWrapper('files converted...')
-        fos.write(data.toString().getBytes())
-        fos.close()
+        if (matchedFiles.length == 0)
+            throw new GradleException("No Excel file foint for 'Panels and Forms'");
+        else 
+            inputFile = matchedFiles[0].getName()
+
+        Map<String, String> sheetNameFilePathMap = new HashMap<String, String>();
+        sheetNameFilePathMap.put("ANSWERS", project.properties['convertData.panelsForms.answers.destFileName']);
+        sheetNameFilePathMap.put("FORMS", project.properties['convertData.panelsForms.forms.destFileName']);
+
+        Map<String, String> sheetNameSkiptColumnsAfterNameMap = new HashMap<String, String>();
+        sheetNameSkiptColumnsAfterNameMap.put("ANSWERS", "DisplayText");
+
+        convertHelper.convertLoinc(inputFile, "out", sheetNameFilePathMap, sheetNameSkiptColumnsAfterNameMap);
 
         // Finish action checkpoint
         timeFinish = System.currentTimeMillis()
-
     }
     catch (FileNotFoundException e) {
         e.printStackTrace()
@@ -1048,7 +1165,7 @@ task xls2Csv(dependsOn: extractFiles, description: project.properties['xls2Csv.d
 /**
  * Task performed import CSV data to database
  */
-task importData(dependsOn: xls2Csv, description: project.properties['import.description']) << {
+task importData(dependsOn: convertData, description: project.properties['import.description']) << {
     println '\n\n***********************************************'
     println '*                                             *'
     println "*         '${description}' action started...          *"
