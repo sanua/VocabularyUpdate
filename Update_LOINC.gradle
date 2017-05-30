@@ -105,7 +105,8 @@ import java.io.*;
 import java.net.URISyntaxException
 import java.nio.file.StandardCopyOption
 import java.nio.file.StandardOpenOption
-import java.util.*;
+import java.util.*
+import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -122,6 +123,8 @@ import java.util.Map;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+
+import java.util.stream.Collectors;
 
 /**
  * Created by Sanders on 5/23/2017.
@@ -787,12 +790,11 @@ public class Xls2CsvHelper {
                  * Get data from first sheet "ANSWERS" and save to file
                  */
                 data = convertSheetByName(workbook, sheetName, skipColumnsAfterName);
-                StringBuilder savedFileFullPath = new StringBuilder(outPath.getPath());
-                if (!outPath.getPath().endsWith(File.separator))
-                    savedFileFullPath.append(File.separator);
-                savedFileFullPath.append(fileName);
-                System.out.println(String.format("\tConversion of Sheet '%s' done. Saved to: '%s'.", sheetName, savedFileFullPath.toString()));
-                fos = new FileOutputStream(savedFileFullPath.toString());
+                
+                File savedFilePath = new File(outPath, fileName);
+                sheetPathEntry.setValue(savedFilePath);
+                System.out.println(String.format("\tConversion of Sheet '%s' done. Saved to: '%s'.", sheetName, savedFilePath.getPath()));
+                fos = new FileOutputStream(savedFilePath);
                 fos.write(data.getBytes());
                 fos.flush();
             }
@@ -812,10 +814,6 @@ public class Xls2CsvHelper {
     }
 
     public static List<File> getFilesByName(File folder, String nameTemplate, String excludeExtension, boolean strictSearch) {
-        println "@@@ folder: ${folder.getPath()}"
-        println "@@@ nameTemplate: ${nameTemplate}"
-        println "@@@ excludeExtension: ${excludeExtension}"
-        println "@@@ strictSearch: ${strictSearch}"
         File[] matchedFiles = folder.listFiles(new FilenameFilter() {
             @Override
             boolean accept(File dir, String name) {
@@ -835,8 +833,6 @@ public class Xls2CsvHelper {
     }
 
     public static String copy(String from, String to) {
-        println "@@@ from: ${from}";
-        println "@@@ to: ${to}";
         Path copyFrom = Paths.get(from);
         Path copyTo = Paths.get(to);
         Path targetFile = Files.copy(copyFrom, copyTo, StandardCopyOption.REPLACE_EXISTING);
@@ -1169,6 +1165,7 @@ task convertData(dependsOn: extractFiles, description: project.properties['conve
 
         Map<String, String> sheetNameSkiptColumnsAfterNameMap = new HashMap<String, String>();
         sheetNameSkiptColumnsAfterNameMap.put("ANSWERS", "DisplayText");
+        sheetNameSkiptColumnsAfterNameMap.put("FORMS", "Loinc");
 
         String fileNameTemplate = "panelsandforms"
         List<File> fileList = convertHelper.getFilesByName(tempDir, fileNameTemplate, "zip", true);
@@ -1179,36 +1176,63 @@ task convertData(dependsOn: extractFiles, description: project.properties['conve
         /**
          * Prepare all other files for import
          */
+        String answersCsvFile = sheetNameFilePathMap.get("ANSWERS");
+        project.ext.set("import.panelsForms.answers.dataFileName", answersCsvFile);
+
+        String formsCsvFile = sheetNameFilePathMap.get("FORMS");
+        project.ext.set("import.panelsForms.forms.dataFileName", formsCsvFile);
+
         String targetPath = new File(tempDir, importReadyFolder).getPath();
+
         String fileToCopy = "loinc.csv";
-        String loincCsvFile = convertHelper.copy(new File(tempDir, fileToCopy).getPath(),
-                new File(targetPath, fileToCopy).getPath());
-        println "!!!!!! loincCsvFile: ${loincCsvFile}"
+        String loincCsvFile = convertHelper.copy(
+                new File(tempDir, fileToCopy).getPath(),
+                new File(targetPath, fileToCopy).getPath()
+        );
+        project.ext.set("import.fullSet.loinc.dataFileName", loincCsvFile);
 
         fileToCopy = "map_to.csv";
-        String mapToCsvFile = convertHelper.copy(new File(tempDir, fileToCopy).getPath(),
-                new File(targetPath, fileToCopy).getPath());;
-        println "!!!!!! mapToCsvFile: ${mapToCsvFile}"
+        String mapToCsvFile = convertHelper.copy(
+                new File(tempDir, fileToCopy).getPath(),
+                new File(targetPath, fileToCopy).getPath()
+        );
+        project.ext.set("import.fullSet.mapTo.dataFileName", mapToCsvFile);
 
         fileToCopy = "source_organization.csv";
-        String sourceOrganizationCsvFile = convertHelper.copy(new File(tempDir, fileToCopy).getPath(),
-                new File(targetPath, fileToCopy).getPath());;
-        println "!!!!!! sourceOrganizationCsvFile: ${sourceOrganizationCsvFile}"
+        String sourceOrganizationCsvFile = convertHelper.copy(
+                new File(tempDir, fileToCopy).getPath(),
+                new File(targetPath, fileToCopy).getPath()
+        );
+        project.ext.set("import.fullSet.sourceOrganization.dataFileName", sourceOrganizationCsvFile);
 
         fileToCopy = project.properties['downloadUpdatePack.multiaxialHierarchy.fileName'].replaceAll(".zip", ".csv");
-        String multiaxialHierarchyCsvFile = convertHelper.copy(new File(tempDir, fileToCopy).getPath(),
-                new File(targetPath, fileToCopy).getPath());
-        println "!!!!!! multiaxialHierarchyCsvFile: ${multiaxialHierarchyCsvFile}"
+        String multiaxialHierarchyCsvFile = convertHelper.copy(
+                new File(tempDir, fileToCopy).getPath(),
+                new File(targetPath, fileToCopy).getPath()
+        );
+        project.ext.set("import.multiaxialHierarchy.dataFileName", multiaxialHierarchyCsvFile);
 
         File filePath = new File(project.properties['downloadUpdatePack.expressionAssociation.fileName'].replaceAll(".zip", "")
                 ,"Full/Refset/Content");
+        filePath = new File(tempDir, filePath.getPath());
+
         fileNameTemplate = "xder2_sscccRefset_LOINCExpressionAssociationFull_INT";
-        fileList = convertHelper.getFilesByName(new File(tempDir, filePath.getPath()), fileNameTemplate, true);
-        filePath = new File(filePath, fileList.get(0).getPath());
-        fileToCopy = filePath.getPath();
-        String expressionAssociationCsvFile = convertHelper.copy(new File(tempDir, fileToCopy).getPath(),
-                new File(targetPath, fileToCopy).getPath());
-        println "!!!!!! expressionAssociationCsvFile: ${expressionAssociationCsvFile}"
+        fileList = convertHelper.getFilesByName(filePath, fileNameTemplate, true);
+        fileToCopy = fileList.get(0).getName();
+        String expressionAssociationCsvFile = convertHelper.copy(
+                new File(filePath, fileToCopy).getPath(),
+                new File(targetPath, fileToCopy).getPath()
+        );
+        project.ext.set("import.expressionAssociation.dataFileName", expressionAssociationCsvFile);
+
+        fileNameTemplate = "MRSMAP";
+        fileList = convertHelper.getFilesByName(tempDir, fileNameTemplate, true);
+        fileToCopy = fileList.get(0).getName();
+        String cptMappingsCsvFile = convertHelper.copy(
+                new File(tempDir, fileToCopy).getPath(),
+                new File(targetPath, fileToCopy).getPath()
+        );
+        project.ext.set("import.cptMappings.dataFileName", cptMappingsCsvFile);
 
         // Finish action checkpoint
         timeFinish = System.currentTimeMillis()
@@ -1240,48 +1264,76 @@ task importData(dependsOn: convertData, description: project.properties['import.
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()
 
-    def dataFile = "${tempDir.getPath()}/${project.properties['importData.dataFileName']}"
-    def logFile = "${project.properties['logPath']}/${project.properties['importData.logFileName']}"
-    def discardFile = "${project.properties['logPath']}/${project.properties['importData.discardFileName']}"
-    def badFile = "${project.properties['logPath']}/${project.properties['importData.badFileName']}"
-    def streamLogFile = "${project.properties['logPath']}/${project.properties['importData.streamLogFileName']}"
-    def streamErrorFile = "${project.properties['logPath']}/${project.properties['importData.streamErrFileName']}"
+    /**
+     * Filter import-specific parameters
+     */
+    Map<String, String> importParams = project.properties.findAll {
+        it.getKey().startsWith("import.") && it.getKey().toLowerCase().indexOf("description") < 0;
+    };
+    /**
+     * Group import-specific parameters
+     */
+    Map<String, String> importParamsGrouped = importParams.groupBy {it.getKey().substring(0, it.getKey().lastIndexOf("."))}
 
-    def bosOut = new ByteArrayOutputStream(), bosErr = new ByteArrayOutputStream()
-    def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
-    exec {
-        executable "sqlldr"
-        args "USERID=${project.properties['db.userName']}/${project.properties['db.password']}@${project.properties['db.tnsName']} " +
-                "CONTROL=${project.properties['basePath']}/${project.properties['import.controlFileName']} DATA=$dataFile LOG=$logFile DISCARD=$discardFile BAD=$badFile"
-        standardOutput = bosOut
-        errorOutput = bosErr
-    }
-    def bisOut = new ByteArrayInputStream(bosOut.toByteArray())
-    bisOut.withReader { out->
-        out.eachLine {
-            sout.append(it).append('\n')
+    /**
+     * Process import
+     */
+    Iterator<Map.Entry<?, ?>> importIterator = importParamsGrouped.entrySet().iterator();
+    while(importIterator.hasNext()) {
+        Map.Entry<?, ?> importEntry = importIterator.next();
+        String groupNameLabel = importEntry.getKey().replaceAll("\\.", " ").capitalize();
+        Map<String, String> groupParams = importEntry.getValue();
+        
+        String controlFileName = groupParams.find {it.getKey().toLowerCase().indexOf("controlFileName".toLowerCase()) >= 0}.getValue();
+        String dataFileName = groupParams.find {it.getKey().toLowerCase().indexOf("dataFileName".toLowerCase()) >= 0}.getValue();
+        String logFileName = groupParams.find {it.getKey().toLowerCase().indexOf("logFileName".toLowerCase()) >= 0}.getValue();
+        String discardFileName = groupParams.find {it.getKey().toLowerCase().indexOf("discardFileName".toLowerCase()) >= 0}.getValue();
+        String badFileName = groupParams.find {it.getKey().toLowerCase().indexOf("badFileName".toLowerCase()) >= 0}.getValue();
+        String streamLogFileName = groupParams.find {it.getKey().toLowerCase().indexOf("streamLogFileName".toLowerCase()) >= 0}.getValue();
+        String streamErrorFileName = groupParams.find {it.getKey().toLowerCase().indexOf("streamErrorFileName".toLowerCase()) >= 0}.getValue();
+
+        println "\n${groupNameLabel}...\n";
+
+        def bosOut = new ByteArrayOutputStream(), bosErr = new ByteArrayOutputStream()
+        def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
+        exec {
+            executable "sqlldr"
+            args "USERID=${project.properties['db.userName']}/${project.properties['db.password']}@${project.properties['db.tnsName']} " +
+                    "CONTROL=${project.properties['basePath']}/${controlFileName} " +
+                    "DATA=$dataFileName " +
+                    "LOG=${project.properties['logPath']}/${logFileName} " +
+                    "DISCARD=${project.properties['logPath']}/${discardFileName} " +
+                    "BAD=${project.properties['logPath']}/${badFileName}"
+            standardOutput = bosOut
+            errorOutput = bosErr
         }
-    }
-    def bisErr = new ByteArrayInputStream(bosErr.toByteArray())
-    bisErr.withReader { out ->
-        out.eachLine {
-            serr.append(it).append('\n')
+        def bisOut = new ByteArrayInputStream(bosOut.toByteArray())
+        bisOut.withReader { out->
+            out.eachLine {
+                sout.append(it).append('\n')
+            }
         }
+        def bisErr = new ByteArrayInputStream(bosErr.toByteArray())
+        bisErr.withReader { out ->
+            out.eachLine {
+                serr.append(it).append('\n')
+            }
+        }
+
+        // Write to console
+        /*
+         *  When import prefer to write stream log to console (it's shorter)
+         * */
+        System.out.println(sout.toString())
+
+        // Write to logfile
+        File f = new File("${project.properties['logPath']}/${streamLogFileName}")
+        f.write(sout.toString())
+
+        // Write to error file
+        f = new File("${project.properties['logPath']}/${streamErrorFileName}")
+        f.write(serr.toString())
     }
-
-    // Write to console
-    /*
-     *  When import prefer to write stream log to console (it's shorter)
-     * */
-    System.out.println(sout.toString())
-
-    // Write to logfile
-    File f = new File(streamLogFile)
-    f.write(sout.toString())
-
-    // Write to error file
-    f = new File(streamErrorFile)
-    f.write(serr.toString())
 
     // Finish action checkpoint
     def timeFinish = System.currentTimeMillis()

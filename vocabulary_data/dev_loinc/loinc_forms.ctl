@@ -5,7 +5,7 @@ BADFILE 'LOINC_FORMS.bad'
 DISCARDFILE 'LOINC_FORMS.dsc'                                                           
 TRUNCATE
 INTO TABLE LOINC_FORMS                                                                
-FIELDS TERMINATED BY X'09' 
+FIELDS TERMINATED BY ";" OPTIONALLY ENCLOSED BY '"'
 TRAILING NULLCOLS                                                             
 (                                                                               
    ParentId                     FILLER
