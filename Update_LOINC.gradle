@@ -103,6 +103,8 @@ import org.apache.http.util.EntityUtils;
 
 import java.io.*;
 import java.net.URISyntaxException
+import java.nio.file.StandardCopyOption
+import java.nio.file.StandardOpenOption
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -117,6 +119,9 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 /**
  * Created by Sanders on 5/23/2017.
@@ -801,6 +806,42 @@ public class Xls2CsvHelper {
             }
         }
     }
+
+    public static List<File> getFilesByName(File folder, String nameTemplate, boolean strictSearch) {
+        return getFilesByName(folder, nameTemplate, null, strictSearch);
+    }
+
+    public static List<File> getFilesByName(File folder, String nameTemplate, String excludeExtension, boolean strictSearch) {
+        println "@@@ folder: ${folder.getPath()}"
+        println "@@@ nameTemplate: ${nameTemplate}"
+        println "@@@ excludeExtension: ${excludeExtension}"
+        println "@@@ strictSearch: ${strictSearch}"
+        File[] matchedFiles = folder.listFiles(new FilenameFilter() {
+            @Override
+            boolean accept(File dir, String name) {
+                return name.toLowerCase().indexOf(nameTemplate.trim().toLowerCase()) >= 0 &&
+                        (StringUtils.isBlank(excludeExtension) || !name.endsWith("." + excludeExtension));
+            }
+        })
+        List<File> foundFiles = Arrays.asList(matchedFiles);
+
+        if (strictSearch) {
+            if (foundFiles.empty)
+                throw new GradleException("No file found by name: ${nameTemplate}");
+            else if (foundFiles.size() > 1)
+                throw new GradleException("More than one files found by name: '${nameTemplate}'");
+        }
+        return foundFiles;
+    }
+
+    public static String copy(String from, String to) {
+        println "@@@ from: ${from}";
+        println "@@@ to: ${to}";
+        Path copyFrom = Paths.get(from);
+        Path copyTo = Paths.get(to);
+        Path targetFile = Files.copy(copyFrom, copyTo, StandardCopyOption.REPLACE_EXISTING);
+        return targetFile.normalize().toString();
+    }
 }
 /**
  * Auxiliary classes. TODO: Further should be used java-defined and compiled only
@@ -1122,20 +1163,6 @@ task convertData(dependsOn: extractFiles, description: project.properties['conve
     Xls2CsvHelper convertHelper = Xls2CsvHelper.getXls2CsvHelper(tempDir);
 
     try {
-        String inputFile = project.properties['downloadUpdatePack.panelsForms.fileName']
-
-        File[] matchedFiles = tempDir.listFiles(new FilenameFilter() {
-            @Override
-            boolean accept(File dir, String name) {
-                return name.toLowerCase().indexOf("panelsandforms") >= 0 && !name.endsWith(".zip");
-            }
-        })
-
-        if (matchedFiles.length == 0)
-            throw new GradleException("No Excel file foint for 'Panels and Forms'");
-        else 
-            inputFile = matchedFiles[0].getName()
-
         Map<String, String> sheetNameFilePathMap = new HashMap<String, String>();
         sheetNameFilePathMap.put("ANSWERS", project.properties['convertData.panelsForms.answers.destFileName']);
         sheetNameFilePathMap.put("FORMS", project.properties['convertData.panelsForms.forms.destFileName']);
@@ -1143,7 +1170,45 @@ task convertData(dependsOn: extractFiles, description: project.properties['conve
         Map<String, String> sheetNameSkiptColumnsAfterNameMap = new HashMap<String, String>();
         sheetNameSkiptColumnsAfterNameMap.put("ANSWERS", "DisplayText");
 
-        convertHelper.convertLoinc(inputFile, "out", sheetNameFilePathMap, sheetNameSkiptColumnsAfterNameMap);
+        String fileNameTemplate = "panelsandforms"
+        List<File> fileList = convertHelper.getFilesByName(tempDir, fileNameTemplate, "zip", true);
+        String inputFile = fileList.get(0).getName()
+        String importReadyFolder = "ready_for_import";
+        convertHelper.convertLoinc(inputFile, importReadyFolder, sheetNameFilePathMap, sheetNameSkiptColumnsAfterNameMap);
+
+        /**
+         * Prepare all other files for import
+         */
+        String targetPath = new File(tempDir, importReadyFolder).getPath();
+        String fileToCopy = "loinc.csv";
+        String loincCsvFile = convertHelper.copy(new File(tempDir, fileToCopy).getPath(),
+                new File(targetPath, fileToCopy).getPath());
+        println "!!!!!! loincCsvFile: ${loincCsvFile}"
+
+        fileToCopy = "map_to.csv";
+        String mapToCsvFile = convertHelper.copy(new File(tempDir, fileToCopy).getPath(),
+                new File(targetPath, fileToCopy).getPath());;
+        println "!!!!!! mapToCsvFile: ${mapToCsvFile}"
+
+        fileToCopy = "source_organization.csv";
+        String sourceOrganizationCsvFile = convertHelper.copy(new File(tempDir, fileToCopy).getPath(),
+                new File(targetPath, fileToCopy).getPath());;
+        println "!!!!!! sourceOrganizationCsvFile: ${sourceOrganizationCsvFile}"
+
+        fileToCopy = project.properties['downloadUpdatePack.multiaxialHierarchy.fileName'].replaceAll(".zip", ".csv");
+        String multiaxialHierarchyCsvFile = convertHelper.copy(new File(tempDir, fileToCopy).getPath(),
+                new File(targetPath, fileToCopy).getPath());
+        println "!!!!!! multiaxialHierarchyCsvFile: ${multiaxialHierarchyCsvFile}"
+
+        File filePath = new File(project.properties['downloadUpdatePack.expressionAssociation.fileName'].replaceAll(".zip", "")
+                ,"Full/Refset/Content");
+        fileNameTemplate = "xder2_sscccRefset_LOINCExpressionAssociationFull_INT";
+        fileList = convertHelper.getFilesByName(new File(tempDir, filePath.getPath()), fileNameTemplate, true);
+        filePath = new File(filePath, fileList.get(0).getPath());
+        fileToCopy = filePath.getPath();
+        String expressionAssociationCsvFile = convertHelper.copy(new File(tempDir, fileToCopy).getPath(),
+                new File(targetPath, fileToCopy).getPath());
+        println "!!!!!! expressionAssociationCsvFile: ${expressionAssociationCsvFile}"
 
         // Finish action checkpoint
         timeFinish = System.currentTimeMillis()
