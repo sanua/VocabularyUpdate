@@ -594,7 +594,7 @@ public class DownloadResourceHelper {
 
             int responseCode = response.getStatusLine().getStatusCode();
             if (responseCode != HttpStatus.SC_OK) {
-                throw new HttpException(String.format("Unable to download %s\n%s", packageDescription, response.getStatusLine()));
+                throw new HttpException(String.format("Unable to download %s", packageDescription));
             } else if (getResponseHeaderValue(response, "Content-Type").indexOf("zip") < 0) {
                 throw new HttpException(String.format("%ы is not a ZIP archive", packageDescription));
             }

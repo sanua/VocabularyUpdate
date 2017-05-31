@@ -55,6 +55,7 @@ BEGIN
                                           pVocabularyVersion     => 'LOINC 2.59',
                                           pVocabularyDevSchema   => 'DEV_LOINC');
 END;
+/
 COMMIT;
 
 --2. Truncate all working tables
@@ -241,9 +242,9 @@ INSERT INTO concept_relationship_stage (concept_id_1,
     WHERE lc.concept_code = l.class;
 COMMIT;
 
---And delete wrong relationship ('History & Physical order set' to 'FLACC pain assessment panel', AVOF-352). 
+--And delete wrong relationship ('History and Physical order set' to 'FLACC pain assessment panel', AVOF-352). 
 --chr(38)=&
-PROMPT And delete wrong relationship ('History & Physical order set' to 'FLACC pain assessment panel', AVOF-352).
+PROMPT And delete wrong relationship ('History and Physical order set' to 'FLACC pain assessment panel', AVOF-352).
 PROMPT chr(38)=&
 DELETE FROM concept_relationship_stage
       WHERE concept_code_1 = 'PANEL.H'||chr(38)||'P' AND concept_code_2 = '38213-5' AND relationship_id = 'Subsumes';
@@ -305,7 +306,8 @@ INSERT INTO concept_stage (concept_id,
           TO_DATE ('20991231', 'yyyymmdd') AS valid_end_date,
           NULL AS invalid_reason
      FROM LOINC_ANSWERS la, loinc l
-    WHERE la.loinc = l.loinc_num AND AnswerStringID IS NOT NULL; --AnswerStringID may be null
+    WHERE la.loinc = l.loinc_num AND AnswerStringID IS NOT NULL --AnswerStringID may be null
+; 
 COMMIT;	
 
 --11 Link LOINCs to Answers in concept_relationship_stage
@@ -459,6 +461,7 @@ PROMPT 16 Working with replacement mappings
 BEGIN
    DEVV5.VOCABULARY_PACK.CheckReplacementMappings;
 END;
+/
 COMMIT;
 
 --17 Deprecate 'Maps to' mappings to deprecated and upgraded concepts
@@ -466,6 +469,7 @@ PROMPT 17 Deprecate 'Maps to' mappings to deprecated and upgraded concepts
 BEGIN
    DEVV5.VOCABULARY_PACK.DeprecateWrongMAPSTO;
 END;
+/
 COMMIT;	
 
 --18 Add mapping from deprecated to fresh concepts
@@ -473,6 +477,7 @@ PROMPT 18 Add mapping from deprecated to fresh concepts
 BEGIN
    DEVV5.VOCABULARY_PACK.AddFreshMAPSTO;
 END;
+/
 COMMIT;		 
 
 --19 Delete ambiguous 'Maps to' mappings
@@ -480,6 +485,7 @@ PROMPT 19 Delete ambiguous 'Maps to' mappings
 BEGIN
    DEVV5.VOCABULARY_PACK.DeleteAmbiguousMAPSTO;
 END;
+/
 COMMIT;
 
 --20 Set the proper concept_class_id for children of "Document ontology" (AVOF-352)
