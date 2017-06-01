@@ -141,6 +141,7 @@ public class DownloadResourceHelper {
     public static final String COOKIE_JSESSIONID = "JSESSIONID";
     public static final String COOKIE_CASTGC = "CASTGC";
     public static final String COOKIE_MOD_AUTH_CAS = "MOD_AUTH_CAS";
+    public static final int NUMBER_OF_ATTEMPTS = 3;
 
     private CloseableHttpClient httpClient;
     private File downloadPath;
@@ -429,8 +430,81 @@ public class DownloadResourceHelper {
         return singleIntance;
     }
 
-    // Login and download resource
+    public String repeatableDownloadResourceUmls(String loginUrl, String userName, String password, String fileUrl, String fileName) {
+        /**
+         * Try three times redownload if error occurs
+         */
+        return downloadResourceUmls(loginUrl, userName, password, fileUrl, fileName, true, NUMBER_OF_ATTEMPTS);
+    }
+
     public String downloadResourceUmls(String loginUrl, String userName, String password, String fileUrl, String fileName) throws IOException {
+        return downloadResourceUmls(loginUrl, userName, password, fileUrl, fileName, false, 0);
+    }
+
+    // Just download UMLS routine
+    private String downloadUmls(String fileUrl, String fileName, boolean isTryRedownload, int numberOfTries) {
+        CloseableHttpResponse response = null;
+        OutputStream outputStream = null;
+        try {
+            List<Cookie> cookies = new ArrayList<>();
+            cookies.add(getClientCookie(COOKIE_MOD_AUTH_CAS));
+            HttpGet request = prepareGet(fileUrl, cookies);
+            response = httpClient.execute(request);
+
+            int responseCode = response.getStatusLine().getStatusCode();
+            if (responseCode != HttpStatus.SC_OK) {
+                numberOfTries--;
+                if (isTryRedownload && numberOfTries > 0) {
+                    try {
+                        if (response != null) {
+                            response.close();
+                        }
+                    } catch (IOException ioe) {}
+                    System.out.println(String.format("Attention!\nThere is some problem of content downloading: %s.\nTry again, attempt %d of %d....", response.getStatusLine(), NUMBER_OF_ATTEMPTS - numberOfTries, NUMBER_OF_ATTEMPTS));
+                    return downloadUmls(fileUrl, fileName, packageDescription, isTryRedownload, numberOfTries);
+                } else {
+                    throw new HttpException(String.format("Unable to download %s\n%s", packageDescription, response.getStatusLine()));
+                }
+            } else if (getResponseHeaderValue(response, "Content-Type").indexOf("zip") < 0) {
+                throw new HttpException(String.format("%s is not a ZIP archive", packageDescription));
+            }
+
+            // Buffer response content
+            BufferedHttpEntity bufEntity = new BufferedHttpEntity(response.getEntity());
+            StringWriter writer = new StringWriter();
+            IOUtils.copy(bufEntity.getContent(), writer, Consts.UTF_8);
+
+            // Eval downloaded file name
+            String contentDisposition = getResponseHeaderValue(response, "Content-Disposition");
+            if (contentDisposition.length() > 0)
+                fileName = contentDisposition.substring(contentDisposition.lastIndexOf("filename") + 9).replace("\"", "").replace(";", "");
+            String filePath = String.format("%s%s%s", this.downloadPath.getPath(), File.separator, fileName);
+
+            String contentLength = getResponseHeaderValue(response,"Content-Length");
+            System.out.println(new StringBuilderWrapper(String.format("Downloaded '%s' file with %s bytes", fileName, contentLength)));
+
+            // Save file to stream
+            outputStream = new FileOutputStream(new File(filePath));
+            IOUtils.copy(bufEntity.getContent(), outputStream);
+            outputStream.flush();
+
+            return fileName;
+        } catch (Exception e) {
+            System.out.println("Error occurs: " + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            if (response != null) {
+                response.close();
+            }
+
+            if (outputStream != null) {
+                outputStream.close();
+            }
+        }
+    }
+
+    // Login and download resource
+    public String downloadResourceUmls(String loginUrl, String userName, String password, String fileUrl, String fileName, boolean isTryRedownload, int numberOfTries) throws IOException {
         CloseableHttpResponse response = null;
         // REQUEST 1
         // Just to get first JSESSION cookie
@@ -517,45 +591,7 @@ public class DownloadResourceHelper {
 
         // REQUEST 5
         // Download resource
-        OutputStream outputStream = null;
-        try {
-            List<Cookie> cookies = new ArrayList<>();
-            cookies.add(getClientCookie(COOKIE_MOD_AUTH_CAS));
-            HttpGet request = prepareGet(fileUrl, cookies);
-            response = httpClient.execute(request);
-
-            // Buffer response content
-            BufferedHttpEntity bufEntity = new BufferedHttpEntity(response.getEntity());
-            StringWriter writer = new StringWriter();
-            IOUtils.copy(bufEntity.getContent(), writer, Consts.UTF_8);
-
-            // Eval downloaded file name
-            String contentDisposition = getResponseHeaderValue(response, "Content-Disposition");
-            if (contentDisposition.length() > 0)
-                fileName = contentDisposition.substring(contentDisposition.lastIndexOf("filename") + 9).replace("\"", "").replace(";", "");
-            String filePath = String.format("%s%s%s", this.downloadPath.getPath(), File.separator, fileName);
-
-            String contentLength = getResponseHeaderValue(response,"Content-Length");
-            System.out.println(new StringBuilderWrapper(String.format("Downloaded '%s' file with %s bytes", fileName, contentLength)));
-
-            // Save file to stream
-            outputStream = new FileOutputStream(new File(filePath));
-            IOUtils.copy(bufEntity.getContent(), outputStream);
-            outputStream.flush();
-            
-            return fileName;
-        } catch (Exception e) {
-            System.out.println("Error occurs: " + e.getMessage());
-            e.printStackTrace();
-        } finally {
-            if (response != null) {
-                response.close();
-            }
-
-            if (outputStream != null) {
-                outputStream.close();
-            }
-        }
+        return downloadUmls(fileUrl, fileName, isTryRedownload, numberOfTries);
     }
 
     public boolean loginLoinc(String loginUrl, String userName, String password) throws IOException {
@@ -582,6 +618,17 @@ public class DownloadResourceHelper {
     }
 
     public String downloadResourceLoinc(String fileUrl, String fileName, String packageDescription) throws IOException {
+        return downloadResourceLoinc(fileUrl, fileName, packageDescription, false, 0);
+    }
+
+    public String repeatableDownloadResourceLoinc(String fileUrl, String fileName, String packageDescription) {
+        /**
+         * Try three times redownload if error occurs
+         */
+        return downloadResourceLoinc(fileUrl, fileName, packageDescription, true, NUMBER_OF_ATTEMPTS);
+    }
+
+    public String downloadResourceLoinc(String fileUrl, String fileName, String packageDescription, boolean isTryRedownload, int numberOfTries) throws IOException {
         OutputStream outputStream = null;
         CloseableHttpResponse response = null;
         try {
@@ -594,9 +641,20 @@ public class DownloadResourceHelper {
 
             int responseCode = response.getStatusLine().getStatusCode();
             if (responseCode != HttpStatus.SC_OK) {
-                throw new HttpException(String.format("Unable to download %s\n%s", packageDescription, response.getStatusLine()));
+                numberOfTries--;
+                if (isTryRedownload && numberOfTries > 0) {
+                    try {
+                        if (response != null) {
+                            response.close();
+                        }
+                    } catch (IOException ioe) {}
+                    System.out.println(String.format("Attention!\nThere is some problem of content downloading: %s.\nTry again, attempt %d of %d....", response.getStatusLine(), NUMBER_OF_ATTEMPTS - numberOfTries, NUMBER_OF_ATTEMPTS));
+                    return downloadResourceLoinc(fileUrl, fileName, packageDescription, isTryRedownload, numberOfTries);
+                } else {
+                    throw new HttpException(String.format("Unable to download %s\n%s", packageDescription, response.getStatusLine()));
+                }
             } else if (getResponseHeaderValue(response, "Content-Type").indexOf("zip") < 0) {
-                throw new HttpException(String.format("%ы is not a ZIP archive", packageDescription));
+                throw new HttpException(String.format("%s is not a ZIP archive", packageDescription));
             }
 
             // Buffer response content
@@ -1055,7 +1113,7 @@ task downloadUpdatePack(dependsOn: createSourceTable, description: project.prope
     println new StringBuilderWrapper("\nDownloading ${packageDescription}...")
     String fileUrl = project.properties['downloadUpdatePack.fullSet.fileUrl']
     String defaultFileName = project.properties['downloadUpdatePack.fullSet.fileName']
-    String downloadedFileName = downloadHelper.downloadResourceLoinc(fileUrl, defaultFileName, packageDescription)
+    String downloadedFileName = downloadHelper.repeatableDownloadResourceLoinc(fileUrl, defaultFileName, packageDescription)
     project.ext.set('downloadUpdatePack.fullSet.fileName', downloadedFileName);
 
     /*************************************************************
@@ -1065,7 +1123,7 @@ task downloadUpdatePack(dependsOn: createSourceTable, description: project.prope
     println new StringBuilderWrapper("\nDownloading ${packageDescription}...")
     fileUrl = project.properties['downloadUpdatePack.multiaxialHierarchy.fileUrl']
     defaultFileName = project.properties['downloadUpdatePack.multiaxialHierarchy.fileName']
-    downloadedFileName = downloadHelper.downloadResourceLoinc(fileUrl, defaultFileName, packageDescription)
+    downloadedFileName = downloadHelper.repeatableDownloadResourceLoinc(fileUrl, defaultFileName, packageDescription)
     project.ext.set('downloadUpdatePack.multiaxialHierarchy.fileName', downloadedFileName);
 
     /*********************************************************
@@ -1075,7 +1133,7 @@ task downloadUpdatePack(dependsOn: createSourceTable, description: project.prope
     println new StringBuilderWrapper("\nDownloading ${packageDescription}...")
     fileUrl = project.properties['downloadUpdatePack.panelsForms.fileUrl']
     defaultFileName = project.properties['downloadUpdatePack.panelsForms.fileName']
-    downloadedFileName = downloadHelper.downloadResourceLoinc(fileUrl, defaultFileName, packageDescription)
+    downloadedFileName = downloadHelper.repeatableDownloadResourceLoinc(fileUrl, defaultFileName, packageDescription)
     project.ext.set('downloadUpdatePack.panelsForms.fileName', downloadedFileName);
 
     /******************************************************************
@@ -1085,23 +1143,23 @@ task downloadUpdatePack(dependsOn: createSourceTable, description: project.prope
     println new StringBuilderWrapper("\nDownloading ${packageDescription}...")
     fileUrl = project.properties['downloadUpdatePack.expressionAssociation.fileUrl']
     defaultFileName = project.properties['downloadUpdatePack.expressionAssociation.fileName']
-    downloadedFileName = downloadHelper.downloadResourceLoinc(fileUrl, defaultFileName, packageDescription)
+    downloadedFileName = downloadHelper.repeatableDownloadResourceLoinc(fileUrl, defaultFileName, packageDescription)
     project.ext.set('downloadUpdatePack.expressionAssociation.fileName', downloadedFileName);
 
     /****************************************************
      * Download 'CPT Mappings' package (from UMLS portal)
      * **************************************************/
     packageDescription = project.properties['downloadUpdatePack.cptMappings.description']
-    println new StringBuilderWrapper("Downloading ${packageDescription}...")
+    println new StringBuilderWrapper("\nDownloading ${packageDescription}...")
     loginUrl = project.properties['downloadUpdatePack.umls.loginUrl']
     userName = project.properties['downloadUpdatePack.umls.username']
     password = project.properties['downloadUpdatePack.umls.password']
     fileUrl = project.properties['downloadUpdatePack.cptMappings.fileUrl']
     defaultFileName = project.properties['downloadUpdatePack.cptMappings.fileName']
-    downloadedFileName = downloadHelper.downloadResourceUmls(loginUrl, userName, password, fileUrl,defaultFileName)
+    downloadedFileName = downloadHelper.repeatableDownloadResourceUmls(loginUrl, userName, password, fileUrl, defaultFileName);
     project.ext.set('downloadUpdatePack.cptMappings.fileName', downloadedFileName);
 
-    println new StringBuilderWrapper("Downloaded complete.\nUpdate packages are saved to the: ${tempDir.getPath()}")
+    println new StringBuilderWrapper("\nDownloaded complete.\nUpdate packages are saved to the: ${tempDir.getPath()}")
 
     // Finish action checkpoint
     def timeFinish = System.currentTimeMillis()
