@@ -1,5 +1,6 @@
 OPTIONS (errors=0, SKIP=1, direct=true)
 LOAD DATA
+CHARACTERSET UTF8
 INFILE 'LOINC_FORMS.txt'
 BADFILE 'LOINC_FORMS.bad'
 DISCARDFILE 'LOINC_FORMS.dsc'                                                           

@@ -1,5 +1,6 @@
 OPTIONS (errors=0, SKIP=1, direct=true)
 LOAD DATA
+CHARACTERSET UTF8
 INFILE 'answers.csv' "str '\n'"
 BADFILE 'LOINC_ANSWERS.bad'
 DISCARDFILE 'LOINC_ANSWERS.dsc'
