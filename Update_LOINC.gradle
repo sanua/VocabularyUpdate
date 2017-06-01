@@ -1242,21 +1242,27 @@ task convertData(dependsOn: extractFiles, description: project.properties['conve
 
         String targetPath = new File(tempDir, importReadyFolder).getPath();
 
-        String fileToCopy = "loinc.csv";
+        fileNameTemplate = "loinc.csv";
+        fileList = convertHelper.getFilesByName(tempDir, fileNameTemplate, "zip", true);
+        String fileToCopy = fileList.get(0).getName();
         String loincCsvFile = convertHelper.copy(
                 new File(tempDir, fileToCopy).getPath(),
                 new File(targetPath, fileToCopy).getPath()
         );
         project.ext.set("import.fullSet.loinc.dataFileName", loincCsvFile);
 
-        fileToCopy = "map_to.csv";
+        fileNameTemplate = "map_to.csv";
+        fileList = convertHelper.getFilesByName(tempDir, fileNameTemplate, "zip", true);
+        fileToCopy = fileList.get(0).getName();
         String mapToCsvFile = convertHelper.copy(
                 new File(tempDir, fileToCopy).getPath(),
                 new File(targetPath, fileToCopy).getPath()
         );
         project.ext.set("import.fullSet.mapTo.dataFileName", mapToCsvFile);
 
-        fileToCopy = "source_organization.csv";
+        fileNameTemplate = "source_organization.csv";
+        fileList = convertHelper.getFilesByName(tempDir, fileNameTemplate, "zip", true);
+        fileToCopy = fileList.get(0).getName();
         String sourceOrganizationCsvFile = convertHelper.copy(
                 new File(tempDir, fileToCopy).getPath(),
                 new File(targetPath, fileToCopy).getPath()
@@ -1264,6 +1270,10 @@ task convertData(dependsOn: extractFiles, description: project.properties['conve
         project.ext.set("import.fullSet.sourceOrganization.dataFileName", sourceOrganizationCsvFile);
 
         fileToCopy = project.properties['downloadUpdatePack.multiaxialHierarchy.fileName'].replaceAll(".zip", ".csv");
+        fileNameTemplate = project.properties['downloadUpdatePack.multiaxialHierarchy.fileName'].toString();
+        fileNameTemplate = fileNameTemplate.substring(0, fileNameTemplate.lastIndexOf("."));
+        fileList = convertHelper.getFilesByName(tempDir, fileNameTemplate, "zip", true);
+        fileToCopy = fileList.get(0).getName();
         String multiaxialHierarchyCsvFile = convertHelper.copy(
                 new File(tempDir, fileToCopy).getPath(),
                 new File(targetPath, fileToCopy).getPath()
