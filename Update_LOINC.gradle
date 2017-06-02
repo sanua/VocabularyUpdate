@@ -530,6 +530,7 @@ public class DownloadResourceHelper {
 
         // REQUEST 2
         // Login
+        System.out.println "${new StringBuilderWrapper("Login UMLS service...")}"
         try {
             Map<String, String> params = new HashMap<String, String>();
             params.put("username", userName);
@@ -671,7 +672,7 @@ public class DownloadResourceHelper {
             String filePath = String.format("%s%s%s", this.downloadPath.getPath(), File.separator, fileName);
 
             String contentLength = getResponseHeaderValue(response,"Content-Length");
-            System.out.println(String.format("Downloaded '%s' file with %s bytes", fileName, contentLength));
+            System.out.println(new StringBuilderWrapper(String.format("Downloaded '%s' file with %s bytes", fileName, contentLength)));
 
             // Save file to stream
             outputStream = new FileOutputStream(new File(filePath));
@@ -812,7 +813,7 @@ public class Xls2CsvHelper {
     }
 
     public void convertLoinc(String inputFile, String destFolder, Map<String, String> sheetNameFilePathMap, Map<String, String> sheetNameSkiptColumnsAfterNameMap) throws IOException {
-        System.out.println("\n\tConversion of LOINC data started");
+        System.out.println(new StringBuilderWrapper("Conversion of LOINC data started"));
         /**
          * Check if input Except file exists
          */
@@ -851,12 +852,12 @@ public class Xls2CsvHelper {
                 
                 File savedFilePath = new File(outPath, fileName);
                 sheetPathEntry.setValue(savedFilePath);
-                System.out.println(String.format("\tConversion of Sheet '%s' done. Saved to: '%s'.", sheetName, savedFilePath.getPath()));
+                System.out.println(new StringBuilderWrapper(String.format("Conversion of Sheet '%s' done. Saved to: '%s'.", sheetName, savedFilePath.getPath())));
                 fos = new FileOutputStream(savedFilePath);
                 fos.write(data.getBytes());
                 fos.flush();
             }
-            System.out.println("\tConversion of LOINC data done");
+            System.out.println(new StringBuilderWrapper("Conversion of LOINC data done"));
         } catch (Exception e) {
             System.out.println("Error occurs: " + e.getMessage());
             e.printStackTrace();
@@ -1110,7 +1111,7 @@ task downloadUpdatePack(dependsOn: createSourceTable, description: project.prope
      * Download 'Full Set' package (from LOINC portal)
      * **********************************************/
     String packageDescription = project.properties['downloadUpdatePack.fullSet.description']
-    println new StringBuilderWrapper("\nDownloading ${packageDescription}...")
+    println "\n${new StringBuilderWrapper("Downloading ${packageDescription}...")}"
     String fileUrl = project.properties['downloadUpdatePack.fullSet.fileUrl']
     String defaultFileName = project.properties['downloadUpdatePack.fullSet.fileName']
     String downloadedFileName = downloadHelper.repeatableDownloadResourceLoinc(fileUrl, defaultFileName, packageDescription)
@@ -1120,7 +1121,7 @@ task downloadUpdatePack(dependsOn: createSourceTable, description: project.prope
      * Download 'Multiaxial Hierarchy' package (from LOINC portal)
      * ***********************************************************/
     packageDescription = project.properties['downloadUpdatePack.multiaxialHierarchy.description']
-    println new StringBuilderWrapper("\nDownloading ${packageDescription}...")
+    println "\n${new StringBuilderWrapper("Downloading ${packageDescription}...")}"
     fileUrl = project.properties['downloadUpdatePack.multiaxialHierarchy.fileUrl']
     defaultFileName = project.properties['downloadUpdatePack.multiaxialHierarchy.fileName']
     downloadedFileName = downloadHelper.repeatableDownloadResourceLoinc(fileUrl, defaultFileName, packageDescription)
@@ -1130,7 +1131,7 @@ task downloadUpdatePack(dependsOn: createSourceTable, description: project.prope
      * Download 'Panels and Forms' package (from LOINC portal)
      * *******************************************************/
     packageDescription = project.properties['downloadUpdatePack.panelsForms.description']
-    println new StringBuilderWrapper("\nDownloading ${packageDescription}...")
+    println "\n${new StringBuilderWrapper("Downloading ${packageDescription}...")}"
     fileUrl = project.properties['downloadUpdatePack.panelsForms.fileUrl']
     defaultFileName = project.properties['downloadUpdatePack.panelsForms.fileName']
     downloadedFileName = downloadHelper.repeatableDownloadResourceLoinc(fileUrl, defaultFileName, packageDescription)
@@ -1140,7 +1141,7 @@ task downloadUpdatePack(dependsOn: createSourceTable, description: project.prope
      * Download 'CT Expression Association' package (from LOINC portal)
      * ****************************************************************/
     packageDescription = project.properties['downloadUpdatePack.expressionAssociation.description']
-    println new StringBuilderWrapper("\nDownloading ${packageDescription}...")
+    println "\n${new StringBuilderWrapper("Downloading ${packageDescription}...")}"
     fileUrl = project.properties['downloadUpdatePack.expressionAssociation.fileUrl']
     defaultFileName = project.properties['downloadUpdatePack.expressionAssociation.fileName']
     downloadedFileName = downloadHelper.repeatableDownloadResourceLoinc(fileUrl, defaultFileName, packageDescription)
@@ -1150,7 +1151,7 @@ task downloadUpdatePack(dependsOn: createSourceTable, description: project.prope
      * Download 'CPT Mappings' package (from UMLS portal)
      * **************************************************/
     packageDescription = project.properties['downloadUpdatePack.cptMappings.description']
-    println new StringBuilderWrapper("\nDownloading ${packageDescription}...")
+    println "\n${new StringBuilderWrapper("Downloading ${packageDescription}...")}"
     loginUrl = project.properties['downloadUpdatePack.umls.loginUrl']
     userName = project.properties['downloadUpdatePack.umls.username']
     password = project.properties['downloadUpdatePack.umls.password']
@@ -1159,7 +1160,8 @@ task downloadUpdatePack(dependsOn: createSourceTable, description: project.prope
     downloadedFileName = downloadHelper.repeatableDownloadResourceUmls(loginUrl, userName, password, fileUrl, defaultFileName);
     project.ext.set('downloadUpdatePack.cptMappings.fileName', downloadedFileName);
 
-    println new StringBuilderWrapper("\nDownloaded complete.\nUpdate packages are saved to the: ${tempDir.getPath()}")
+    println "\n${new StringBuilderWrapper('Download completed.')}"
+    println "${new StringBuilderWrapper("Update packages are saved to the: ${tempDir.getPath()}")}"
 
     // Finish action checkpoint
     def timeFinish = System.currentTimeMillis()
@@ -1184,10 +1186,10 @@ task extractFiles(dependsOn: downloadUpdatePack, description: project.properties
     def dir = tempDir
     dir.eachFile(FileType.FILES) { file ->
         fileList << file
-        println new StringBuilderWrapper("extracting: ${file}")
-
         if (file.getPath().endsWith('zip')) {
+            print new StringBuilderWrapper("Extracting ${file} ...")
             ant.unzip(src: file.getPath(), dest: tempDir, overwrite: false)
+            println ' done'
         }
     }
 
@@ -1242,21 +1244,30 @@ task convertData(dependsOn: extractFiles, description: project.properties['conve
 
         String targetPath = new File(tempDir, importReadyFolder).getPath();
 
-        String fileToCopy = "loinc.csv";
+        fileNameTemplate = "loinc.csv";
+        fileList = convertHelper.getFilesByName(tempDir, fileNameTemplate, "zip", true);
+        String fileToCopy = fileList.get(0).getName();
+        println "\n${new StringBuilderWrapper("Copy from: '${new File(tempDir, fileToCopy).getPath()}',\n\t to ${targetPath}")}";
         String loincCsvFile = convertHelper.copy(
                 new File(tempDir, fileToCopy).getPath(),
                 new File(targetPath, fileToCopy).getPath()
         );
         project.ext.set("import.fullSet.loinc.dataFileName", loincCsvFile);
 
-        fileToCopy = "map_to.csv";
+        fileNameTemplate = "map_to.csv";
+        fileList = convertHelper.getFilesByName(tempDir, fileNameTemplate, "zip", true);
+        fileToCopy = fileList.get(0).getName();
+        println new StringBuilderWrapper("Copy from: '${new File(tempDir, fileToCopy).getPath()}',\n\t to ${targetPath}");
         String mapToCsvFile = convertHelper.copy(
                 new File(tempDir, fileToCopy).getPath(),
                 new File(targetPath, fileToCopy).getPath()
         );
         project.ext.set("import.fullSet.mapTo.dataFileName", mapToCsvFile);
 
-        fileToCopy = "source_organization.csv";
+        fileNameTemplate = "source_organization.csv";
+        fileList = convertHelper.getFilesByName(tempDir, fileNameTemplate, "zip", true);
+        fileToCopy = fileList.get(0).getName();
+        println new StringBuilderWrapper("Copy from: '${new File(tempDir, fileToCopy).getPath()}',\n\t to ${targetPath}");
         String sourceOrganizationCsvFile = convertHelper.copy(
                 new File(tempDir, fileToCopy).getPath(),
                 new File(targetPath, fileToCopy).getPath()
@@ -1264,6 +1275,10 @@ task convertData(dependsOn: extractFiles, description: project.properties['conve
         project.ext.set("import.fullSet.sourceOrganization.dataFileName", sourceOrganizationCsvFile);
 
         fileToCopy = project.properties['downloadUpdatePack.multiaxialHierarchy.fileName'].replaceAll(".zip", ".csv");
+        fileNameTemplate = project.properties['downloadUpdatePack.multiaxialHierarchy.fileName'].toString();
+        fileNameTemplate = fileNameTemplate.substring(0, fileNameTemplate.lastIndexOf("."));
+        fileList = convertHelper.getFilesByName(tempDir, fileNameTemplate, "zip", true);
+        fileToCopy = fileList.get(0).getName();
         String multiaxialHierarchyCsvFile = convertHelper.copy(
                 new File(tempDir, fileToCopy).getPath(),
                 new File(targetPath, fileToCopy).getPath()
@@ -1277,6 +1292,7 @@ task convertData(dependsOn: extractFiles, description: project.properties['conve
         fileNameTemplate = "xder2_sscccRefset_LOINCExpressionAssociationFull_INT";
         fileList = convertHelper.getFilesByName(filePath, fileNameTemplate, true);
         fileToCopy = fileList.get(0).getName();
+        println new StringBuilderWrapper("Copy from: '${new File(tempDir, fileToCopy).getPath()}',\n\t to ${targetPath}");
         String expressionAssociationCsvFile = convertHelper.copy(
                 new File(filePath, fileToCopy).getPath(),
                 new File(targetPath, fileToCopy).getPath()
@@ -1286,6 +1302,7 @@ task convertData(dependsOn: extractFiles, description: project.properties['conve
         fileNameTemplate = "MRSMAP";
         fileList = convertHelper.getFilesByName(tempDir, fileNameTemplate, true);
         fileToCopy = fileList.get(0).getName();
+        println new StringBuilderWrapper("Copy from: '${new File(tempDir, fileToCopy).getPath()}',\n\t to ${targetPath}");
         String cptMappingsCsvFile = convertHelper.copy(
                 new File(tempDir, fileToCopy).getPath(),
                 new File(targetPath, fileToCopy).getPath()
@@ -1350,8 +1367,8 @@ task importData(dependsOn: convertData, description: project.properties['import.
         String streamLogFileName = groupParams.find {it.getKey().toLowerCase().indexOf("streamLogFileName".toLowerCase()) >= 0}.getValue();
         String streamErrorFileName = groupParams.find {it.getKey().toLowerCase().indexOf("streamErrorFileName".toLowerCase()) >= 0}.getValue();
 
-        println "\n${groupNameLabel}...\n";
-
+        println "\n${new StringBuilderWrapper("${groupNameLabel}...")}";
+        
         def bosOut = new ByteArrayOutputStream(), bosErr = new ByteArrayOutputStream()
         def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
         exec {
