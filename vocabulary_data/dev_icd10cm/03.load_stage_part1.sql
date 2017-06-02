@@ -17,6 +17,7 @@
 * Date: 2016
 **************************************************************************/
 
+SET SERVEROUTPUT ON
 SET ECHO OFF
 SET sqlbl on
 SET VERIFY OFF

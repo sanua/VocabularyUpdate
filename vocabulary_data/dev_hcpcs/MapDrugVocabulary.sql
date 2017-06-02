@@ -11,6 +11,7 @@
 * Suppport writing amount field                   *
 **************************************************/
 
+SET SERVEROUTPUT ON
 SET ECHO OFF
 SET VERIFY OFF
 /* If any errors occurs - stop script execution and return error code */

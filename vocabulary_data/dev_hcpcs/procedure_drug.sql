@@ -17,6 +17,7 @@
 * Date: 2016
 **************************************************************************/
 
+SET SERVEROUTPUT ON
 SET ECHO OFF
 SET VERIFY OFF
 /* If any errors occurs - stop script execution and return error code */
@@ -1264,8 +1265,8 @@ commit;
 -- Add ingredients for combination products
 -- 5% dextrose and 0.45% normal saline
 begin
-        DBMS_OUTPUT.PUT_LINE('Add ingredients for combination products');
-        DBMS_OUTPUT.PUT_LINE('5% dextrose and 0.45% normal saline');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'Add ingredients for combination products');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || '5% dextrose and 0.45% normal saline');
         insert into internal_relationship_stage
         select concept_code_1, 'dextrose' as concept_code_2 from internal_relationship_stage where concept_code_2='5% dextrose and 0.45% normal saline';
         insert into internal_relationship_stage
@@ -1273,8 +1274,8 @@ begin
         delete from internal_relationship_stage where concept_code_2='5% dextrose and 0.45% normal saline';
         -- 5% dextrose in lactated ringer's
         -- Calcium Chloride 0.001 MEQ/ML / Glucose 50 MG/ML / Potassium Chloride 0.004 MEQ/ML / Sodium Chloride 0.103 MEQ/ML / Sodium Lactate 0.028 MEQ/ML Injectable Solution
-        DBMS_OUTPUT.PUT_LINE('5% dextrose in lactated ringer''s');
-        DBMS_OUTPUT.PUT_LINE('Calcium Chloride 0.001 MEQ/ML / Glucose 50 MG/ML / Potassium Chloride 0.004 MEQ/ML / Sodium Chloride 0.103 MEQ/ML / Sodium Lactate 0.028 MEQ/ML Injectable Solution');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || '5% dextrose in lactated ringer''s');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'Calcium Chloride 0.001 MEQ/ML / Glucose 50 MG/ML / Potassium Chloride 0.004 MEQ/ML / Sodium Chloride 0.103 MEQ/ML / Sodium Lactate 0.028 MEQ/ML Injectable Solution');
         insert into internal_relationship_stage
         select concept_code_1, 'dextrose' as concept_code_2 from internal_relationship_stage where concept_code_2='5% dextrose in lactated ringer''s';
         insert into internal_relationship_stage
@@ -1288,8 +1289,8 @@ begin
         delete from internal_relationship_stage where concept_code_2='5% dextrose in lactated ringer''s';
         -- 5% dextrose in lactated ringers infusion
         -- Calcium Chloride 0.001 MEQ/ML / Glucose 50 MG/ML / Potassium Chloride 0.004 MEQ/ML / Sodium Chloride 0.103 MEQ/ML / Sodium Lactate 0.028 MEQ/ML Injectable Solution
-        DBMS_OUTPUT.PUT_LINE('5% dextrose in lactated ringers infusion');
-        DBMS_OUTPUT.PUT_LINE('Calcium Chloride 0.001 MEQ/ML / Glucose 50 MG/ML / Potassium Chloride 0.004 MEQ/ML / Sodium Chloride 0.103 MEQ/ML / Sodium Lactate 0.028 MEQ/ML Injectable Solution');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || '5% dextrose in lactated ringers infusion');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'Calcium Chloride 0.001 MEQ/ML / Glucose 50 MG/ML / Potassium Chloride 0.004 MEQ/ML / Sodium Chloride 0.103 MEQ/ML / Sodium Lactate 0.028 MEQ/ML Injectable Solution');
         insert into internal_relationship_stage
         select concept_code_1, 'dextrose' as concept_code_2 from internal_relationship_stage where concept_code_2='5% dextrose in lactated ringers infusion';
         insert into internal_relationship_stage
@@ -1302,7 +1303,7 @@ begin
         select concept_code_1, 'sodium lactate' as concept_code_2 from internal_relationship_stage where concept_code_2='5% dextrose in lactated ringers infusion';
         delete from internal_relationship_stage where concept_code_2='5% dextrose in lactated ringers infusion';
         -- 5% dextrose with potassium chloride
-        DBMS_OUTPUT.PUT_LINE('5% dextrose with potassium chloride');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || '5% dextrose with potassium chloride');
         insert into internal_relationship_stage
         select concept_code_1, 'dextrose' as concept_code_2 from internal_relationship_stage where concept_code_2='5% dextrose with potassium chloride';
         insert into internal_relationship_stage
@@ -1310,8 +1311,8 @@ begin
         delete from internal_relationship_stage where concept_code_2='5% dextrose with potassium chloride';
         -- both ingredients already defined
         -- 5% dextrose/0.45% normal saline with potassium chloride and magnesium sulfate
-        DBMS_OUTPUT.PUT_LINE('Both ingredients already defined');
-        DBMS_OUTPUT.PUT_LINE('5% dextrose/0.45% normal saline with potassium chloride and magnesium sulfate');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'Both ingredients already defined');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || '5% dextrose/0.45% normal saline with potassium chloride and magnesium sulfate');
         insert into internal_relationship_stage
         select concept_code_1, 'dextrose' as concept_code_2 from internal_relationship_stage where concept_code_2='5% dextrose/0.45% normal saline with potassium chloride and magnesium sulfate';
         insert into internal_relationship_stage
@@ -1323,8 +1324,8 @@ begin
         delete from internal_relationship_stage where concept_code_2='5% dextrose/0.45% normal saline with potassium chloride and magnesium sulfate';
         -- all ingredients already defined
         -- 5% dextrose/normal saline (500 ml = 1 unit)
-        DBMS_OUTPUT.PUT_LINE('All ingredients already defined');
-        DBMS_OUTPUT.PUT_LINE('5% dextrose/normal saline (500 ml = 1 unit)');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'All ingredients already defined');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || '5% dextrose/normal saline (500 ml = 1 unit)');
         insert into internal_relationship_stage
         select concept_code_1, 'dextrose' as concept_code_2 from internal_relationship_stage where concept_code_2='5% dextrose/normal saline (500 ml = 1 unit)';
         insert into internal_relationship_stage
@@ -1332,8 +1333,8 @@ begin
         delete from internal_relationship_stage where concept_code_2='5% dextrose/normal saline (500 ml = 1 unit)';
         -- both ingredients already defined
         -- albuterol/ipratropium bromide up to 0.5 mg
-        DBMS_OUTPUT.PUT_LINE('Both ingredients already defined');
-        DBMS_OUTPUT.PUT_LINE('albuterol/ipratropium bromide up to 0.5 mg');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'Both ingredients already defined');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'albuterol/ipratropium bromide up to 0.5 mg');
         insert into internal_relationship_stage
         select concept_code_1, 'albuterol' as concept_code_2 from internal_relationship_stage where concept_code_2='albuterol/ipratropium bromide up to 0.5 mg';
         insert into internal_relationship_stage
@@ -1341,15 +1342,15 @@ begin
         delete from internal_relationship_stage where concept_code_2='albuterol/ipratropium bromide up to 0.5 mg';
         -- both ingredients already defined
         -- ampicillin sodium/sulbactam sodium
-        DBMS_OUTPUT.PUT_LINE('Both ingredients already defined');
-        DBMS_OUTPUT.PUT_LINE('ampicillin sodium/sulbactam sodium');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'Both ingredients already defined');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'ampicillin sodium/sulbactam sodium');
         insert into internal_relationship_stage
         select concept_code_1, 'ampicillin sodium' as concept_code_2 from internal_relationship_stage where concept_code_2='ampicillin sodium/sulbactam sodium';
         insert into internal_relationship_stage
         select concept_code_1, 'sulbactam' as concept_code_2 from internal_relationship_stage where concept_code_2='ampicillin sodium/sulbactam sodium';
         delete from internal_relationship_stage where concept_code_2='ampicillin sodium/sulbactam sodium';
         -- antihemophilic factor viii/von willebrand factor complex (human)
-        DBMS_OUTPUT.PUT_LINE('Antihemophilic factor viii/von willebrand factor complex (human)');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'Antihemophilic factor viii/von willebrand factor complex (human)');
         insert into internal_relationship_stage
         select concept_code_1, 'factor viii' as concept_code_2 from internal_relationship_stage where concept_code_2='antihemophilic factor viii/von willebrand factor complex (human)';
         insert into internal_relationship_stage
@@ -1357,8 +1358,8 @@ begin
         delete from internal_relationship_stage where concept_code_2='antihemophilic factor viii/von willebrand factor complex (human)';
         -- both ingredients already defined
         -- buprenorphine/naloxone
-        DBMS_OUTPUT.PUT_LINE('Both ingredients already defined');
-        DBMS_OUTPUT.PUT_LINE('buprenorphine/naloxone');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'Both ingredients already defined');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'buprenorphine/naloxone');
         insert into internal_relationship_stage
         select concept_code_1, 'buprenorphine hydrochloride' as concept_code_2 from internal_relationship_stage where concept_code_2='buprenorphine/naloxone';
         insert into internal_relationship_stage
@@ -1367,9 +1368,9 @@ begin
         -- both ingredients defined already
         -- elliot b solution
         -- Calcium Chloride 0.00136 MEQ/ML / Glucose 0.8 MG/ML / Magnesium Sulfate 0.00122 MEQ/ML / Potassium Chloride 0.00403 MEQ/ML / Sodium Bicarbonate 0.0226 MEQ/ML / Sodium Chloride 0.125 MEQ/ML / sodium phosphate 0.000746 MEQ/ML Injectable Solution [Elliotts B
-        DBMS_OUTPUT.PUT_LINE('Both ingredients defined already');
-        DBMS_OUTPUT.PUT_LINE('elliot b solution');
-        DBMS_OUTPUT.PUT_LINE('Calcium Chloride 0.00136 MEQ/ML / Glucose 0.8 MG/ML / Magnesium Sulfate 0.00122 MEQ/ML / Potassium Chloride 0.00403 MEQ/ML / Sodium Bicarbonate 0.0226 MEQ/ML / Sodium Chloride 0.125 MEQ/ML / sodium phosphate 0.000746 MEQ/ML Injectable Solution [Elliotts B');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'Both ingredients defined already');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'elliot b solution');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'Calcium Chloride 0.00136 MEQ/ML / Glucose 0.8 MG/ML / Magnesium Sulfate 0.00122 MEQ/ML / Potassium Chloride 0.00403 MEQ/ML / Sodium Bicarbonate 0.0226 MEQ/ML / Sodium Chloride 0.125 MEQ/ML / sodium phosphate 0.000746 MEQ/ML Injectable Solution [Elliotts B');
         insert into internal_relationship_stage
         select concept_code_1, 'sodium bicarbonate' as concept_code_2 from internal_relationship_stage where concept_code_2='elliotts'' b solution';
         insert into internal_relationship_stage
@@ -1387,8 +1388,8 @@ begin
         delete from internal_relationship_stage where concept_code_2='elliotts'' b solution';
         -- some of the ingredients are already defined
         -- immune globulin/hyaluronidase
-        DBMS_OUTPUT.PUT_LINE('Some of the ingredients are already defined');
-        DBMS_OUTPUT.PUT_LINE('immune globulin/hyaluronidase');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'Some of the ingredients are already defined');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'immune globulin/hyaluronidase');
         insert into internal_relationship_stage
         select concept_code_1, 'immune globulin' as concept_code_2 from internal_relationship_stage where concept_code_2='immune globulin/hyaluronidase';
         insert into internal_relationship_stage
@@ -1396,8 +1397,8 @@ begin
         delete from internal_relationship_stage where concept_code_2='immune globulin/hyaluronidase';
         -- both ingredients definded already
         -- lidocaine /tetracaine
-        DBMS_OUTPUT.PUT_LINE('Both ingredients definded already');
-        DBMS_OUTPUT.PUT_LINE('lidocaine /tetracaine');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'Both ingredients definded already');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'lidocaine /tetracaine');
         insert into internal_relationship_stage
         select concept_code_1, 'lidocaine hcl for intravenous infusion' as concept_code_2 from internal_relationship_stage where concept_code_2='lidocaine /tetracaine ';
         insert into internal_relationship_stage
@@ -1405,8 +1406,8 @@ begin
         delete from internal_relationship_stage where concept_code_2='lidocaine /tetracaine ';
         -- lidocaine already defined
         -- medroxyprogesterone acetate / estradiol cypionate
-        DBMS_OUTPUT.PUT_LINE('Lidocaine already defined');
-        DBMS_OUTPUT.PUT_LINE('medroxyprogesterone acetate / estradiol cypionate');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'Lidocaine already defined');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'medroxyprogesterone acetate / estradiol cypionate');
         insert into internal_relationship_stage
         select concept_code_1, 'medroxyprogesterone acetate' as concept_code_2 from internal_relationship_stage where concept_code_2='medroxyprogesterone acetate / estradiol cypionate';
         insert into internal_relationship_stage
@@ -1414,8 +1415,8 @@ begin
         delete from internal_relationship_stage where concept_code_2='medroxyprogesterone acetate / estradiol cypionate';
         -- both ingredients already defined
         -- piperacillin sodium/tazobactam sodium
-        DBMS_OUTPUT.PUT_LINE('both ingredients already defined');
-        DBMS_OUTPUT.PUT_LINE('piperacillin sodium/tazobactam sodium');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'both ingredients already defined');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'piperacillin sodium/tazobactam sodium');
         insert into internal_relationship_stage
         select concept_code_1, 'piperacillin sodium' as concept_code_2 from internal_relationship_stage where concept_code_2='piperacillin sodium/tazobactam sodium';
         insert into internal_relationship_stage
@@ -1423,22 +1424,22 @@ begin
         delete from internal_relationship_stage where concept_code_2='piperacillin sodium/tazobactam sodium';
         -- piperacillin already defined
         -- quinupristin/dalfopristin
-        DBMS_OUTPUT.PUT_LINE('piperacillin already defined');
-        DBMS_OUTPUT.PUT_LINE('quinupristin/dalfopristin');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'piperacillin already defined');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'quinupristin/dalfopristin');
         insert into internal_relationship_stage
         select concept_code_1, 'quinupristin' as concept_code_2 from internal_relationship_stage where concept_code_2='quinupristin/dalfopristin';
         insert into internal_relationship_stage
         select concept_code_1, 'dalfopristin' as concept_code_2 from internal_relationship_stage where concept_code_2='quinupristin/dalfopristin';
         delete from internal_relationship_stage where concept_code_2='quinupristin/dalfopristin';
         -- calcium glycerophosphate and calcium lactate
-        DBMS_OUTPUT.PUT_LINE('Calcium glycerophosphate and calcium lactate');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'Calcium glycerophosphate and calcium lactate');
         insert into internal_relationship_stage
         select concept_code_1, 'calcium glycerophosphate' as concept_code_2 from internal_relationship_stage where concept_code_2='calcium glycerophosphate and calcium lactate';
         insert into internal_relationship_stage
         select concept_code_1, 'calcium lactate' as concept_code_2 from internal_relationship_stage where concept_code_2='calcium glycerophosphate and calcium lactate';
         delete from internal_relationship_stage where concept_code_2='calcium glycerophosphate and calcium lactate';
         --- ceftazidime and avibactam
-        DBMS_OUTPUT.PUT_LINE('Ceftazidime and avibactam');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'Ceftazidime and avibactam');
         insert into internal_relationship_stage
         select concept_code_1, 'ceftazidime' as concept_code_2 from internal_relationship_stage where concept_code_2='ceftazidime and avibactam';
         insert into internal_relationship_stage
@@ -1446,8 +1447,8 @@ begin
         delete from internal_relationship_stage where concept_code_2='ceftazidime and avibactam';
         -- ceftazidime already defined
         -- ceftolozane 50 mg and tazobactam 25 mg
-        DBMS_OUTPUT.PUT_LINE('Ceftazidime already defined');
-        DBMS_OUTPUT.PUT_LINE('ceftolozane 50 mg and tazobactam 25 mg');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'Ceftazidime already defined');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'ceftolozane 50 mg and tazobactam 25 mg');
         insert into internal_relationship_stage
         select concept_code_1, 'ceftolozane' as concept_code_2 from internal_relationship_stage where concept_code_2='ceftolozane 50 mg and tazobactam 25 mg';
         insert into internal_relationship_stage
@@ -1455,8 +1456,8 @@ begin
         delete from internal_relationship_stage where concept_code_2='ceftolozane 50 mg and tazobactam 25 mg';
         -- tazobactam already defined
         -- droperidol and fentanyl citrate
-        DBMS_OUTPUT.PUT_LINE('Tazobactam already defined');
-        DBMS_OUTPUT.PUT_LINE('droperidol and fentanyl citrate');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'Tazobactam already defined');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'droperidol and fentanyl citrate');
         insert into internal_relationship_stage
         select concept_code_1, 'droperidol' as concept_code_2 from internal_relationship_stage where concept_code_2='droperidol and fentanyl citrate';
         insert into internal_relationship_stage
@@ -1464,8 +1465,8 @@ begin
         delete from internal_relationship_stage where concept_code_2='droperidol and fentanyl citrate';
         -- both ingredients already defined
         -- meperidine and promethazine hcl
-        DBMS_OUTPUT.PUT_LINE('Both ingredients already defined');
-        DBMS_OUTPUT.PUT_LINE('meperidine and promethazine hcl');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'Both ingredients already defined');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'meperidine and promethazine hcl');
         insert into internal_relationship_stage
         select concept_code_1, 'meperidine hydrochloride' as concept_code_2 from internal_relationship_stage where concept_code_2='meperidine and promethazine hcl';
         insert into internal_relationship_stage
@@ -1473,8 +1474,8 @@ begin
         delete from internal_relationship_stage where concept_code_2='meperidine and promethazine hcl';
         -- Both ingredients already defined
         -- netupitant 300 mg and palonosetron 0.5 mg
-        DBMS_OUTPUT.PUT_LINE('Both ingredients already defined');
-        DBMS_OUTPUT.PUT_LINE('netupitant 300 mg and palonosetron 0.5 mg');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'Both ingredients already defined');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'netupitant 300 mg and palonosetron 0.5 mg');
         insert into internal_relationship_stage
         select concept_code_1, 'netupitant' as concept_code_2 from internal_relationship_stage where concept_code_2='netupitant 300 mg and palonosetron 0.5 mg';
         insert into internal_relationship_stage
@@ -1482,8 +1483,8 @@ begin
         delete from internal_relationship_stage where concept_code_2='netupitant 300 mg and palonosetron 0.5 mg';
         -- palonosetron already defined
         -- phenylephrine and ketorolac
-        DBMS_OUTPUT.PUT_LINE('Palonosetron already defined');
-        DBMS_OUTPUT.PUT_LINE('phenylephrine and ketorolac');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'Palonosetron already defined');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'phenylephrine and ketorolac');
         insert into internal_relationship_stage
         select concept_code_1, 'phenylephrine hcl' as concept_code_2 from internal_relationship_stage where concept_code_2='phenylephrine and ketorolac';
         insert into internal_relationship_stage
@@ -1492,9 +1493,9 @@ begin
         -- both ingredients already defined
         -- ringers lactate infusion
         -- Calcium Chloride 0.0014 MEQ/ML / Potassium Chloride 0.004 MEQ/ML / Sodium Chloride 0.103 MEQ/ML / Sodium Lactate 0.028 MEQ/ML Injectable Solution
-        DBMS_OUTPUT.PUT_LINE('Both ingredients already defined');
-        DBMS_OUTPUT.PUT_LINE('ringers lactate infusion');
-        DBMS_OUTPUT.PUT_LINE('Calcium Chloride 0.0014 MEQ/ML / Potassium Chloride 0.004 MEQ/ML / Sodium Chloride 0.103 MEQ/ML / Sodium Lactate 0.028 MEQ/ML Injectable Solution');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'Both ingredients already defined');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'ringers lactate infusion');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'Calcium Chloride 0.0014 MEQ/ML / Potassium Chloride 0.004 MEQ/ML / Sodium Chloride 0.103 MEQ/ML / Sodium Lactate 0.028 MEQ/ML Injectable Solution');
         insert into internal_relationship_stage
         select concept_code_1, 'calcium chloride' as concept_code_2 from internal_relationship_stage where concept_code_2='ringers lactate infusion';
         insert into internal_relationship_stage
@@ -1505,14 +1506,14 @@ begin
         select concept_code_1, 'sodium lactate' as concept_code_2 from internal_relationship_stage where concept_code_2='ringers lactate infusion';
         delete from internal_relationship_stage where concept_code_2='ringers lactate infusion';
         -- sulfamethoxazole and trimethoprim
-        DBMS_OUTPUT.PUT_LINE('Sulfamethoxazole and trimethoprim');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'Sulfamethoxazole and trimethoprim');
         insert into internal_relationship_stage
         select concept_code_1, 'sulfamethoxazole' as concept_code_2 from internal_relationship_stage where concept_code_2='sulfamethoxazole and trimethoprim';
         insert into internal_relationship_stage
         select concept_code_1, 'trimethoprim' as concept_code_2 from internal_relationship_stage where concept_code_2='sulfamethoxazole and trimethoprim';
         delete from internal_relationship_stage where concept_code_2='sulfamethoxazole and trimethoprim';
         -- testosterone cypionate and estradiol cypionate
-        DBMS_OUTPUT.PUT_LINE('Testosterone cypionate and estradiol cypionate');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'Testosterone cypionate and estradiol cypionate');
         insert into internal_relationship_stage
         select concept_code_1, 'testosterone cypionate' as concept_code_2 from internal_relationship_stage where concept_code_2='testosterone cypionate and estradiol cypionate';
         insert into internal_relationship_stage
@@ -1520,8 +1521,8 @@ begin
         delete from internal_relationship_stage where concept_code_2='testosterone cypionate and estradiol cypionate';
         -- both ingredients already defined
         -- testosterone enanthate and estradiol valerate
-        DBMS_OUTPUT.PUT_LINE('Both ingredients already defined');
-        DBMS_OUTPUT.PUT_LINE('testosterone enanthate and estradiol valerate');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'Both ingredients already defined');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'testosterone enanthate and estradiol valerate');
         insert into internal_relationship_stage
         select concept_code_1, 'testosterone enanthate' as concept_code_2 from internal_relationship_stage where concept_code_2='testosterone enanthate and estradiol valerate';
         insert into internal_relationship_stage
@@ -1529,8 +1530,8 @@ begin
         delete from internal_relationship_stage where concept_code_2='testosterone enanthate and estradiol valerate';
         -- both ingredients already defined
         -- ticarcillin disodium and clavulanate potassium
-        DBMS_OUTPUT.PUT_LINE('Both ingredients already defined');
-        DBMS_OUTPUT.PUT_LINE('ticarcillin disodium and clavulanate potassium');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'Both ingredients already defined');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'ticarcillin disodium and clavulanate potassium');
         insert into internal_relationship_stage
         select concept_code_1, 'ticarcillin' as concept_code_2 from internal_relationship_stage where concept_code_2='ticarcillin disodium and clavulanate potassium';
         insert into internal_relationship_stage
@@ -1538,7 +1539,7 @@ begin
         delete from internal_relationship_stage where concept_code_2='ticarcillin disodium and clavulanate potassium';
 
         -- Add and remove ingredients
-        DBMS_OUTPUT.PUT_LINE('Add and remove ingredients');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'Add and remove ingredients');
         delete from drug_concept_stage where concept_class_id='Ingredient' and concept_code not in (select concept_code_2 from internal_relationship_stage);
 end;
 /
@@ -1958,19 +1959,19 @@ begin
         -- C9285 defined and correct
         -- C9447 not defined, will pass only as form or ingredient
         -- C9448 defined:
-        DBMS_OUTPUT.PUT_LINE('Manually fix the combination products');
-        DBMS_OUTPUT.PUT_LINE('C9285 defined and correct');
-        DBMS_OUTPUT.PUT_LINE('C9447 not defined, will pass only as form or ingredient');
-        DBMS_OUTPUT.PUT_LINE('C9448 defined:');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'Manually fix the combination products');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'C9285 defined and correct');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'C9447 not defined, will pass only as form or ingredient');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'C9448 defined:');
         update ds_stage set amount_value=0.5 where drug_concept_code='C9448' and ingredient_concept_code='palonosetron hcl';
         -- C9452 defined:
-        DBMS_OUTPUT.PUT_LINE('C9452 defined:');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'C9452 defined:');
         update ds_stage set amount_value=25 where drug_concept_code='C9452' and ingredient_concept_code='tazobactam';
         -- J0295 only defined for ampicillin
-        DBMS_OUTPUT.PUT_LINE('J0295 only defined for ampicillin');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'J0295 only defined for ampicillin');
         delete from ds_stage where drug_concept_code='J0295' and ingredient_concept_code='sulbactam';
         -- J0571 - J0575 only defined for buprenorphine, will pass only as form or ingredient
-        DBMS_OUTPUT.PUT_LINE('J0571 - J0575 only defined for buprenorphine, will pass only as form or ingredient');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'J0571 - J0575 only defined for buprenorphine, will pass only as form or ingredient');
         delete from ds_stage where drug_concept_code='J0571' and ingredient_concept_code='naloxone hydrochloride';
         delete from ds_stage where drug_concept_code='J0572' and ingredient_concept_code='naloxone hydrochloride';
         delete from ds_stage where drug_concept_code='J0573' and ingredient_concept_code='naloxone hydrochloride';
@@ -1978,61 +1979,61 @@ begin
         delete from ds_stage where drug_concept_code='J0575' and ingredient_concept_code='naloxone hydrochloride';
         -- J0620 not defined, will pass only as form or ingredient
         -- J0695 defined:
-        DBMS_OUTPUT.PUT_LINE('J0620 not defined, will pass only as form or ingredient');
-        DBMS_OUTPUT.PUT_LINE('J0695 defined:');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'J0620 not defined, will pass only as form or ingredient');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'J0695 defined:');
         update ds_stage set amount_value=25 where drug_concept_code='J0695' and ingredient_concept_code='tazobactam';
         -- J0900 not defined, will pass only as form or ingredient
         -- J1056 defined:
-        DBMS_OUTPUT.PUT_LINE('J0900 not defined, will pass only as form or ingredient');
-        DBMS_OUTPUT.PUT_LINE('J1056 defined:');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'J0900 not defined, will pass only as form or ingredient');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'J1056 defined:');
         update ds_stage set amount_value=25 where drug_concept_code='J1056' and ingredient_concept_code='depo-estradiol cypionate';
         -- J1060 not defined, will pass only as form or ingredient
         -- J1575 not defined, will pass only as form or ingredient
         -- J1810 not defined, will pass only as form or ingredient
         -- J2180 defined:
-        DBMS_OUTPUT.PUT_LINE('J1060 not defined, will pass only as form or ingredient');
-        DBMS_OUTPUT.PUT_LINE('J1575 not defined, will pass only as form or ingredient');
-        DBMS_OUTPUT.PUT_LINE('J1810 not defined, will pass only as form or ingredient');
-        DBMS_OUTPUT.PUT_LINE('J2180 defined:');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'J1060 not defined, will pass only as form or ingredient');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'J1575 not defined, will pass only as form or ingredient');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'J1810 not defined, will pass only as form or ingredient');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'J2180 defined:');
         update ds_stage set amount_value=25 where drug_concept_code='J2180' and ingredient_concept_code='promethazine hcl';
         -- J2543 defined:
-        DBMS_OUTPUT.PUT_LINE('J2543 defined:');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'J2543 defined:');
         update ds_stage set amount_value=125, amount_unit='mg' where drug_concept_code='J2543' and ingredient_concept_code='tazobactam';
         -- J2770 defined:
-        DBMS_OUTPUT.PUT_LINE('J2770 defined:');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'J2770 defined:');
         update ds_stage set amount_value=350 where drug_concept_code='J2770' and ingredient_concept_code='quinupristin';
         update ds_stage set amount_value=150 where drug_concept_code='J2770' and ingredient_concept_code='dalfopristin';
         -- J7042 defined:
-        DBMS_OUTPUT.PUT_LINE('J7042 defined:');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'J7042 defined:');
         update ds_stage set amount_value=null, amount_unit=null, numerator_value=50, numerator_unit='mg', denominator_unit='ml' where drug_concept_code='J7042' and ingredient_concept_code='dextrose';
         update ds_stage set amount_value=null, amount_unit=null, numerator_value=0.154, numerator_unit='meq', denominator_unit='ml' where drug_concept_code='J7042' and ingredient_concept_code='normal saline solution';
         -- J7060 defined:
-        DBMS_OUTPUT.PUT_LINE('J7060 defined:');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'J7060 defined:');
         update ds_stage set amount_value=null, amount_unit=null, numerator_value=50, numerator_unit='mg', denominator_unit='ml' where drug_concept_code='J7060' and ingredient_concept_code='dextrose';
         -- J7120 defined:
         -- Calcium Chloride 0.0014 MEQ/ML / Potassium Chloride 0.004 MEQ/ML / Sodium Chloride 0.103 MEQ/ML / Sodium Lactate 0.028 MEQ/ML Injectable Solution
-        DBMS_OUTPUT.PUT_LINE('J7120 defined:');
-        DBMS_OUTPUT.PUT_LINE('Calcium Chloride 0.0014 MEQ/ML / Potassium Chloride 0.004 MEQ/ML / Sodium Chloride 0.103 MEQ/ML / Sodium Lactate 0.028 MEQ/ML Injectable Solution');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'J7120 defined:');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'Calcium Chloride 0.0014 MEQ/ML / Potassium Chloride 0.004 MEQ/ML / Sodium Chloride 0.103 MEQ/ML / Sodium Lactate 0.028 MEQ/ML Injectable Solution');
         update ds_stage set amount_value=null, amount_unit=null, numerator_value=0.0014, numerator_unit='meq', denominator_unit='ml' where drug_concept_code='J7120' and ingredient_concept_code='calcium chloride';
         update ds_stage set amount_value=null, amount_unit=null, numerator_value=0.004, numerator_unit='meq', denominator_unit='ml' where drug_concept_code='J7120' and ingredient_concept_code='potassium chloride';
         update ds_stage set amount_value=null, amount_unit=null, numerator_value=0.103, numerator_unit='meq', denominator_unit='ml' where drug_concept_code='J7120' and ingredient_concept_code='normal saline solution';
         update ds_stage set amount_value=null, amount_unit=null, numerator_value=0.028, numerator_unit='meq', denominator_unit='ml' where drug_concept_code='J7120' and ingredient_concept_code='sodium lactate';
         -- J7121 defined:
         -- Calcium Chloride 0.001 MEQ/ML / Glucose 50 MG/ML / Potassium Chloride 0.004 MEQ/ML / Sodium Chloride 0.103 MEQ/ML / Sodium Lactate 0.028 MEQ/ML Injectable Solution
-        DBMS_OUTPUT.PUT_LINE('J7121 defined:');
-        DBMS_OUTPUT.PUT_LINE('Calcium Chloride 0.001 MEQ/ML / Glucose 50 MG/ML / Potassium Chloride 0.004 MEQ/ML / Sodium Chloride 0.103 MEQ/ML / Sodium Lactate 0.028 MEQ/ML Injectable Solution');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'J7121 defined:');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'Calcium Chloride 0.001 MEQ/ML / Glucose 50 MG/ML / Potassium Chloride 0.004 MEQ/ML / Sodium Chloride 0.103 MEQ/ML / Sodium Lactate 0.028 MEQ/ML Injectable Solution');
         update ds_stage set amount_value=null, amount_unit=null, numerator_value=50, numerator_unit='mg', denominator_unit='ml' where drug_concept_code='J7121' and ingredient_concept_code='dextrose';
         update ds_stage set amount_value=null, amount_unit=null, numerator_value=0.001, numerator_unit='meq', denominator_unit='ml' where drug_concept_code='J7121' and ingredient_concept_code='calcium chloride';
         update ds_stage set amount_value=null, amount_unit=null, numerator_value=0.004, numerator_unit='meq', denominator_unit='ml' where drug_concept_code='J7121' and ingredient_concept_code='potassium chloride';
         update ds_stage set amount_value=null, amount_unit=null, numerator_value=0.103, numerator_unit='meq', denominator_unit='ml' where drug_concept_code='J7121' and ingredient_concept_code='normal saline solution';
         update ds_stage set amount_value=null, amount_unit=null, numerator_value=0.028, numerator_unit='meq', denominator_unit='ml' where drug_concept_code='J7121' and ingredient_concept_code='sodium lactate';
         -- J7620 defined:
-        DBMS_OUTPUT.PUT_LINE('J7620 defined:');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'J7620 defined:');
         update ds_stage set amount_value=2.5 where drug_concept_code='J7620' and ingredient_concept_code='albuterol';
         -- J9175 defined:
         -- Calcium Chloride 0.00136 MEQ/ML / Glucose 0.8 MG/ML / Magnesium Sulfate 0.00122 MEQ/ML / Potassium Chloride 0.00403 MEQ/ML / Sodium Bicarbonate 0.0226 MEQ/ML / Sodium Chloride 0.125 MEQ/ML / sodium phosphate 0.000746 MEQ/ML Injectable Solution [Elliotts B
-        DBMS_OUTPUT.PUT_LINE('J9175 defined:');
-        DBMS_OUTPUT.PUT_LINE('Calcium Chloride 0.00136 MEQ/ML / Glucose 0.8 MG/ML / Magnesium Sulfate 0.00122 MEQ/ML / Potassium Chloride 0.00403 MEQ/ML / Sodium Bicarbonate 0.0226 MEQ/ML / Sodium Chloride 0.125 MEQ/ML / sodium phosphate 0.000746 MEQ/ML Injectable Solution [Elliotts B');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'J9175 defined:');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'Calcium Chloride 0.00136 MEQ/ML / Glucose 0.8 MG/ML / Magnesium Sulfate 0.00122 MEQ/ML / Potassium Chloride 0.00403 MEQ/ML / Sodium Bicarbonate 0.0226 MEQ/ML / Sodium Chloride 0.125 MEQ/ML / sodium phosphate 0.000746 MEQ/ML Injectable Solution [Elliotts B');
         update ds_stage set amount_value=null, amount_unit=null, numerator_value=0.0226, numerator_unit='meq', denominator_unit='ml' where drug_concept_code='J9175' and ingredient_concept_code='sodium bicarbonate';
         update ds_stage set amount_value=null, amount_unit=null, numerator_value= 0.000746, numerator_unit='meq', denominator_unit='ml' where drug_concept_code='J9175' and ingredient_concept_code='sodium phosphate';
         update ds_stage set amount_value=null, amount_unit=null, numerator_value=0.125, numerator_unit='meq', denominator_unit='ml' where drug_concept_code='J9175' and ingredient_concept_code='normal saline solution';
@@ -2042,35 +2043,35 @@ begin
         update ds_stage set amount_value=null, amount_unit=null, numerator_value=0.00122, numerator_unit='meq', denominator_unit='ml' where drug_concept_code='J9175' and ingredient_concept_code='magnesium sulfate';
         -- S0039: not defined, will pass only as form or ingredient
         -- S0040 somewhat defined. the 31 mg are in one milliliter andn are a sum of both ingredients:
-        DBMS_OUTPUT.PUT_LINE('S0039: not defined, will pass only as form or ingredient');
-        DBMS_OUTPUT.PUT_LINE('S0040 somewhat defined. the 31 mg are in one milliliter andn are a sum of both ingredients:');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'S0039: not defined, will pass only as form or ingredient');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'S0040 somewhat defined. the 31 mg are in one milliliter andn are a sum of both ingredients:');
         update ds_stage set amount_value=null, amount_unit=null, numerator_value=30, numerator_unit='mg', denominator_unit='ml' where drug_concept_code='S0040' and ingredient_concept_code='ticarcillin';
         update ds_stage set amount_value=null, amount_unit=null, numerator_value=1, numerator_unit='mg', denominator_unit='ml' where drug_concept_code='S0040' and ingredient_concept_code='clavulanate';
         -- S5010: defined:
-        DBMS_OUTPUT.PUT_LINE('S5010: defined:');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'S5010: defined:');
         update ds_stage set amount_value=null, amount_unit=null, numerator_value=50, numerator_unit='mg', denominator_unit='ml' where drug_concept_code='S5010' and ingredient_concept_code='dextrose';
         update ds_stage set amount_value=null, amount_unit=null, numerator_value=0.0769, numerator_unit='meq', denominator_unit='ml' where drug_concept_code='S5010' and ingredient_concept_code='normal saline solution';
         -- S5011
         -- Calcium Chloride 0.001 MEQ/ML / Glucose 50 MG/ML / Potassium Chloride 0.004 MEQ/ML / Sodium Chloride 0.103 MEQ/ML / Sodium Lactate 0.028 MEQ/ML Injectable Solution
-        DBMS_OUTPUT.PUT_LINE('S5011');
-        DBMS_OUTPUT.PUT_LINE('Calcium Chloride 0.001 MEQ/ML / Glucose 50 MG/ML / Potassium Chloride 0.004 MEQ/ML / Sodium Chloride 0.103 MEQ/ML / Sodium Lactate 0.028 MEQ/ML Injectable Solution');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'S5011');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'Calcium Chloride 0.001 MEQ/ML / Glucose 50 MG/ML / Potassium Chloride 0.004 MEQ/ML / Sodium Chloride 0.103 MEQ/ML / Sodium Lactate 0.028 MEQ/ML Injectable Solution');
         update ds_stage set amount_value=null, amount_unit=null, numerator_value=50, numerator_unit='mg', denominator_unit='ml' where drug_concept_code='S5011' and ingredient_concept_code='dextrose';
         update ds_stage set amount_value=null, amount_unit=null, numerator_value=0.001, numerator_unit='meq', denominator_unit='ml' where drug_concept_code='S5011' and ingredient_concept_code='calcium chloride';
         update ds_stage set amount_value=null, amount_unit=null, numerator_value=0.004, numerator_unit='meq', denominator_unit='ml' where drug_concept_code='S5011' and ingredient_concept_code='potassium chloride';
         update ds_stage set amount_value=null, amount_unit=null, numerator_value=0.103, numerator_unit='meq', denominator_unit='ml' where drug_concept_code='S5011' and ingredient_concept_code='normal saline solution';
         update ds_stage set amount_value=null, amount_unit=null, numerator_value=0.028, numerator_unit='meq', denominator_unit='ml' where drug_concept_code='S5011' and ingredient_concept_code='sodium lactate';
         -- S5012: undefined, including the ingredients. Still:
-        DBMS_OUTPUT.PUT_LINE('S5012: undefined, including the ingredients. Still:');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'S5012: undefined, including the ingredients. Still:');
         update ds_stage set amount_value=null, amount_unit=null, numerator_value=50, numerator_unit='mg', denominator_unit='ml' where drug_concept_code='S5012' and ingredient_concept_code='dextrose';
         delete from ds_stage where drug_concept_code='S5012' and ingredient_concept_code='potassium chloride';
         -- S5013: undefined, but this we know:
-        DBMS_OUTPUT.PUT_LINE('S5013: undefined, but this we know:');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'S5013: undefined, but this we know:');
         update ds_stage set amount_value=null, amount_unit=null, numerator_value=50, numerator_unit='mg', denominator_unit='ml' where drug_concept_code='S5013' and ingredient_concept_code='dextrose';
         update ds_stage set amount_value=null, amount_unit=null, numerator_value=0.0769, numerator_unit='meq', denominator_unit='ml' where drug_concept_code='S5013' and ingredient_concept_code='normal saline solution';
         delete from ds_stage where drug_concept_code='S5013' and ingredient_concept_code='potassium chloride';
         delete from ds_stage where drug_concept_code='S5013' and ingredient_concept_code='magnesium sulfate';
         -- S5014: undefined, but this we know:
-        DBMS_OUTPUT.PUT_LINE('S5014: undefined, but this we know:');
+        DBMS_OUTPUT.PUT_LINE(CHR(10) || 'S5014: undefined, but this we know:');
         update ds_stage set amount_value=null, amount_unit=null, numerator_value=50, numerator_unit='mg', denominator_unit='ml' where drug_concept_code='S5014' and ingredient_concept_code='dextrose';
         update ds_stage set amount_value=null, amount_unit=null, numerator_value=0.0769, numerator_unit='meq', denominator_unit='ml' where drug_concept_code='S5014' and ingredient_concept_code='normal saline solution';
         delete from ds_stage where drug_concept_code='S5014' and ingredient_concept_code='potassium chloride';

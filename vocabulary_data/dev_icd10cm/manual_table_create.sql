@@ -1,3 +1,4 @@
+SET SERVEROUTPUT ON
 SET ECHO OFF
 SET VERIFY OFF
 /* If any errors occurs - stop script execution and return error code */
@@ -59,9 +60,9 @@ truncate table &2;
 insert into &2 (CONCEPT_CODE_1,CONCEPT_NAME_1,VOCABULARY_ID_1,invalid_reason_1, CONCEPT_CODE_2,CONCEPT_NAME_2,CONCEPT_CLASS_ID_2,VOCABULARY_ID_2,invalid_reason_2, RELATIONSHIP_ID,VALID_START_DATE,VALID_END_DATE,INVALID_REASON)
 SELECT c.concept_code,c.concept_name,c.vocabulary_id,c.invalid_reason, t.concept_code, t.concept_name,t.concept_class_id,t.vocabulary_id,t.invalid_reason, r.RELATIONSHIP_ID, r.VALID_START_DATE, r.VALID_END_DATE, r.INVALID_REASON
   FROM concept_stage c
-  left join concept cc on c.concept_code = cc.concept_code and cc.vocabulary_id = 'ICD10CM' and cc.invalid_reason is null
- left join  concept_relationship r on cc.concept_id = r.concept_id_1 and r.relationship_id in ('Maps to', 'Maps to value') and r.invalid_reason is null -- for this case other relationships shouldn't be checked manualy
- left join concept t on t.concept_id = r.concept_id_2 and t.invalid_reason is null
+	  left join concept cc on c.concept_code = cc.concept_code and cc.vocabulary_id = 'ICD10CM' and cc.invalid_reason is null
+	  left join concept_relationship r on cc.concept_id = r.concept_id_1 and r.relationship_id in ('Maps to', 'Maps to value') and r.invalid_reason is null -- for this case other relationships shouldn't be checked manualy
+	  left join concept t on t.concept_id = r.concept_id_2 and t.invalid_reason is null
 ;
 
 COMMIT;

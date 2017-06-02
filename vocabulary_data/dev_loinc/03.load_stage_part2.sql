@@ -1,3 +1,4 @@
+SET SERVEROUTPUT ON
 SET sqlbl on
 SET VERIFY OFF
 /* If any errors occurs - stop script execution and return error code */

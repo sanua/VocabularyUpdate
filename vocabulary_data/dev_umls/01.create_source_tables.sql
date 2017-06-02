@@ -17,6 +17,7 @@
 * Date: 2016
 **************************************************************************/
 
+SET SERVEROUTPUT ON
 SET VERIFY OFF
 /* If any errors occurs - stop script execution and return error code */
 WHENEVER SQLERROR EXIT SQL.SQLCODE

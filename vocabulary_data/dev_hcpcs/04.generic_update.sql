@@ -17,6 +17,7 @@
 * Date: 2016
 **************************************************************************/
 
+SET SERVEROUTPUT ON
 SET ECHO OFF
 SET VERIFY OFF
 /* If any errors occurs - stop script execution and return error code */
@@ -705,7 +706,7 @@ COMMIT;
 PROMPT 16 Post-processing (some concepts might be deprecated when they missed in source, so load_stage doesn''t know about them and DO NOT deprecate relationships proper)...
 BEGIN
 --Deprecate replacement records if target concept was deprecated
-DBMS_OUTPUT.PUT_LINE('Deprecate replacement records if target concept was deprecated...');
+DBMS_OUTPUT.PUT_LINE(CHR(10) || 'Deprecate replacement records if target concept was deprecated...');
 MERGE INTO concept_relationship r
      USING (WITH upgraded_concepts
                     AS (SELECT r.concept_id_1,
@@ -742,7 +743,7 @@ THEN
 COMMIT;
 
 --Deprecate concepts if we have no active replacement record in the concept_relationship
-DBMS_OUTPUT.PUT_LINE('Deprecate concepts if we have no active replacement record in the concept_relationship...');
+DBMS_OUTPUT.PUT_LINE(CHR(10) || 'Deprecate concepts if we have no active replacement record in the concept_relationship...');
 UPDATE concept c SET
 	c.valid_end_date = (SELECT v.latest_update FROM vocabulary v WHERE c.vocabulary_id = v.vocabulary_id) - 1, -- day before release day
 	c.invalid_reason = 'D',
@@ -767,7 +768,7 @@ AND c.invalid_reason = 'U' -- not already deprecated
 COMMIT;
 
 --Deprecate 'Maps to' mappings to deprecated and upgraded concepts
-DBMS_OUTPUT.PUT_LINE('Deprecate ''Maps to'' mappings to deprecated and upgraded concepts...');
+DBMS_OUTPUT.PUT_LINE(CHR(10) || 'Deprecate ''Maps to'' mappings to deprecated and upgraded concepts...');
 UPDATE concept_relationship r
    SET r.valid_end_date =
             (SELECT MAX (v.latest_update)
@@ -789,7 +790,7 @@ COMMIT;
    
 
 --Reverse for deprecating
-DBMS_OUTPUT.PUT_LINE('Reverse for deprecating...');
+DBMS_OUTPUT.PUT_LINE(CHR(10) || 'Reverse for deprecating...');
 MERGE INTO concept_relationship r
      USING (SELECT r.*, rel.reverse_relationship_id
               FROM concept_relationship r, relationship rel
