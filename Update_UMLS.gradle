@@ -1,6 +1,6 @@
 /*
 ****************************
-* LOINC Vocabulary update  *
+* UMLS Vocabulary update  *
 * Version 0.0.6            *
 ****************************
 */
@@ -72,7 +72,6 @@ compileOne.options.compilerArgs = ["-sourcepath", "${projectDir}/src/main/java"]
  * 
  * Temporary java code are located here. If future it's need to move it toi separate java-module.
  */
-
 import com.google.common.base.Joiner;
 import com.google.common.io.Files;
 import org.apache.commons.io.IOUtils;
@@ -891,7 +890,11 @@ public class StringBuilderWrapper implements java.lang.Appendable {
     }
 }
 
-// Load LOINC properties
+/**
+ * JAVA-CODE SECTION
+ */
+
+// Load UMLS properties
 Properties props = new Properties()
 props.load(new FileInputStream("${project.getBuildFile().toString().replace('.gradle', '.properties')}"))
 props.each {prop ->
@@ -960,9 +963,6 @@ task fastRecreateSchema(description: project.properties['fastRecreate.descriptio
 
     println "*** '${description}' action done ***"
 }
-/**
- * JAVA-CODE SECTION
- */
 
 /**
  * This task will prepare user schema for vocabulary update routine.

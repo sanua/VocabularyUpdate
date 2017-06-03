@@ -6,6 +6,7 @@ Prerequisites:
 
 1. Run create_source_tables.sql
 2. Download umls-YYYYAB-full.zip (for example umls-2016AB-full.zip) from http://www.nlm.nih.gov/research/umls/licensedcontent/umlsknowledgesources.html.
+https://download.nlm.nih.gov/umls/kss/2017AA/umls-2017AA-full.zip
 3. Unpack 
 MRCONSO.RRF.aa.gz 
 MRCONSO.RRF.ab.gz 
