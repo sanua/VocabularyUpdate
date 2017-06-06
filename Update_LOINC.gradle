@@ -72,6 +72,7 @@ compileOne.options.compilerArgs = ["-sourcepath", "${projectDir}/src/main/java"]
  * 
  * Temporary java code are located here. If future it's need to move it toi separate java-module.
  */
+
 import com.google.common.base.Joiner;
 import com.google.common.io.Files;
 import org.apache.commons.io.IOUtils;
@@ -1365,6 +1366,15 @@ task importData(dependsOn: convertData, description: project.properties['import.
         String badFileName = groupParams.find {it.getKey().toLowerCase().indexOf("badFileName".toLowerCase()) >= 0}.getValue();
         String streamLogFileName = groupParams.find {it.getKey().toLowerCase().indexOf("streamLogFileName".toLowerCase()) >= 0}.getValue();
         String streamErrorFileName = groupParams.find {it.getKey().toLowerCase().indexOf("streamErrorFileName".toLowerCase()) >= 0}.getValue();
+
+        Map.Entry<String, String> providedEntry = groupParams.find {it.getKey().toLowerCase().indexOf("provided".toLowerCase()) >= 0}
+        boolean provided = false;
+        if (providedEntry != null) {
+            provided = Boolean.valueOf(providedEntry.getValue()).booleanValue();
+        }
+        if (provided) {
+            dataFileName = new File(project.properties['basePath'], dataFileName).getPath();
+        }
 
         println "\n${new StringBuilderWrapper("${groupNameLabel}...")}";
         
