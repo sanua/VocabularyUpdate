@@ -1041,65 +1041,19 @@ task downloadUpdatePack(dependsOn: createSourceTable, description: project.prope
     def timeStart = System.currentTimeMillis()
     DownloadResourceHelper downloadHelper = DownloadResourceHelper.getDownloadResourceHelper(tempDir);
 
-    // Login LOINC service
-    println "\n${new StringBuilderWrapper("Login LOINC service...")}"
-    String loginUrl = project.properties['downloadUpdatePack.loinc.loginUrl']
-    String userName = project.properties['downloadUpdatePack.loinc.username']
-    String password = project.properties['downloadUpdatePack.loinc.password']
-    downloadHelper.loginLoinc(loginUrl, userName, password)
-
-    /*************************************************
-     * Download 'Full Set' package (from LOINC portal)
-     * **********************************************/
-    String packageDescription = project.properties['downloadUpdatePack.fullSet.description']
-    println new StringBuilderWrapper("\nDownloading ${packageDescription}...")
-    String fileUrl = project.properties['downloadUpdatePack.fullSet.fileUrl']
-    String defaultFileName = project.properties['downloadUpdatePack.fullSet.fileName']
-    String downloadedFileName = downloadHelper.downloadResourceLoinc(fileUrl, defaultFileName, packageDescription)
-    project.ext.set('downloadUpdatePack.fullSet.fileName', downloadedFileName);
-
-    /*************************************************************
-     * Download 'Multiaxial Hierarchy' package (from LOINC portal)
-     * ***********************************************************/
-    packageDescription = project.properties['downloadUpdatePack.multiaxialHierarchy.description']
-    println new StringBuilderWrapper("\nDownloading ${packageDescription}...")
-    fileUrl = project.properties['downloadUpdatePack.multiaxialHierarchy.fileUrl']
-    defaultFileName = project.properties['downloadUpdatePack.multiaxialHierarchy.fileName']
-    downloadedFileName = downloadHelper.downloadResourceLoinc(fileUrl, defaultFileName, packageDescription)
-    project.ext.set('downloadUpdatePack.multiaxialHierarchy.fileName', downloadedFileName);
-
-    /*********************************************************
-     * Download 'Panels and Forms' package (from LOINC portal)
-     * *******************************************************/
-    packageDescription = project.properties['downloadUpdatePack.panelsForms.description']
-    println new StringBuilderWrapper("\nDownloading ${packageDescription}...")
-    fileUrl = project.properties['downloadUpdatePack.panelsForms.fileUrl']
-    defaultFileName = project.properties['downloadUpdatePack.panelsForms.fileName']
-    downloadedFileName = downloadHelper.downloadResourceLoinc(fileUrl, defaultFileName, packageDescription)
-    project.ext.set('downloadUpdatePack.panelsForms.fileName', downloadedFileName);
-
-    /******************************************************************
-     * Download 'CT Expression Association' package (from LOINC portal)
-     * ****************************************************************/
-    packageDescription = project.properties['downloadUpdatePack.expressionAssociation.description']
-    println new StringBuilderWrapper("\nDownloading ${packageDescription}...")
-    fileUrl = project.properties['downloadUpdatePack.expressionAssociation.fileUrl']
-    defaultFileName = project.properties['downloadUpdatePack.expressionAssociation.fileName']
-    downloadedFileName = downloadHelper.downloadResourceLoinc(fileUrl, defaultFileName, packageDescription)
-    project.ext.set('downloadUpdatePack.expressionAssociation.fileName', downloadedFileName);
-
     /****************************************************
-     * Download 'CPT Mappings' package (from UMLS portal)
+     * Download 'UMLS' package
      * **************************************************/
-    packageDescription = project.properties['downloadUpdatePack.cptMappings.description']
+    String packageDescription = project.properties['downloadUpdatePack.umlsFull.description']
     println new StringBuilderWrapper("Downloading ${packageDescription}...")
-    loginUrl = project.properties['downloadUpdatePack.umls.loginUrl']
-    userName = project.properties['downloadUpdatePack.umls.username']
-    password = project.properties['downloadUpdatePack.umls.password']
-    fileUrl = project.properties['downloadUpdatePack.cptMappings.fileUrl']
-    defaultFileName = project.properties['downloadUpdatePack.cptMappings.fileName']
-    downloadedFileName = downloadHelper.downloadResourceUmls(loginUrl, userName, password, fileUrl,defaultFileName)
-    project.ext.set('downloadUpdatePack.cptMappings.fileName', downloadedFileName);
+    String loginUrl = project.properties['downloadUpdatePack.umls.loginUrl']
+    String userName = project.properties['downloadUpdatePack.umls.username']
+    String password = project.properties['downloadUpdatePack.umls.password']
+
+    String fileUrl = project.properties['downloadUpdatePack.umlsFull.fileUrl']
+    String defaultFileName = project.properties['downloadUpdatePack.umlsFull.fileName']
+    String downloadedFileName = downloadHelper.downloadResourceUmls(loginUrl, userName, password, fileUrl,defaultFileName)
+    project.ext.set('downloadUpdatePack.umlsFull.fileName', downloadedFileName);
 
     println new StringBuilderWrapper("Downloaded complete.\nUpdate packages are saved to the: ${tempDir.getPath()}")
 

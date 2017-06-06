@@ -640,9 +640,7 @@ public class DownloadResourceHelper {
         }
     }
 
-    public static void main(String[] args) throws IOException {
-        DownloadResourceHelper downloadHelper = DownloadResourceHelper.getDownloadResourceHelper();
-
+    public static void testDownloadLOINC(DownloadResourceHelper downloadHelper) {
         // Login LOINC service
         System.out.println("\nLogin LOINC service...");
         downloadHelper.loginLoinc();
@@ -654,21 +652,21 @@ public class DownloadResourceHelper {
         String defaultFileName = getPropertyByName("downloadUpdatePack.fullSet.fileName");
         downloadHelper.downloadResourceLoinc(fileUrl, defaultFileName, packageDescription);
 
-         // Download 'Multiaxial Hierarchy' package
+        // Download 'Multiaxial Hierarchy' package
         packageDescription = getPropertyByName("downloadUpdatePack.multiaxialHierarchy.description");
         System.out.println(String.format("\nDownload %s...", packageDescription));
         fileUrl = getPropertyByName("downloadUpdatePack.multiaxialHierarchy.fileUrl");
         defaultFileName = getPropertyByName("downloadUpdatePack.multiaxialHierarchy.fileName");
         downloadHelper.downloadResourceLoinc(fileUrl, defaultFileName, packageDescription);
 
-         // Download 'Panels and Forms' package
+        // Download 'Panels and Forms' package
         packageDescription = getPropertyByName("downloadUpdatePack.panelsForms.description");
         System.out.println(String.format("\nDownload %s...", packageDescription));
         fileUrl = getPropertyByName("downloadUpdatePack.panelsForms.fileUrl");
         defaultFileName = getPropertyByName("downloadUpdatePack.panelsForms.fileName");
         downloadHelper.downloadResourceLoinc(fileUrl, defaultFileName, packageDescription);
 
-         // Download 'CT Expression Association' package
+        // Download 'CT Expression Association' package
         packageDescription = getPropertyByName("downloadUpdatePack.expressionAssociation.description");
         System.out.println(String.format("\nDownload %s...", packageDescription));
         fileUrl = getPropertyByName("downloadUpdatePack.expressionAssociation.fileUrl");
@@ -679,4 +677,42 @@ public class DownloadResourceHelper {
         System.out.println("\nLogin and download from UMLS service...");
         downloadHelper.downloadResourceUmls();
     }
+
+    public static void testDownloadUMLS(DownloadResourceHelper downloadHelper) {
+        /* Downloading file */
+        // Start action checkpoint
+        def timeStart = System.currentTimeMillis()
+        DownloadResourceHelper downloadHelper = DownloadResourceHelper.getDownloadResourceHelper(tempDir);
+
+        /****************************************************
+         * Download 'UMLS' package
+         * **************************************************/
+        String packageDescription = project.properties['downloadUpdatePack.umlsFull.description']
+        println new StringBuilderWrapper("Downloading ${packageDescription}...")
+        String loginUrl = project.properties['downloadUpdatePack.umls.loginUrl']
+        String userName = project.properties['downloadUpdatePack.umls.username']
+        String password = project.properties['downloadUpdatePack.umls.password']
+
+        String fileUrl = project.properties['downloadUpdatePack.umlsFull.fileUrl']
+        String defaultFileName = project.properties['downloadUpdatePack.umlsFull.fileName']
+        String downloadedFileName = downloadHelper.downloadResourceUmls(loginUrl, userName, password, fileUrl,defaultFileName)
+        project.ext.set('downloadUpdatePack.umlsFull.fileName', downloadedFileName);
+
+        println new StringBuilderWrapper("Downloaded complete.\nUpdate packages are saved to the: ${tempDir.getPath()}")
+
+        // Finish action checkpoint
+        def timeFinish = System.currentTimeMillis()
+        def timeElapsed = (timeFinish - timeStart) / 1000
+        println "Time elapsed: ${timeElapsed} seconds."
+
+        println "*** '${description}' action done ***"
+    }
+
+    public static void main(String[] args) throws IOException {
+        DownloadResourceHelper downloadHelper = DownloadResourceHelper.getDownloadResourceHelper();
+        //testDownloadLOINC (downloadHelper);
+
+        testDownloadUMLS(downloadHelper);
+    }
+
 }
