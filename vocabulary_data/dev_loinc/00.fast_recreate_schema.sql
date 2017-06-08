@@ -21,8 +21,8 @@ SET SERVEROUTPUT ON
 SET ECHO OFF
 SET VERIFY OFF
 /* If any errors occurs - stop script execution and return error code */
---WHENEVER SQLERROR EXIT SQL.SQLCODE
-WHENEVER SQLERROR CONTINUE
+WHENEVER SQLERROR EXIT SQL.SQLCODE
+--WHENEVER SQLERROR CONTINUE
 /*
  *****************************
  *  Log to file...    
@@ -41,48 +41,41 @@ include_deprecated_rels constant boolean := true;
 begin 
     execute immediate 'ALTER TABLE source_to_concept_map DROP CONSTRAINT fpk_source_to_concept_map_v_1';
     execute immediate 'ALTER TABLE source_to_concept_map DROP CONSTRAINT fpk_source_to_concept_map_v_2';
-    begin 	
-    	execute immediate 'drop table concept cascade constraints purge'; 
-    exception 
-    	when others 
-    		then null; 
-   	end;
-	begin     
-		execute immediate 'drop table concept_relationship purge'; 
-	exception 
-		when others 
-			then null; 
-	end;
-	begin     
-		execute immediate 'drop table concept_synonym purge'; 
-	exception 
-		when others 
-			then null; 
-	end;
-	begin     
-		execute immediate 'drop table vocabulary purge'; 
-	exception 
-		when others 
-			then null; 
-	end;
-	begin     
-		execute immediate 'drop table relationship purge'; 
-	exception 
-		when others 
-			then null; 
-	end;
-	begin     
-		execute immediate 'drop table drug_strength purge'; 
-	exception 
-		when others 
-			then null; 
-	end;
-	begin     
-		execute immediate 'drop table pack_content purge'; 
-	exception 
-		when others 
-			then null; 
-	end;
+    BEGIN 	
+    	EXECUTE IMMEDIATE 'drop table concept cascade constraints purge'; 
+	    EXCEPTION 
+    		WHEN OTHERS THEN NULL;
+   	END;
+	BEGIN     
+		EXECUTE IMMEDIATE 'drop table concept_relationship purge'; 
+		EXCEPTION 
+			WHEN OTHERS THEN NULL;
+	END;
+	BEGIN     
+		EXECUTE IMMEDIATE 'drop table concept_synonym purge'; 
+		EXCEPTION 
+			WHEN OTHERS THEN NULL;
+	END;
+	BEGIN     
+		EXECUTE IMMEDIATE 'drop table vocabulary purge'; 
+		EXCEPTION 
+			WHEN OTHERS THEN NULL;
+	END;
+	BEGIN     
+		EXECUTE IMMEDIATE 'drop table relationship purge'; 
+		EXCEPTION 
+			WHEN OTHERS THEN NULL;
+	END;
+	BEGIN     
+		EXECUTE IMMEDIATE 'drop table drug_strength purge'; 
+		EXCEPTION 
+			WHEN OTHERS THEN NULL;
+	END;
+	BEGIN     
+		EXECUTE IMMEDIATE 'drop table pack_content purge'; 
+		EXCEPTION
+			WHEN OTHERS THEN NULL;
+	END;
     execute immediate 'truncate table CONCEPT_STAGE';
     execute immediate 'truncate table concept_relationship_stage';
     execute immediate 'truncate table concept_synonym_stage';
