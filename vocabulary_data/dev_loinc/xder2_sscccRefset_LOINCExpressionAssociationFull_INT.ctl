@@ -1,5 +1,6 @@
 options (direct=true, errors=0, SKIP=1)
 load data
+CHARACTERSET UTF8
 infile 'xder2_sscccRefset_LOINCExpressionAssociationFull_INT.txt'
 truncate
 into table scccRefset_MapCorrOrFull_INT

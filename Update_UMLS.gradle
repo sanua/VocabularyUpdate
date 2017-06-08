@@ -97,11 +97,11 @@ import org.apache.http.impl.cookie.BasicClientCookie;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.protocol.HttpContext;
 import org.apache.commons.httpclient.HttpStatus;
-import org.apache.http.Consts;
 import org.apache.http.util.EntityUtils;
 
 import java.io.*;
 import java.net.URISyntaxException
+import java.nio.charset.StandardCharsets
 import java.nio.file.StandardCopyOption
 import java.nio.file.StandardOpenOption
 import java.util.*
@@ -309,11 +309,14 @@ public class DownloadResourceHelper {
 
         StringBuilder sb = new StringBuilder();
         for (Cookie c: cookies) {
-            if (sb.toString().length() != 0)
-                sb.append(";");
-            sb.append(String.format("%s=%s", c.getName(), c.getValue()));
+            if (c != null) {
+                if (sb.toString().length() != 0)
+                    sb.append(";");
+                sb.append(String.format("%s=%s", c.getName(), c.getValue()));
+            }
         }
-        request.addHeader("Cookie", sb.toString());
+        if (sb.length() > 0)
+            request.addHeader("Cookie", sb.toString());
         return request;
     }
 
@@ -526,7 +529,7 @@ public class DownloadResourceHelper {
             // Buffer response content
             BufferedHttpEntity bufEntity = new BufferedHttpEntity(response.getEntity());
             StringWriter writer = new StringWriter();
-            IOUtils.copy(bufEntity.getContent(), writer, Consts.UTF_8);
+            IOUtils.copy(bufEntity.getContent(), writer, StandardCharsets.UTF_8);
 
             // Eval downloaded file name
             String contentDisposition = getResponseHeaderValue(response, "Content-Disposition");
@@ -539,7 +542,7 @@ public class DownloadResourceHelper {
 
             // Save file to stream
             outputStream = new FileOutputStream(new File(filePath));
-            IOUtils.copy(bufEntity.getContent(), outputStream);
+            IOUtils.copy(bufEntity.getContent(), outputStream, StandardCharsets.UTF_8);
             outputStream.flush();
             
             return fileName;
@@ -601,7 +604,7 @@ public class DownloadResourceHelper {
             // Buffer response content
             BufferedHttpEntity bufEntity = new BufferedHttpEntity(response.getEntity());
             StringWriter writer = new StringWriter();
-            IOUtils.copy(bufEntity.getContent(), writer, Consts.UTF_8);
+            IOUtils.copy(bufEntity.getContent(), writer, StandardCharsets.UTF_8);
             String responseBody = writer.toString().trim();
 
             // Eval downloaded file name
@@ -616,7 +619,7 @@ public class DownloadResourceHelper {
 
             // Save file to stream
             outputStream = new FileOutputStream(new File(filePath));
-            IOUtils.copy(bufEntity.getContent(), outputStream);
+            IOUtils.copy(bufEntity.getContent(), outputStream, StandardCharsets.UTF_8);
             outputStream.flush();
             
             return fileName;
@@ -701,8 +704,8 @@ public class Xls2CsvHelper {
                             skipColumnNumber = j;
                         }
                         if (j <= skipColumnNumber) {
-                            data.append("\"" + cellText.replaceAll("\"", "'").replaceAll("[\\n\\r]", " ") + "\"");
-                            if (j < skipColumnNumber && (j < sheet.getLastRowNum())) {
+                            data.append(cellText.replaceAll("[\\n\\r]", " "));
+                            if (j < skipColumnNumber && (j < sheet.getLastCellNum())) {
                                 data.append(";");
                             }
                         } else
@@ -714,7 +717,6 @@ public class Xls2CsvHelper {
         }
         return data.toString();
     }
-
 
     public void convertHcpcs(String inputFile, String outputFile) throws IOException {
         System.out.println("\n\tConversion of HCPCS data started");
@@ -739,7 +741,7 @@ public class Xls2CsvHelper {
              * Get data from default (first) sheet and save to file
              */
             data = convertSheetByName(workbook);
-            fos.write(data.getBytes());
+            fos.write(data.getBytes(StandardCharsets.UTF_8));
             fos.flush();
             System.out.println("\tConversion of HCPCS data done");
         } catch (Exception e) {

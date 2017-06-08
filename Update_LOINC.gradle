@@ -98,11 +98,11 @@ import org.apache.http.impl.cookie.BasicClientCookie;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.protocol.HttpContext;
 import org.apache.commons.httpclient.HttpStatus;
-import org.apache.http.Consts;
 import org.apache.http.util.EntityUtils;
 
 import java.io.*;
 import java.net.URISyntaxException
+import java.nio.charset.StandardCharsets
 import java.nio.file.StandardCopyOption
 import java.nio.file.StandardOpenOption
 import java.util.*
@@ -311,11 +311,14 @@ public class DownloadResourceHelper {
 
         StringBuilder sb = new StringBuilder();
         for (Cookie c: cookies) {
-            if (sb.toString().length() != 0)
-                sb.append(";");
-            sb.append(String.format("%s=%s", c.getName(), c.getValue()));
+            if (c != null) {
+                if (sb.toString().length() != 0)
+                    sb.append(";");
+                sb.append(String.format("%s=%s", c.getName(), c.getValue()));
+            }
         }
-        request.addHeader("Cookie", sb.toString());
+        if (sb.length() > 0)
+            request.addHeader("Cookie", sb.toString());
         return request;
     }
 
@@ -430,19 +433,19 @@ public class DownloadResourceHelper {
         return singleIntance;
     }
 
-    public String repeatableDownloadResourceUmls(String loginUrl, String userName, String password, String fileUrl, String fileName) {
+    public String repeatableDownloadResourceUmls(String loginUrl, String userName, String password, String fileUrl, String fileName, String packageDescription) {
         /**
          * Try three times redownload if error occurs
          */
-        return downloadResourceUmls(loginUrl, userName, password, fileUrl, fileName, true, NUMBER_OF_ATTEMPTS);
+        return downloadResourceUmls(loginUrl, userName, password, fileUrl, fileName, packageDescription, true, NUMBER_OF_ATTEMPTS);
     }
 
-    public String downloadResourceUmls(String loginUrl, String userName, String password, String fileUrl, String fileName) throws IOException {
-        return downloadResourceUmls(loginUrl, userName, password, fileUrl, fileName, false, 0);
+    public String downloadResourceUmls(String loginUrl, String userName, String password, String fileUrl, String fileName, String packageDescription) throws IOException {
+        return downloadResourceUmls(loginUrl, userName, password, fileUrl, fileName, packageDescription, false, 0);
     }
 
     // Just download UMLS routine
-    private String downloadUmls(String fileUrl, String fileName, boolean isTryRedownload, int numberOfTries) {
+    private String downloadUmls(String fileUrl, String fileName, packageDescription, boolean isTryRedownload, int numberOfTries) {
         CloseableHttpResponse response = null;
         OutputStream outputStream = null;
         try {
@@ -472,7 +475,7 @@ public class DownloadResourceHelper {
             // Buffer response content
             BufferedHttpEntity bufEntity = new BufferedHttpEntity(response.getEntity());
             StringWriter writer = new StringWriter();
-            IOUtils.copy(bufEntity.getContent(), writer, Consts.UTF_8);
+            IOUtils.copy(bufEntity.getContent(), writer, StandardCharsets.UTF_8);
 
             // Eval downloaded file name
             String contentDisposition = getResponseHeaderValue(response, "Content-Disposition");
@@ -488,7 +491,6 @@ public class DownloadResourceHelper {
             IOUtils.copy(bufEntity.getContent(), outputStream);
             outputStream.flush();
 
-            return fileName;
         } catch (Exception e) {
             System.out.println("Error occurs: " + e.getMessage());
             e.printStackTrace();
@@ -501,10 +503,11 @@ public class DownloadResourceHelper {
                 outputStream.close();
             }
         }
+        return fileName;
     }
 
     // Login and download resource
-    public String downloadResourceUmls(String loginUrl, String userName, String password, String fileUrl, String fileName, boolean isTryRedownload, int numberOfTries) throws IOException {
+    public String downloadResourceUmls(String loginUrl, String userName, String password, String fileUrl, String fileName, String packageDescription, boolean isTryRedownload, int numberOfTries) throws IOException {
         CloseableHttpResponse response = null;
         // REQUEST 1
         // Just to get first JSESSION cookie
@@ -592,7 +595,7 @@ public class DownloadResourceHelper {
 
         // REQUEST 5
         // Download resource
-        return downloadUmls(fileUrl, fileName, isTryRedownload, numberOfTries);
+        return downloadUmls(fileUrl, fileName, packageDescription, isTryRedownload, numberOfTries);
     }
 
     public boolean loginLoinc(String loginUrl, String userName, String password) throws IOException {
@@ -661,7 +664,7 @@ public class DownloadResourceHelper {
             // Buffer response content
             BufferedHttpEntity bufEntity = new BufferedHttpEntity(response.getEntity());
             StringWriter writer = new StringWriter();
-            IOUtils.copy(bufEntity.getContent(), writer, Consts.UTF_8);
+            IOUtils.copy(bufEntity.getContent(), writer, StandardCharsets.UTF_8);
             String responseBody = writer.toString().trim();
 
             // Eval downloaded file name
@@ -678,8 +681,7 @@ public class DownloadResourceHelper {
             outputStream = new FileOutputStream(new File(filePath));
             IOUtils.copy(bufEntity.getContent(), outputStream);
             outputStream.flush();
-            
-            return fileName;
+
         } catch (Exception e) {
             System.out.println("Error occurs: " + e.getMessage());
             e.printStackTrace();
@@ -691,6 +693,7 @@ public class DownloadResourceHelper {
                 outputStream.close();
             }
         }
+        return fileName;
     }
 }
 
@@ -761,8 +764,8 @@ public class Xls2CsvHelper {
                             skipColumnNumber = j;
                         }
                         if (j <= skipColumnNumber) {
-                            data.append("\"" + cellText.replaceAll("\"", "'").replaceAll("[\\n\\r]", " ") + "\"");
-                            if (j < skipColumnNumber && (j < sheet.getLastRowNum())) {
+                            data.append(cellText.replaceAll("[\\n\\r]", " "));
+                            if (j < skipColumnNumber && (j < sheet.getLastCellNum())) {
                                 data.append(";");
                             }
                         } else
@@ -774,7 +777,6 @@ public class Xls2CsvHelper {
         }
         return data.toString();
     }
-
 
     public void convertHcpcs(String inputFile, String outputFile) throws IOException {
         System.out.println("\n\tConversion of HCPCS data started");
@@ -799,7 +801,7 @@ public class Xls2CsvHelper {
              * Get data from default (first) sheet and save to file
              */
             data = convertSheetByName(workbook);
-            fos.write(data.getBytes());
+            fos.write(data.getBytes(StandardCharsets.UTF_8));
             fos.flush();
             System.out.println("\tConversion of HCPCS data done");
         } catch (Exception e) {
@@ -1157,7 +1159,7 @@ task downloadUpdatePack(dependsOn: createSourceTable, description: project.prope
     password = project.properties['downloadUpdatePack.umls.password']
     fileUrl = project.properties['downloadUpdatePack.cptMappings.fileUrl']
     defaultFileName = project.properties['downloadUpdatePack.cptMappings.fileName']
-    downloadedFileName = downloadHelper.repeatableDownloadResourceUmls(loginUrl, userName, password, fileUrl, defaultFileName);
+    downloadedFileName = downloadHelper.repeatableDownloadResourceUmls(loginUrl, userName, password, fileUrl, defaultFileName, packageDescription);
     project.ext.set('downloadUpdatePack.cptMappings.fileName', downloadedFileName);
 
     println "\n${new StringBuilderWrapper('Download completed.')}"

@@ -44,6 +44,8 @@ import org.apache.poi.ss.usermodel.WorkbookFactory
 import org.apache.poi.ss.usermodel.Sheet
 import org.apache.commons.io.FileUtils
 
+import java.nio.charset.StandardCharsets
+
 /*
 task compileOne(type: JavaCompile) {
     source = sourceSets.main.java.srcDir
@@ -325,7 +327,7 @@ task xls2Csv(dependsOn: extractFiles, description: project.properties['xls2Csv.d
 //        Cell cell
 //        Row row
 
-        for (int i = 0; i < sheet.getLastRowNum(); i++) {
+        for (int i = 0; i <= sheet.getLastRowNum(); i++) {
             Row row = sheet.getRow(i)
 
             if (row!= null){
@@ -335,7 +337,10 @@ task xls2Csv(dependsOn: extractFiles, description: project.properties['xls2Csv.d
                         data.append(";")
                     } else {
                         cell.setCellType(Cell.CELL_TYPE_STRING)
-                        data.append("\"" + cell. toString().trim().replaceAll("\"", "'") + "\"" + ";")
+                        data.append(cell.toString().trim().replaceAll("[\\n\\r]", " "))
+                        if (j < sheet.getLastCellNum()) {
+                            data.append(";");
+                        }
 //                        switch (cell.getCellType()) {
 //                            case Cell.CELL_TYPE_BOOLEAN:
 //                                data.append("\"" + cell.getBooleanCellValue() + "\"" + ";")
@@ -406,7 +411,7 @@ task xls2Csv(dependsOn: extractFiles, description: project.properties['xls2Csv.d
 //
 //        }
         println new StringBuilderWrapper('files converted...')
-        fos.write(data.toString().getBytes())
+        fos.write(data.toString().getBytes(StandardCharsets.UTF_8))
         fos.close()
 
         // Finish action checkpoint

@@ -332,7 +332,7 @@ task xls2Csv(dependsOn: extractFiles, description: project.properties['xls2Csv.d
 //        Cell cell
 //        Row row
 
-        for (int i = 0; i < sheet.getLastRowNum(); i++){
+        for (int i = 0; i <= sheet.getLastRowNum(); i++){
             Row row = sheet.getRow(i)
 
             if (row!= null){
@@ -342,7 +342,10 @@ task xls2Csv(dependsOn: extractFiles, description: project.properties['xls2Csv.d
                         data.append(";")
                     } else {
                         cell.setCellType(Cell.CELL_TYPE_STRING)
-                        data.append("\"" + cell. toString().trim().replaceAll("\"", "'") + "\"" + ";")
+                        data.append(cell.toString().trim().replaceAll("[\\n\\r]", " "))
+                        if (j < sheet.getLastCellNum()) {
+                            data.append(";");
+                        }
 //                        switch (cell.getCellType()) {
 //                            case Cell.CELL_TYPE_BOOLEAN:
 //                                data.append("\"" + cell.getBooleanCellValue() + "\"" + ";")
