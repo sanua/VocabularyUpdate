@@ -338,7 +338,7 @@ task xls2Csv(dependsOn: extractFiles, description: project.properties['xls2Csv.d
                     } else {
                         cell.setCellType(Cell.CELL_TYPE_STRING)
                         data.append(cell.toString().trim().replaceAll("[\\n\\r]", " "))
-                        if (j < sheet.getLastCellNum()) {
+                        if (j < row.getLastCellNum()) {
                             data.append(";");
                         }
 //                        switch (cell.getCellType()) {

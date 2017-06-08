@@ -130,6 +130,18 @@ import java.util.stream.Collectors;
  * Created by Sanders on 5/23/2017.
  */
 
+public class IllegalUpdateStateException extends Exception {
+    public IllegalUpdateStateException(String message) {
+        super(message);
+    }
+    public IllegalUpdateStateException(Throwable cause) {
+        super(cause);
+    }
+    public IllegalUpdateStateException(String message, Throwable cause) {
+        super(message, cause);
+    }
+}
+
 public class DownloadResourceHelper {
     /**
      * Names of using cookies.
@@ -432,20 +444,20 @@ public class DownloadResourceHelper {
         }
         return singleIntance;
     }
-
-    public String repeatableDownloadResourceUmls(String loginUrl, String userName, String password, String fileUrl, String fileName, String packageDescription) {
+    
+    public String repeatableDownloadResourceUmls(String loginUrl, String userName, String password, String fileUrl, String fileName, String packageDescription) throws IllegalUpdateStateException {
         /**
          * Try three times redownload if error occurs
          */
         return downloadResourceUmls(loginUrl, userName, password, fileUrl, fileName, packageDescription, true, NUMBER_OF_ATTEMPTS);
     }
 
-    public String downloadResourceUmls(String loginUrl, String userName, String password, String fileUrl, String fileName, String packageDescription) throws IOException {
+    public String downloadResourceUmls(String loginUrl, String userName, String password, String fileUrl, String fileName, String packageDescription) throws IllegalUpdateStateException {
         return downloadResourceUmls(loginUrl, userName, password, fileUrl, fileName, packageDescription, false, 0);
     }
 
     // Just download UMLS routine
-    private String downloadUmls(String fileUrl, String fileName, packageDescription, boolean isTryRedownload, int numberOfTries) {
+    private String downloadUmls(String fileUrl, String fileName, packageDescription, boolean isTryRedownload, int numberOfTries) throws IllegalUpdateStateException {
         CloseableHttpResponse response = null;
         OutputStream outputStream = null;
         try {
@@ -466,10 +478,10 @@ public class DownloadResourceHelper {
                     System.out.println(String.format("Attention!\nThere is some problem of content downloading: %s.\nTry again, attempt %d of %d....", response.getStatusLine(), NUMBER_OF_ATTEMPTS - numberOfTries, NUMBER_OF_ATTEMPTS));
                     return downloadUmls(fileUrl, fileName, packageDescription, isTryRedownload, numberOfTries);
                 } else {
-                    throw new HttpException(String.format("Unable to download %s\n%s", packageDescription, response.getStatusLine()));
+                    throw new IllegalUpdateStateException(new HttpException(String.format("Unable to download %s\n%s", packageDescription, response.getStatusLine())));
                 }
             } else if (getResponseHeaderValue(response, "Content-Type").indexOf("zip") < 0) {
-                throw new HttpException(String.format("%s is not a ZIP archive", packageDescription));
+                throw new IllegalUpdateStateException(new HttpException(String.format("%s is not a ZIP archive", packageDescription)));
             }
 
             // Buffer response content
@@ -492,22 +504,18 @@ public class DownloadResourceHelper {
             outputStream.flush();
 
         } catch (Exception e) {
-            System.out.println("Error occurs: " + e.getMessage());
-            e.printStackTrace();
+            throw new IllegalUpdateStateException(e);
         } finally {
-            if (response != null) {
+            if (response != null)
                 response.close();
-            }
-
-            if (outputStream != null) {
+            if (outputStream != null)
                 outputStream.close();
-            }
         }
         return fileName;
     }
 
     // Login and download resource
-    public String downloadResourceUmls(String loginUrl, String userName, String password, String fileUrl, String fileName, String packageDescription, boolean isTryRedownload, int numberOfTries) throws IOException {
+    public String downloadResourceUmls(String loginUrl, String userName, String password, String fileUrl, String fileName, String packageDescription, boolean isTryRedownload, int numberOfTries) throws IllegalUpdateStateException {
         CloseableHttpResponse response = null;
         // REQUEST 1
         // Just to get first JSESSION cookie
@@ -523,12 +531,10 @@ public class DownloadResourceHelper {
                 this.ltParam = m.group(1);
             }
         } catch (Exception e) {
-            System.out.println("Error occurs: " + e.getMessage());
-            e.printStackTrace();
+            throw new IllegalUpdateStateException(e);
         } finally {
-            if (response != null) {
+            if (response != null)
                 response.close();
-            }
         }
 
         // REQUEST 2
@@ -548,8 +554,7 @@ public class DownloadResourceHelper {
             response = httpClient.execute(request);
 
         } catch (Exception e) {
-            System.out.println("Exception occurs: " + e.getMessage());
-            e.printStackTrace();
+            throw new IllegalUpdateStateException(e);
         } finally {
             if (response != null)
                 response.close();
@@ -569,8 +574,7 @@ public class DownloadResourceHelper {
              */
             fileUrl = getResponseHeaderValue(response, "Location");
         } catch (Exception e) {
-            System.out.println("Error occurs: " + e.getMessage());
-            e.printStackTrace();
+            throw new IllegalUpdateStateException(e);
         } finally {
             if (response != null)
                 response.close();
@@ -587,7 +591,7 @@ public class DownloadResourceHelper {
              */
             fileUrl = getResponseHeaderValue(response,"Location");
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new IllegalUpdateStateException(e);
         } finally {
             if (response != null)
                 response.close();
@@ -598,7 +602,7 @@ public class DownloadResourceHelper {
         return downloadUmls(fileUrl, fileName, packageDescription, isTryRedownload, numberOfTries);
     }
 
-    public boolean loginLoinc(String loginUrl, String userName, String password) throws IOException {
+    public boolean loginLoinc(String loginUrl, String userName, String password) throws IllegalUpdateStateException {
         CloseableHttpResponse response = null;
         // Login LOINC services
         try {
@@ -609,30 +613,27 @@ public class DownloadResourceHelper {
             HttpPost request = preparePost(loginUrl, params);
             response = httpClient.execute(request);
 
-            return true;
+            return (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK);
         } catch (Exception e) {
-            System.out.println("Error occurs: " + e.getMessage());
-            e.printStackTrace();
-            return false;
+            throw new IllegalUpdateStateException(e);
         } finally {
-            if (response != null) {
+            if (response != null)
                 response.close();
-            }
         }
     }
 
-    public String downloadResourceLoinc(String fileUrl, String fileName, String packageDescription) throws IOException {
+    public String downloadResourceLoinc(String fileUrl, String fileName, String packageDescription) throws IllegalUpdateStateException {
         return downloadResourceLoinc(fileUrl, fileName, packageDescription, false, 0);
     }
 
-    public String repeatableDownloadResourceLoinc(String fileUrl, String fileName, String packageDescription) {
+    public String repeatableDownloadResourceLoinc(String fileUrl, String fileName, String packageDescription) throws IllegalUpdateStateException {
         /**
          * Try three times redownload if error occurs
          */
         return downloadResourceLoinc(fileUrl, fileName, packageDescription, true, NUMBER_OF_ATTEMPTS);
     }
 
-    public String downloadResourceLoinc(String fileUrl, String fileName, String packageDescription, boolean isTryRedownload, int numberOfTries) throws IOException {
+    public String downloadResourceLoinc(String fileUrl, String fileName, String packageDescription, boolean isTryRedownload, int numberOfTries) throws IllegalUpdateStateException {
         OutputStream outputStream = null;
         CloseableHttpResponse response = null;
         try {
@@ -655,10 +656,10 @@ public class DownloadResourceHelper {
                     System.out.println(String.format("Attention!\nThere is some problem of content downloading: %s.\nTry again, attempt %d of %d....", response.getStatusLine(), NUMBER_OF_ATTEMPTS - numberOfTries, NUMBER_OF_ATTEMPTS));
                     return downloadResourceLoinc(fileUrl, fileName, packageDescription, isTryRedownload, numberOfTries);
                 } else {
-                    throw new HttpException(String.format("Unable to download %s\n%s", packageDescription, response.getStatusLine()));
+                    throw new IllegalUpdateStateException(new HttpException(String.format("Unable to download %s\n%s", packageDescription, response.getStatusLine())));
                 }
             } else if (getResponseHeaderValue(response, "Content-Type").indexOf("zip") < 0) {
-                throw new HttpException(String.format("%s is not a ZIP archive", packageDescription));
+                throw new IllegalUpdateStateException(new HttpException(String.format("%s is not a ZIP archive", packageDescription)));
             }
 
             // Buffer response content
@@ -683,15 +684,12 @@ public class DownloadResourceHelper {
             outputStream.flush();
 
         } catch (Exception e) {
-            System.out.println("Error occurs: " + e.getMessage());
-            e.printStackTrace();
+            throw new IllegalUpdateStateException(e);
         } finally {
-            if (response != null) {
+            if (response != null)
                 response.close();
-            }
-            if (outputStream != null) {
+            if (outputStream != null)
                 outputStream.close();
-            }
         }
         return fileName;
     }
@@ -702,6 +700,8 @@ public class DownloadResourceHelper {
  */
 public class Xls2CsvHelper {
     
+    public static final String CSV_FIELD_SEPARATOR = ";";
+
     private File convertPath;
     private static Xls2CsvHelper singleInstance;
 
@@ -725,6 +725,32 @@ public class Xls2CsvHelper {
 
     private String convertSheetByName(Workbook workbook) {
         return convertSheetByName(workbook, null, null);
+    }
+
+    private String normalizeString(String value) {
+        String result = new String(value);
+        // If empty - just return
+        if (StringUtils.isBlank(value))
+            return result;
+        boolean doubleQuiotesProcessed = false
+        // Replace all number of double quotes by twice double quotes
+        if (result.indexOf("\"") >= 0) {
+            result = result.replaceAll("(\"+)", "\"\"");
+            doubleQuiotesProcessed = true;
+        }
+        // Replace all double quotes by
+        if (result.indexOf(CSV_FIELD_SEPARATOR) >= 0 || doubleQuiotesProcessed) {
+            result = String.format("\"%s\"", result);
+        }
+        // Replace all carriage return to space
+        if (result.indexOf("\n") >= 0) {
+            result = result.replaceAll("\n", " ");
+        }
+        // Replace all carriage return to space
+        if (result.indexOf("\r") >= 0) {
+            result = result.replaceAll("\r", " ");
+        }
+        return result;
     }
 
     private String convertSheetByName(Workbook workbook, String name, String skipColumnsAfterName) {
@@ -764,8 +790,8 @@ public class Xls2CsvHelper {
                             skipColumnNumber = j;
                         }
                         if (j <= skipColumnNumber) {
-                            data.append(cellText.replaceAll("[\\n\\r]", " "));
-                            if (j < skipColumnNumber && (j < sheet.getLastCellNum())) {
+                            data.append(normalizeString(cellText));
+                            if (j < skipColumnNumber && (j < row.getLastCellNum())) {
                                 data.append(";");
                             }
                         } else
@@ -778,7 +804,7 @@ public class Xls2CsvHelper {
         return data.toString();
     }
 
-    public void convertHcpcs(String inputFile, String outputFile) throws IOException {
+    public void convertHcpcs(String inputFile, String outputFile) throws IllegalUpdateStateException {
         System.out.println("\n\tConversion of HCPCS data started");
         File f = new File(outputFile.substring(0, outputFile.lastIndexOf(File.separator) + 1));
         if (!f.exists()) {
@@ -805,16 +831,14 @@ public class Xls2CsvHelper {
             fos.flush();
             System.out.println("\tConversion of HCPCS data done");
         } catch (Exception e) {
-            System.out.println("Error occurs: " + e.getMessage());
-            e.printStackTrace();
+            throw new IllegalUpdateStateException(e);
         } finally {
-            if (fos != null) {
+            if (fos != null)
                 fos.close();
-            }
         }
     }
 
-    public void convertLoinc(String inputFile, String destFolder, Map<String, String> sheetNameFilePathMap, Map<String, String> sheetNameSkiptColumnsAfterNameMap) throws IOException {
+    public void convertLoinc(String inputFile, String destFolder, Map<String, String> sheetNameFilePathMap, Map<String, String> sheetNameSkiptColumnsAfterNameMap) throws IllegalUpdateStateException {
         System.out.println(new StringBuilderWrapper("Conversion of LOINC data started"));
         /**
          * Check if input Except file exists
@@ -856,17 +880,15 @@ public class Xls2CsvHelper {
                 sheetPathEntry.setValue(savedFilePath);
                 System.out.println(new StringBuilderWrapper(String.format("Conversion of Sheet '%s' done. Saved to: '%s'.", sheetName, savedFilePath.getPath())));
                 fos = new FileOutputStream(savedFilePath);
-                fos.write(data.getBytes());
+                fos.write(data.getBytes(StandardCharsets.UTF_8));
                 fos.flush();
             }
             System.out.println(new StringBuilderWrapper("Conversion of LOINC data done"));
         } catch (Exception e) {
-            System.out.println("Error occurs: " + e.getMessage());
-            e.printStackTrace();
+            throw new IllegalUpdateStateException(e);
         } finally {
-            if (fos != null) {
+            if (fos != null)
                 fos.close();
-            }
         }
     }
 
@@ -874,7 +896,7 @@ public class Xls2CsvHelper {
         return getFilesByName(folder, nameTemplate, null, strictSearch);
     }
 
-    public static List<File> getFilesByName(File folder, String nameTemplate, String excludeExtension, boolean strictSearch) {
+    public static List<File> getFilesByName(File folder, String nameTemplate, String excludeExtension, boolean strictSearch) throws IllegalUpdateStateException {
         File[] matchedFiles = folder.listFiles(new FilenameFilter() {
             @Override
             boolean accept(File dir, String name) {
@@ -886,9 +908,9 @@ public class Xls2CsvHelper {
 
         if (strictSearch) {
             if (foundFiles.empty)
-                throw new GradleException("No file found by name: ${nameTemplate}");
+                throw new IllegalUpdateStateException(String.format("No file found by name: %s", nameTemplate));
             else if (foundFiles.size() > 1)
-                throw new GradleException("More than one files found by name: '${nameTemplate}'");
+                throw new IllegalUpdateStateException(String.format("More than one files found by name: %s", nameTemplate));
         }
         return foundFiles;
     }
@@ -989,22 +1011,18 @@ task fastRecreateSchema(description: project.properties['fastRecreate.descriptio
               sqlfile: sqlFile,
               logfile: logFile]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
-    def sqlplus = """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
+    def sqlplus = """sqlplus -L ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)
     sqlplus.waitFor()
 
     // Finish action checkpoint
     def timeFinish = System.currentTimeMillis()
 
-    // Write to console
-    try {
-        // Write compact SQLPlus's spool log
-        System.out.println(StringBuilderWrapper.readFromFile(new File(logFile)))
-    } catch (IOException ioe) {
-        // Write whole SQLPlus's log
-        System.out.println(sout.toString())
-    }
-
+    // Write compact SQLPlus's spool log
+    File lf = new File(logFile);
+    if (lf.exists())
+        System.out.println(StringBuilderWrapper.readFromFile(lf))
+    
     // Write to logfile
     File f = new File(streamLogFile)
     f.write(sout.toString())
@@ -1057,14 +1075,10 @@ task createSourceTable(dependsOn: fastRecreateSchema, description: project.prope
     // Finish action checkpoint
     def timeFinish = System.currentTimeMillis()
 
-    // Write to console
-    try {
-        // Write compact SQLPlus's spool log
-        System.out.println(StringBuilderWrapper.readFromFile(new File(logFile)))
-    } catch (IOException ioe) {
-        // Write whole SQLPlus's log
-        System.out.println(sout.toString())
-    }
+    // Write compact SQLPlus's spool log
+    File lf = new File(logFile);
+    if (lf.exists())
+        System.out.println(StringBuilderWrapper.readFromFile(lf))
 
     // Write to logfile
     File f = new File(streamLogFile)
@@ -1314,11 +1328,11 @@ task convertData(dependsOn: extractFiles, description: project.properties['conve
         // Finish action checkpoint
         timeFinish = System.currentTimeMillis()
     }
-    catch (FileNotFoundException e) {
-        e.printStackTrace()
+    catch (FileNotFoundException fnfe) {
+        throw new IllegalUpdateStateException("File not found", fnfe);
     }
-    catch (IOException e) {
-        e.printStackTrace()
+    catch (IOException ioe) {
+        throw new IllegalUpdateStateException("IO error occurs", ioe);
     }
 
     // Measure time execution
@@ -1462,19 +1476,10 @@ task loadStage(dependsOn: importData, description: project.properties['loadStage
     // Finish action checkpoint
     def timeFinish = System.currentTimeMillis()
 
-    // Write to console
-    try {
-        // Write compact SQLPlus's spool log
-        System.out.println(StringBuilderWrapper.readFromFile(new File(logFile)))
-    } catch (IOException ioe) {
-        System.out.println("IO Exception occurs": ioe.getMessage())
-        ioe.printStackTrace()
-        // Write whole SQLPlus's log
-        System.out.println(sout.toString())
-    } catch (Exception e) {
-        System.out.println("Exception occurs": e.getMessage())
-        ioe.printStackTrace()
-    }
+    // Write compact SQLPlus's spool log
+    File lf = new File(logFile);
+    if (lf.exists())
+        System.out.println(StringBuilderWrapper.readFromFile(lf))
 
     // Write to logfile
     File f = new File(streamLogFile)
@@ -1528,14 +1533,10 @@ task genericUpdate(dependsOn: loadStage, description: project.properties['generi
     // Finish action checkpoint
     def timeFinish = System.currentTimeMillis()
 
-    // Write to console
-    try {
-        // Write compact SQLPlus's spool log
-        System.out.println(StringBuilderWrapper.readFromFile(new File(logFile)))
-    } catch (IOException ioe) {
-        // Write whole SQLPlus's log
-        System.out.println(sout.toString())
-    }
+    // Write compact SQLPlus's spool log
+    File lf = new File(logFile);
+    if (lf.exists())
+        System.out.println(StringBuilderWrapper.readFromFile(lf))
 
     // Write to logfile
     File f = new File(streamLogFile)
@@ -1588,14 +1589,10 @@ task checkUpdateResults(dependsOn: genericUpdate, description: project.propertie
     // Finish action checkpoint
     def timeFinish = System.currentTimeMillis()
 
-    // Write to console
-    try {
-        // Write compact SQLPlus's spool log
-        System.out.println(StringBuilderWrapper.readFromFile(new File(logFile)))
-    } catch (IOException ioe) {
-        // Write whole SQLPlus's log
-        System.out.println(sout.toString())
-    }
+    // Write compact SQLPlus's spool log
+    File lf = new File(logFile);
+    if (lf.exists())
+        System.out.println(StringBuilderWrapper.readFromFile(lf))
 
     // Write to log file
     File f = new File(streamLogFile)

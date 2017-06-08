@@ -705,7 +705,7 @@ public class Xls2CsvHelper {
                         }
                         if (j <= skipColumnNumber) {
                             data.append(cellText.replaceAll("[\\n\\r]", " "));
-                            if (j < skipColumnNumber && (j < sheet.getLastCellNum())) {
+                            if (j < skipColumnNumber && (j < row.getLastCellNum())) {
                                 data.append(";");
                             }
                         } else
