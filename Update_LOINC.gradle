@@ -1,7 +1,7 @@
 /*
 ****************************
 * LOINC Vocabulary update  *
-* Version 0.0.6            *
+* Version 0.0.7            *
 ****************************
 */
 
@@ -67,6 +67,7 @@ task compileOne(type: JavaCompile) {
 compileOne.options.compilerArgs = ["-sourcepath", "${projectDir}/src/main/java"]
 
 */
+
 /**
  * JAVA-CODE SECTION.
  * 
@@ -1405,7 +1406,7 @@ task importData(dependsOn: convertData, description: project.properties['importD
             executable "sqlldr"
             args "USERID=${project.properties['db.userName']}/${project.properties['db.password']}@${project.properties['db.tnsName']} " +
                  "CONTROL=${project.properties['basePath']}/${controlFileName} " +
-                 "DATA=$dataFileName " +
+                 "DATA=${dataFileName} " +
                  "LOG=${project.properties['logPath']}/${logFileName} " +
                  "DISCARD=${project.properties['logPath']}/${discardFileName} " +
                  "BAD=${project.properties['logPath']}/${badFileName}"
@@ -1454,6 +1455,7 @@ task importData(dependsOn: convertData, description: project.properties['importD
  * This task will run 'Load stage' script.
  * Seems it's is specific for each vocabulary.
  */
+
 task loadStage(dependsOn: importData, description: project.properties['loadStage.description']) << {
     println '\n\n***********************************************'
     println '*                                             *'
@@ -1508,7 +1510,6 @@ task loadStage(dependsOn: importData, description: project.properties['loadStage
 
     println "*** '${description}' action done ***"
 }
-
 /**
  * This task will run 'Genetic update' script.
  * It's common for all updated vocabularies and located in '\Vocabulary-v5.0\working\generic_update.sql' file.

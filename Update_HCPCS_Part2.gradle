@@ -1,7 +1,7 @@
 /*
 ****************************
 * HCPCS Vocabulary update  *
-* Version 0.0.6            *
+* Version 0.0.7            *
 ****************************
 */
 
@@ -143,7 +143,7 @@ task prepareManualTable(description: project.properties['prepareManualTable.desc
               tableName: "${project.properties['manualTableName']}",
               logfile  : logFile]
     def sOut = new StringBuilderWrapper(), sErr = new StringBuilderWrapper()
-    def sqlPlus = """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile} ${db.tableName}""".execute()
+    def sqlPlus = """sqlplus -L ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile} ${db.tableName}""".execute()
     sqlPlus.consumeProcessOutput(sOut, sErr)
     sqlPlus.waitFor()
 

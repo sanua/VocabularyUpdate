@@ -1,7 +1,7 @@
 /*
 ******************************
 * ICD10CM Vocabulary update  *
-* Version 0.0.6              *
+* Version 0.0.7              *
 ******************************
 */
 
@@ -33,6 +33,12 @@ buildscript {
         classpath group: 'commons-io', name: 'commons-io', version: '2.5'
     }
 }
+
+/**
+ * JAVA-CODE SECTION.
+ *
+ * Temporary java code are located here. If future it's need to move it toi separate java-module.
+ */
 
 import org.apache.commons.io.FileUtils
 
@@ -88,6 +94,10 @@ public class StringBuilderWrapper implements java.lang.Appendable {
     }
 }
 
+/**
+ * JAVA-CODE SECTION
+ */
+
 // Load ICD10CM properties
 Properties props = new Properties()
 props.load(new FileInputStream("${project.getBuildFile().toString().replace('.gradle', '.properties')}"))
@@ -122,34 +132,33 @@ task loadStage(description: project.properties['loadStage.description']) << {
               tns    : project.properties['db.tnsName'],
               sqlfile: sqlFile,
               logfile: logFile]
-    def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
-    def sqlplus = """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
-    sqlplus.consumeProcessOutput(sout, serr)
-    sqlplus.waitFor()
+    def sOut = new StringBuilderWrapper(), sErr = new StringBuilderWrapper()
+    def sqlPlus = """sqlplus -L ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
+    sqlPlus.consumeProcessOutput(sOut, sErr)
+    sqlPlus.waitFor()
 
     // Finish action checkpoint
     def timeFinish = System.currentTimeMillis()
 
-    // Write to console
-    try {
-        // Write compact SQLPlus's spool log
-        System.out.println(StringBuilderWrapper.readFromFile(new File(logFile)))
-    } catch (IOException ioe) {
-        // Write whole SQLPlus's log
-        System.out.println(sout.toString())
-    }
+    /**
+     * Write to console.
+     * Write compact SQLPlus's spool log
+     */
+    File lf = new File(logFile)
+    if (lf.exists())
+        System.out.println(StringBuilderWrapper.readFromFile(lf))
 
     // Write to logfile
     File f = new File(streamLogFile)
-    f.write(sout.toString())
+    f.write(sOut.toString())
 
     // Write to error file
     f = new File(streamErrorFile)
-    f.write(serr.toString())
+    f.write(sErr.toString())
 
     /* Check for errors */
-    if (project.properties['stop.on.error'].toBoolean() && (sqlplus.exitValue() != 0 || (serr != null && serr.toString().length() > 0))) {
-        throw new GradleException(String.format(project.properties['error.message.with.code'], sqlplus.exitValue(), name))
+    if (Boolean.valueOf(project.properties['stop.on.error'].toString()) && (sqlPlus.exitValue() != 0 || (sErr != null && sErr.toString().length() > 0))) {
+        throw new GradleException(String.format(project.properties['error.message.with.code'], sqlPlus.exitValue(), name))
     }
 
     // Measure time execution
@@ -183,34 +192,33 @@ task genericUpdate(dependsOn: loadStage, description: project.properties['generi
               tns    : project.properties['db.tnsName'],
               sqlfile: sqlFile,
               logfile: logFile]
-    def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
-    def sqlplus = """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
-    sqlplus.consumeProcessOutput(sout, serr)
-    sqlplus.waitFor()
+    def sOut = new StringBuilderWrapper(), sErr = new StringBuilderWrapper()
+    def sqlPlus = """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
+    sqlPlus.consumeProcessOutput(sOut, sErr)
+    sqlPlus.waitFor()
 
     // Finish action checkpoint
     def timeFinish = System.currentTimeMillis()
 
-    // Write to console
-    try {
-        // Write compact SQLPlus's spool log
-        System.out.println(StringBuilderWrapper.readFromFile(new File(logFile)))
-    } catch (IOException ioe) {
-        // Write whole SQLPlus's log
-        System.out.println(sout.toString())
-    }
+    /**
+     * Write to console.
+     * Write compact SQLPlus's spool log
+     */
+    File lf = new File(logFile)
+    if (lf.exists())
+        System.out.println(StringBuilderWrapper.readFromFile(lf))
 
     // Write to logfile
     File f = new File(streamLogFile)
-    f.write(sout.toString())
+    f.write(sOut.toString())
 
     // Write to error file
     f = new File(streamErrorFile)
-    f.write(serr.toString())
+    f.write(sErr.toString())
 
     /* Check for errors */
-    if (project.properties['stop.on.error'].toBoolean() && (sqlplus.exitValue() != 0 || (serr != null && serr.toString().length() > 0))) {
-        throw new GradleException(String.format(project.properties['error.message.with.code'], sqlplus.exitValue(), name))
+    if (Boolean.valueOf(project.properties['stop.on.error'].toString()) && (sqlPlus.exitValue() != 0 || (sErr != null && sErr.toString().length() > 0))) {
+        throw new GradleException(String.format(project.properties['error.message.with.code'], sqlPlus.exitValue(), name))
     }
 
     // Measure time execution
@@ -243,34 +251,33 @@ task checkUpdateResults(dependsOn: genericUpdate, description: project.propertie
               tns    : project.properties['db.tnsName'],
               sqlfile: sqlFile,
               logfile: logFile]
-    def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
-    def sqlplus = """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
-    sqlplus.consumeProcessOutput(sout, serr)
-    sqlplus.waitFor()
+    def sOut = new StringBuilderWrapper(), sErr = new StringBuilderWrapper()
+    def sqlPlus = """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
+    sqlPlus.consumeProcessOutput(sOut, sErr)
+    sqlPlus.waitFor()
 
     // Finish action checkpoint
     def timeFinish = System.currentTimeMillis()
 
-    // Write to console
-    try {
-        // Write compact SQLPlus's spool log
-        System.out.println(StringBuilderWrapper.readFromFile(new File(logFile)))
-    } catch (IOException ioe) {
-        // Write whole SQLPlus's log
-        System.out.println(sout.toString())
-    }
+    /**
+     * Write to console.
+     * Write compact SQLPlus's spool log
+     */
+    File lf = new File(logFile)
+    if (lf.exists())
+        System.out.println(StringBuilderWrapper.readFromFile(lf))
 
     // Write to logfile
     File f = new File(streamLogFile)
-    f.write(sout.toString())
+    f.write(sOut.toString())
 
     // Write to error file
     f = new File(streamErrorFile)
-    f.write(serr.toString())
+    f.write(sErr.toString())
 
     /* Check for errors */
-    if (project.properties['stop.on.error'].toBoolean() && (sqlplus.exitValue() != 0 || (serr != null && serr.toString().length() > 0))) {
-        throw new GradleException(String.format(project.properties['error.message.with.code'], sqlplus.exitValue(), name))
+    if (Boolean.valueOf(project.properties['stop.on.error'].toString()) && (sqlPlus.exitValue() != 0 || (sErr != null && sErr.toString().length() > 0))) {
+        throw new GradleException(String.format(project.properties['error.message.with.code'], sqlPlus.exitValue(), name))
     }
 
     // Measure time execution

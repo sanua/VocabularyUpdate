@@ -1,7 +1,7 @@
 /*
 **************************************
-* LOINC Vocabulary update. Part 2  *
-* Version 0.0.6                      *
+* LOINC Vocabulary update. Part 2    *
+* Version 0.0.7                      *
 **************************************
 */
 
@@ -127,7 +127,7 @@ task prepareManualTable(description: project.properties['prepareManualTable.desc
               tableName: "${project.properties['manualTableName']}",
               logfile  : logFile]
     def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
-    def sqlplus = """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile} ${db.tableName}""".execute()
+    def sqlplus = """sqlplus -L ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile} ${db.tableName}""".execute()
     sqlplus.consumeProcessOutput(sout, serr)
     sqlplus.waitFor()
 
