@@ -122,7 +122,7 @@ class StringBuilderWrapper implements java.lang.Appendable {
 class StringHelper {
     public static final String CSV_FIELD_SEPARATOR = ";"
 
-    static String normalizeString(String value) {
+    public static String normalizeString(String value) {
         String result = new String(value)
         // If empty - just return
         if (StringUtils.isBlank(value))
@@ -368,8 +368,9 @@ task xls2Csv(dependsOn: extractFiles, description: project.properties['xls2Csv.d
 
     // For storing data into CSV files
     StringBuffer data = new StringBuffer()
+    OutputStream outputStream = null
     try {
-        FileOutputStream fos = new FileOutputStream(outputFile)
+        outputStream = new FileOutputStream(outputFile)
 
         // Get the workbook object for XLS file
         Workbook workbook = WorkbookFactory.create(new FileInputStream(inputFile))
@@ -388,7 +389,7 @@ task xls2Csv(dependsOn: extractFiles, description: project.properties['xls2Csv.d
                         cell.setCellType(Cell.CELL_TYPE_STRING)
                         String cellText = cell.toString().trim()
 
-                        data.append(normalizeString(cellText))
+                        data.append(StringHelper.normalizeString(cellText))
                         if (j < row.getLastCellNum()) {
                             data.append(";")
                         }
@@ -398,14 +399,14 @@ task xls2Csv(dependsOn: extractFiles, description: project.properties['xls2Csv.d
             }
         }
         println new StringBuilderWrapper('file converted...')
-        fos.write(data.toString().getBytes(StandardCharsets.UTF_8))
-        fos.flush()
+        outputStream.write(data.toString().getBytes(StandardCharsets.UTF_8))
+        outputStream.flush()
 
     } catch (Exception e) {
         throw new GradleException(String.format(project.properties['error.message'], e.getMessage(), name))
     } finally {
-        if (fos != null)
-            fos.close()
+        if (outputStream != null)
+            outputStream.close()
     }
 
     // Finish action checkpoint
@@ -443,7 +444,7 @@ task importData(dependsOn: xls2Csv, description: project.properties['importData.
     exec {
         executable "sqlldr"
         args "USERID=${project.properties['db.userName']}/${project.properties['db.password']}@${project.properties['db.tnsName']} " +
-             "CONTROL=${project.properties['basePath']}/${project.properties['import.controlFileName']} " +
+             "CONTROL=${project.properties['basePath']}/${project.properties['importData.controlFileName']} " +
              "DATA=${dataFile} " +
              "LOG=${logFile} " +
              "DISCARD=${discardFile} " +

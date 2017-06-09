@@ -357,8 +357,9 @@ task xls2Csv(dependsOn: extractFiles, description: project.properties['xls2Csv.d
 
     // For storing data into CSV files
     StringBuffer data = new StringBuffer()
+    OutputStream outputStream = null
     try {
-        FileOutputStream fos = new FileOutputStream(outputFile)
+        outputStream = new FileOutputStream(outputFile)
 
         // Get the workbook object for XLS file
         Workbook workbook = WorkbookFactory.create(new FileInputStream(inputFile))
@@ -387,15 +388,15 @@ task xls2Csv(dependsOn: extractFiles, description: project.properties['xls2Csv.d
             }
         }
         println new StringBuilderWrapper('file converted...')
-        fos.write(data.toString().getBytes(StandardCharsets.UTF_8))
-        fos.flush()
+        outputStream.write(data.toString().getBytes(StandardCharsets.UTF_8))
+        outputStream.flush()
 
     }
     catch (FileNotFoundException e) {
         e.printStackTrace()
     } finally {
-        if (fos != null)
-            fos.close()
+        if (outputStream != null)
+            outputStream.close()
     }
 
     // Finish action checkpoint
@@ -538,7 +539,7 @@ task loadStage(dependsOn: importData, description: project.properties['loadStage
     f.write(sErr.toString())
 
     /* Check for errors */
-    if (Boolean.valueof(project.properties['stop.on.error'].toString()) && (sqlPlus.exitValue() != 0 || (sErr != null && sErr.toString().length() > 0))) {
+    if (Boolean.valueOf(project.properties['stop.on.error'].toString()) && (sqlPlus.exitValue() != 0 || (sErr != null && sErr.toString().length() > 0))) {
         throw new GradleException(String.format(project.properties['error.message.with.code'], sqlPlus.exitValue(), name))
     }
 

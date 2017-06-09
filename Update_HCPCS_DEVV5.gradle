@@ -409,7 +409,7 @@ task loadStage(dependsOn: applyManualTable, description: project.properties['loa
     f.write(sErr.toString())
 
     /* Check for errors */
-    if (Boolean.valueof(project.properties['stop.on.error'].toString()) && (sqlPlus.exitValue() != 0 || (sErr != null && sErr.toString().length() > 0))) {
+    if (Boolean.valueOf(project.properties['stop.on.error'].toString()) && (sqlPlus.exitValue() != 0 || (sErr != null && sErr.toString().length() > 0))) {
         throw new GradleException(String.format(project.properties['error.message.with.code'], sqlPlus.exitValue(), name))
     }
 
