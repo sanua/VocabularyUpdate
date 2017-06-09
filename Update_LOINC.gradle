@@ -110,8 +110,6 @@ import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.ss.usermodel.*;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -469,7 +467,7 @@ public class DownloadResourceHelper {
             int responseCode = response.getStatusLine().getStatusCode();
             if (responseCode != HttpStatus.SC_OK) {
                 numberOfTries--;
-                if (isTryRedownload && numberOfTries > 0) {
+                if (isTryRedownload && numberOfTries >= 0) {
                     try {
                         if (response != null) {
                             response.close();
@@ -750,6 +748,10 @@ public class Xls2CsvHelper {
         if (result.indexOf("\r") >= 0) {
             result = result.replaceAll("\r", " ");
         }
+        // Replace the 'EN DASH' (U+2013) by the 'HYPHEN-MINUS' (U+002D)
+        if (result.indexOf("\u2013") >= 0) {
+            result = result.replaceAll("\u2013", "\u002D");
+        }
         return result;
     }
 
@@ -973,6 +975,7 @@ public class StringBuilderWrapper implements java.lang.Appendable {
         return wrapped.toString()
     }
 }
+
 /**
  * JAVA-CODE SECTION
  */
@@ -1010,30 +1013,33 @@ task fastRecreateSchema(description: project.properties['fastRecreate.descriptio
               tns    : project.properties['db.tnsName'],
               sqlfile: sqlFile,
               logfile: logFile]
-    def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
-    def sqlplus = """sqlplus -L ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
-    sqlplus.consumeProcessOutput(sout, serr)
-    sqlplus.waitFor()
+    def sOut = new StringBuilderWrapper(), sErr = new StringBuilderWrapper()
+    def sqlPlus = """sqlplus -L ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
+    sqlPlus.consumeProcessOutput(sOut, sErr)
+    sqlPlus.waitFor()
 
     // Finish action checkpoint
     def timeFinish = System.currentTimeMillis()
 
-    // Write compact SQLPlus's spool log
-    File lf = new File(logFile);
+    /**
+     * Write to console.
+     * Write compact SQLPlus's spool log
+     */
+    File lf = new File(logFile)
     if (lf.exists())
         System.out.println(StringBuilderWrapper.readFromFile(lf))
     
     // Write to logfile
     File f = new File(streamLogFile)
-    f.write(sout.toString())
+    f.write(sOut.toString())
 
     // Write to error file
     f = new File(streamErrorFile)
-    f.write(serr.toString())
+    f.write(sErr.toString())
 
     /* Check for errors */
-    if (project.properties['stop.on.error'].toBoolean() && (sqlplus.exitValue() != 0 || (serr != null && serr.toString().length() > 0))) {
-        throw new GradleException(String.format(project.properties['error.message.with.code'], sqlplus.exitValue(), name))
+    if (Boolean.valueOf(project.properties['stop.on.error'].toString()) && (sqlPlus.exitValue() != 0 || (sErr != null && sErr.toString().length() > 0))) {
+        throw new GradleException(String.format(project.properties['error.message.with.code'], sqlPlus.exitValue(), name))
     }
 
     // Measure time execution
@@ -1067,30 +1073,33 @@ task createSourceTable(dependsOn: fastRecreateSchema, description: project.prope
               tns    : project.properties['db.tnsName'],
               sqlfile: sqlFile,
               logfile: logFile]
-    def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
-    def sqlplus = """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
-    sqlplus.consumeProcessOutput(sout, serr)
-    sqlplus.waitFor()
+    def sOut = new StringBuilderWrapper(), sErr = new StringBuilderWrapper()
+    def sqlPlus = """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
+    sqlPlus.consumeProcessOutput(sOut, sErr)
+    sqlPlus.waitFor()
 
     // Finish action checkpoint
     def timeFinish = System.currentTimeMillis()
 
-    // Write compact SQLPlus's spool log
-    File lf = new File(logFile);
+    /**
+     * Write to console.
+     * Write compact SQLPlus's spool log
+     */
+    File lf = new File(logFile)
     if (lf.exists())
         System.out.println(StringBuilderWrapper.readFromFile(lf))
 
     // Write to logfile
     File f = new File(streamLogFile)
-    f.write(sout.toString())
+    f.write(sOut.toString())
 
     // Write to error file
     f = new File(streamErrorFile)
-    f.write(serr.toString())
+    f.write(sErr.toString())
 
     /* Check for errors */
-    if (project.properties['stop.on.error'].toBoolean() && (sqlplus.exitValue() != 0 || (serr != null && serr.toString().length() > 0))) {
-        throw new GradleException(String.format(project.properties['error.message.with.code'], sqlplus.exitValue(), name))
+    if (Boolean.valueOf(project.properties['stop.on.error'].toString()) && (sqlPlus.exitValue() != 0 || (sErr != null && sErr.toString().length() > 0))) {
+        throw new GradleException(String.format(project.properties['error.message.with.code'], sqlPlus.exitValue(), name))
     }
 
     // Measure time execution
@@ -1231,79 +1240,78 @@ task convertData(dependsOn: extractFiles, description: project.properties['conve
 
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()
-    def timeFinish = timeStart
-    Xls2CsvHelper convertHelper = Xls2CsvHelper.getXls2CsvHelper(tempDir);
+    Xls2CsvHelper convertHelper = Xls2CsvHelper.getXls2CsvHelper(tempDir)
 
     try {
-        Map<String, String> sheetNameFilePathMap = new HashMap<String, String>();
-        sheetNameFilePathMap.put("ANSWERS", project.properties['convertData.panelsForms.answers.destFileName']);
-        sheetNameFilePathMap.put("FORMS", project.properties['convertData.panelsForms.forms.destFileName']);
+        Map<String, String> sheetNameFilePathMap = new HashMap<String, String>()
+        sheetNameFilePathMap.put("ANSWERS", project.properties['convertData.panelsForms.answers.destFileName'])
+        sheetNameFilePathMap.put("FORMS", project.properties['convertData.panelsForms.forms.destFileName'])
 
-        Map<String, String> sheetNameSkiptColumnsAfterNameMap = new HashMap<String, String>();
-        sheetNameSkiptColumnsAfterNameMap.put("ANSWERS", "DisplayText");
-        sheetNameSkiptColumnsAfterNameMap.put("FORMS", "Loinc");
+        Map<String, String> sheetNameSkiptColumnsAfterNameMap = new HashMap<String, String>()
+        sheetNameSkiptColumnsAfterNameMap.put("ANSWERS", "DisplayText")
+        sheetNameSkiptColumnsAfterNameMap.put("FORMS", "Loinc")
 
         String fileNameTemplate = "panelsandforms"
-        List<File> fileList = convertHelper.getFilesByName(tempDir, fileNameTemplate, "zip", true);
+        List<File> fileList = convertHelper.getFilesByName(tempDir, fileNameTemplate, "zip", true)
         String inputFile = fileList.get(0).getName()
-        String importReadyFolder = "ready_for_import";
-        convertHelper.convertLoinc(inputFile, importReadyFolder, sheetNameFilePathMap, sheetNameSkiptColumnsAfterNameMap);
+        String importReadyFolder = "ready_for_import"
+        convertHelper.convertLoinc(inputFile, importReadyFolder, sheetNameFilePathMap, sheetNameSkiptColumnsAfterNameMap)
 
         /**
          * Prepare all other files for import
          */
-        String answersCsvFile = sheetNameFilePathMap.get("ANSWERS");
-        project.ext.set("import.panelsForms.answers.dataFileName", answersCsvFile);
+        String answersCsvFile = sheetNameFilePathMap.get("ANSWERS")
+        project.ext.set("importData.panelsForms.answers.dataFileName", answersCsvFile)
 
-        String formsCsvFile = sheetNameFilePathMap.get("FORMS");
-        project.ext.set("import.panelsForms.forms.dataFileName", formsCsvFile);
+        String formsCsvFile = sheetNameFilePathMap.get("FORMS")
+        project.ext.set("importData.panelsForms.forms.dataFileName", formsCsvFile)
 
-        String targetPath = new File(tempDir, importReadyFolder).getPath();
+        String targetPath = new File(tempDir, importReadyFolder).getPath()
 
-        fileNameTemplate = "loinc.csv";
-        fileList = convertHelper.getFilesByName(tempDir, fileNameTemplate, "zip", true);
-        String fileToCopy = fileList.get(0).getName();
-        println "\n${new StringBuilderWrapper("Copy from: '${new File(tempDir, fileToCopy).getPath()}',\n\t to ${targetPath}")}";
+        fileNameTemplate = "loinc.csv"
+        fileList = convertHelper.getFilesByName(tempDir, fileNameTemplate, "zip", true)
+        String fileToCopy = fileList.get(0).getName()
+        println "\n${new StringBuilderWrapper("Copy from: '${new File(tempDir, fileToCopy).getPath()}',\n\t to ${targetPath}")}"
         String loincCsvFile = convertHelper.copy(
                 new File(tempDir, fileToCopy).getPath(),
                 new File(targetPath, fileToCopy).getPath()
-        );
-        project.ext.set("import.fullSet.loinc.dataFileName", loincCsvFile);
+        )
+        project.ext.set("importData.fullSet.loinc.dataFileName", loincCsvFile)
 
-        fileNameTemplate = "map_to.csv";
-        fileList = convertHelper.getFilesByName(tempDir, fileNameTemplate, "zip", true);
-        fileToCopy = fileList.get(0).getName();
-        println new StringBuilderWrapper("Copy from: '${new File(tempDir, fileToCopy).getPath()}',\n\t to ${targetPath}");
+        fileNameTemplate = "map_to.csv"
+        fileList = convertHelper.getFilesByName(tempDir, fileNameTemplate, "zip", true)
+        fileToCopy = fileList.get(0).getName()
+        println new StringBuilderWrapper("Copy from: '${new File(tempDir, fileToCopy).getPath()}',\n\t to ${targetPath}")
         String mapToCsvFile = convertHelper.copy(
                 new File(tempDir, fileToCopy).getPath(),
                 new File(targetPath, fileToCopy).getPath()
-        );
-        project.ext.set("import.fullSet.mapTo.dataFileName", mapToCsvFile);
+        )
+        project.ext.set("importData.fullSet.mapTo.dataFileName", mapToCsvFile)
 
-        fileNameTemplate = "source_organization.csv";
-        fileList = convertHelper.getFilesByName(tempDir, fileNameTemplate, "zip", true);
-        fileToCopy = fileList.get(0).getName();
-        println new StringBuilderWrapper("Copy from: '${new File(tempDir, fileToCopy).getPath()}',\n\t to ${targetPath}");
+        fileNameTemplate = "source_organization.csv"
+        fileList = convertHelper.getFilesByName(tempDir, fileNameTemplate, "zip", true)
+        fileToCopy = fileList.get(0).getName()
+        println new StringBuilderWrapper("Copy from: '${new File(tempDir, fileToCopy).getPath()}',\n\t to ${targetPath}")
         String sourceOrganizationCsvFile = convertHelper.copy(
                 new File(tempDir, fileToCopy).getPath(),
                 new File(targetPath, fileToCopy).getPath()
-        );
-        project.ext.set("import.fullSet.sourceOrganization.dataFileName", sourceOrganizationCsvFile);
+        )
+        project.ext.set("importData.fullSet.sourceOrganization.dataFileName", sourceOrganizationCsvFile)
 
-        fileToCopy = project.properties['downloadUpdatePack.multiaxialHierarchy.fileName'].replaceAll(".zip", ".csv");
-        fileNameTemplate = project.properties['downloadUpdatePack.multiaxialHierarchy.fileName'].toString();
-        fileNameTemplate = fileNameTemplate.substring(0, fileNameTemplate.lastIndexOf("."));
-        fileList = convertHelper.getFilesByName(tempDir, fileNameTemplate, "zip", true);
-        fileToCopy = fileList.get(0).getName();
+        fileToCopy = project.properties['downloadUpdatePack.multiaxialHierarchy.fileName'].replaceAll(".zip", ".csv")
+        fileNameTemplate = project.properties['downloadUpdatePack.multiaxialHierarchy.fileName'].toString()
+        fileNameTemplate = fileNameTemplate.substring(0, fileNameTemplate.lastIndexOf("."))
+        fileList = convertHelper.getFilesByName(tempDir, fileNameTemplate, "zip", true)
+        fileToCopy = fileList.get(0).getName()
         String multiaxialHierarchyCsvFile = convertHelper.copy(
                 new File(tempDir, fileToCopy).getPath(),
                 new File(targetPath, fileToCopy).getPath()
-        );
-        project.ext.set("import.multiaxialHierarchy.dataFileName", multiaxialHierarchyCsvFile);
+        )
+        project.ext.set("importData.multiaxialHierarchy.dataFileName", multiaxialHierarchyCsvFile)
 
         File filePath = new File(project.properties['downloadUpdatePack.expressionAssociation.fileName'].replaceAll(".zip", "")
-                ,"Full/Refset/Content");
-        filePath = new File(tempDir, filePath.getPath());
+                ,"Full/Refset/Content")
+        filePath = new File(tempDir, filePath.getPath())
 
         fileNameTemplate = "xder2_sscccRefset_LOINCExpressionAssociationFull_INT";
         fileList = convertHelper.getFilesByName(filePath, fileNameTemplate, true);
@@ -1313,27 +1321,24 @@ task convertData(dependsOn: extractFiles, description: project.properties['conve
                 new File(filePath, fileToCopy).getPath(),
                 new File(targetPath, fileToCopy).getPath()
         );
-        project.ext.set("import.expressionAssociation.dataFileName", expressionAssociationCsvFile);
+        project.ext.set("importData.expressionAssociation.dataFileName", expressionAssociationCsvFile)
 
-        fileNameTemplate = "MRSMAP";
-        fileList = convertHelper.getFilesByName(tempDir, fileNameTemplate, true);
-        fileToCopy = fileList.get(0).getName();
-        println new StringBuilderWrapper("Copy from: '${new File(tempDir, fileToCopy).getPath()}',\n\t to ${targetPath}");
+        fileNameTemplate = "MRSMAP"
+        fileList = convertHelper.getFilesByName(tempDir, fileNameTemplate, true)
+        fileToCopy = fileList.get(0).getName()
+        println new StringBuilderWrapper("Copy from: '${new File(tempDir, fileToCopy).getPath()}',\n\t to ${targetPath}")
         String cptMappingsCsvFile = convertHelper.copy(
                 new File(tempDir, fileToCopy).getPath(),
                 new File(targetPath, fileToCopy).getPath()
-        );
-        project.ext.set("import.cptMappings.dataFileName", cptMappingsCsvFile);
+        )
+        project.ext.set("importData.cptMappings.dataFileName", cptMappingsCsvFile)
 
-        // Finish action checkpoint
-        timeFinish = System.currentTimeMillis()
+    } catch (Exception e) {
+        throw new GradleException(String.format(project.properties['error.message'], e.getMessage(), name))
     }
-    catch (FileNotFoundException fnfe) {
-        throw new IllegalUpdateStateException("File not found", fnfe);
-    }
-    catch (IOException ioe) {
-        throw new IllegalUpdateStateException("IO error occurs", ioe);
-    }
+
+    // Finish action checkpoint
+    def timeFinish = System.currentTimeMillis()
 
     // Measure time execution
     def timeElapsed = (timeFinish - timeStart) / 1000
@@ -1345,7 +1350,7 @@ task convertData(dependsOn: extractFiles, description: project.properties['conve
 /**
  * Task performed import CSV data to database
  */
-task importData(dependsOn: convertData, description: project.properties['import.description']) << {
+task importData(dependsOn: convertData, description: project.properties['importData.description']) << {
     println '\n\n***********************************************'
     println '*                                             *'
     println "*         '${description}' action started...          *"
@@ -1359,8 +1364,8 @@ task importData(dependsOn: convertData, description: project.properties['import.
      * Filter import-specific parameters
      */
     Map<String, String> importParams = project.properties.findAll {
-        it.getKey().startsWith("import.") && it.getKey().toLowerCase().indexOf("description") < 0;
-    };
+        it.getKey().startsWith("importData.") && it.getKey().toLowerCase().indexOf("description") < 0
+    }
     /**
      * Group import-specific parameters
      */
@@ -1369,70 +1374,70 @@ task importData(dependsOn: convertData, description: project.properties['import.
     /**
      * Process import
      */
-    Iterator<Map.Entry<?, ?>> importIterator = importParamsGrouped.entrySet().iterator();
+    Iterator<Map.Entry<?, ?>> importIterator = importParamsGrouped.entrySet().iterator()
     while(importIterator.hasNext()) {
-        Map.Entry<?, ?> importEntry = importIterator.next();
-        String groupNameLabel = importEntry.getKey().replaceAll("\\.", " ").capitalize();
-        Map<String, String> groupParams = importEntry.getValue();
+        Map.Entry<?, ?> importEntry = importIterator.next()
+        String groupNameLabel = importEntry.getKey().replaceAll("\\.", " ").capitalize()
+        Map<String, String> groupParams = importEntry.getValue()
         
-        String controlFileName = groupParams.find {it.getKey().toLowerCase().indexOf("controlFileName".toLowerCase()) >= 0}.getValue();
-        String dataFileName = groupParams.find {it.getKey().toLowerCase().indexOf("dataFileName".toLowerCase()) >= 0}.getValue();
-        String logFileName = groupParams.find {it.getKey().toLowerCase().indexOf("logFileName".toLowerCase()) >= 0}.getValue();
-        String discardFileName = groupParams.find {it.getKey().toLowerCase().indexOf("discardFileName".toLowerCase()) >= 0}.getValue();
-        String badFileName = groupParams.find {it.getKey().toLowerCase().indexOf("badFileName".toLowerCase()) >= 0}.getValue();
-        String streamLogFileName = groupParams.find {it.getKey().toLowerCase().indexOf("streamLogFileName".toLowerCase()) >= 0}.getValue();
-        String streamErrorFileName = groupParams.find {it.getKey().toLowerCase().indexOf("streamErrorFileName".toLowerCase()) >= 0}.getValue();
+        String controlFileName = groupParams.find {it.getKey().toLowerCase().indexOf("controlFileName".toLowerCase()) >= 0}.getValue()
+        String dataFileName = groupParams.find {it.getKey().toLowerCase().indexOf("dataFileName".toLowerCase()) >= 0}.getValue()
+        String logFileName = groupParams.find {it.getKey().toLowerCase().indexOf("logFileName".toLowerCase()) >= 0}.getValue()
+        String discardFileName = groupParams.find {it.getKey().toLowerCase().indexOf("discardFileName".toLowerCase()) >= 0}.getValue()
+        String badFileName = groupParams.find {it.getKey().toLowerCase().indexOf("badFileName".toLowerCase()) >= 0}.getValue()
+        String streamLogFileName = groupParams.find {it.getKey().toLowerCase().indexOf("streamLogFileName".toLowerCase()) >= 0}.getValue()
+        String streamErrorFileName = groupParams.find {it.getKey().toLowerCase().indexOf("streamErrorFileName".toLowerCase()) >= 0}.getValue()
 
         Map.Entry<String, String> providedEntry = groupParams.find {it.getKey().toLowerCase().indexOf("provided".toLowerCase()) >= 0}
-        boolean provided = false;
+        boolean provided = false
         if (providedEntry != null) {
-            provided = Boolean.valueOf(providedEntry.getValue()).booleanValue();
+            provided = Boolean.valueOf(providedEntry.getValue()).booleanValue()
         }
         if (provided) {
-            dataFileName = new File(project.properties['basePath'], dataFileName).getPath();
+            dataFileName = new File(project.properties['basePath'], dataFileName).getPath()
         }
 
-        println "\n${new StringBuilderWrapper("${groupNameLabel}...")}";
+        println "\n${new StringBuilderWrapper("${groupNameLabel}...")}"
         
         def bosOut = new ByteArrayOutputStream(), bosErr = new ByteArrayOutputStream()
-        def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
+        def sOut = new StringBuilderWrapper(), sErr = new StringBuilderWrapper()
         exec {
             executable "sqlldr"
             args "USERID=${project.properties['db.userName']}/${project.properties['db.password']}@${project.properties['db.tnsName']} " +
-                    "CONTROL=${project.properties['basePath']}/${controlFileName} " +
-                    "DATA=$dataFileName " +
-                    "LOG=${project.properties['logPath']}/${logFileName} " +
-                    "DISCARD=${project.properties['logPath']}/${discardFileName} " +
-                    "BAD=${project.properties['logPath']}/${badFileName}"
+                 "CONTROL=${project.properties['basePath']}/${controlFileName} " +
+                 "DATA=$dataFileName " +
+                 "LOG=${project.properties['logPath']}/${logFileName} " +
+                 "DISCARD=${project.properties['logPath']}/${discardFileName} " +
+                 "BAD=${project.properties['logPath']}/${badFileName}"
             standardOutput = bosOut
             errorOutput = bosErr
         }
         def bisOut = new ByteArrayInputStream(bosOut.toByteArray())
         bisOut.withReader { out->
             out.eachLine {
-                sout.append(it).append('\n')
+                sOut.append(it).append('\n')
             }
         }
         def bisErr = new ByteArrayInputStream(bosErr.toByteArray())
         bisErr.withReader { out ->
             out.eachLine {
-                serr.append(it).append('\n')
+                sErr.append(it).append('\n')
             }
         }
 
-        // Write to console
-        /*
-         *  When import prefer to write stream log to console (it's shorter)
-         * */
-        System.out.println(sout.toString())
+        /**
+         *  Write to console.
+         *  When import prefer to write stream log to console (it's shorter).
+         */
+        System.out.println(sOut.toString())
 
         // Write to logfile
         File f = new File("${project.properties['logPath']}/${streamLogFileName}")
-        f.write(sout.toString())
+        f.write(sOut.toString())
 
         // Write to error file
         f = new File("${project.properties['logPath']}/${streamErrorFileName}")
-        f.write(serr.toString())
+        f.write(sErr.toString())
     }
 
     // Finish action checkpoint
@@ -1468,30 +1473,33 @@ task loadStage(dependsOn: importData, description: project.properties['loadStage
               tns    : project.properties['db.tnsName'],
               sqlfile: sqlFile,
               logfile: logFile]
-    def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
-    def sqlplus = """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
-    sqlplus.consumeProcessOutput(sout, serr)
-    sqlplus.waitFor()
+    def sOut = new StringBuilderWrapper(), sErr = new StringBuilderWrapper()
+    def sqlPlus = """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
+    sqlPlus.consumeProcessOutput(sOut, sErr)
+    sqlPlus.waitFor()
 
     // Finish action checkpoint
     def timeFinish = System.currentTimeMillis()
 
-    // Write compact SQLPlus's spool log
-    File lf = new File(logFile);
+    /**
+     * Write to console.
+     * Write compact SQLPlus's spool log
+     */
+    File lf = new File(logFile)
     if (lf.exists())
         System.out.println(StringBuilderWrapper.readFromFile(lf))
 
     // Write to logfile
     File f = new File(streamLogFile)
-    f.write(sout.toString())
+    f.write(sOut.toString())
 
     // Write to error file
     f = new File(streamErrorFile)
-    f.write(serr.toString())
+    f.write(sErr.toString())
 
     /* Check for errors */
-    if (project.properties['stop.on.error'].toBoolean() && (sqlplus.exitValue() != 0 || (serr != null && serr.toString().length() > 0))) {
-        throw new GradleException(String.format(project.properties['error.message.with.code'], sqlplus.exitValue(), name))
+    if (Boolean.valueOf(project.properties['stop.on.error'].toString()) && (sqlPlus.exitValue() != 0 || (sErr != null && sErr.toString().length() > 0))) {
+        throw new GradleException(String.format(project.properties['error.message.with.code'], sqlPlus.exitValue(), name))
     }
 
     // Measure time execution
@@ -1525,30 +1533,33 @@ task genericUpdate(dependsOn: loadStage, description: project.properties['generi
               tns    : project.properties['db.tnsName'],
               sqlfile: sqlFile,
               logfile: logFile]
-    def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
-    def sqlplus = """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
-    sqlplus.consumeProcessOutput(sout, serr)
-    sqlplus.waitFor()
+    def sOut = new StringBuilderWrapper(), sErr = new StringBuilderWrapper()
+    def sqlPlus = """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
+    sqlPlus.consumeProcessOutput(sOut, sErr)
+    sqlPlus.waitFor()
 
     // Finish action checkpoint
     def timeFinish = System.currentTimeMillis()
 
-    // Write compact SQLPlus's spool log
-    File lf = new File(logFile);
+    /**
+     * Write to console.
+     * Write compact SQLPlus's spool log
+     */
+    File lf = new File(logFile)
     if (lf.exists())
         System.out.println(StringBuilderWrapper.readFromFile(lf))
 
     // Write to logfile
     File f = new File(streamLogFile)
-    f.write(sout.toString())
+    f.write(sOut.toString())
 
     // Write to error file
     f = new File(streamErrorFile)
-    f.write(serr.toString())
+    f.write(sErr.toString())
 
     /* Check for errors */
-    if (project.properties['stop.on.error'].toBoolean() && (sqlplus.exitValue() != 0 || (serr != null && serr.toString().length() > 0))) {
-        throw new GradleException(String.format(project.properties['error.message.with.code'], sqlplus.exitValue(), name))
+    if (Boolean.valueOf(project.properties['stop.on.error'].toString()) && (sqlPlus.exitValue() != 0 || (sErr != null && sErr.toString().length() > 0))) {
+        throw new GradleException(String.format(project.properties['error.message.with.code'], sqlPlus.exitValue(), name))
     }
 
     // Measure time execution
@@ -1581,30 +1592,33 @@ task checkUpdateResults(dependsOn: genericUpdate, description: project.propertie
               tns    : project.properties['db.tnsName'],
               sqlfile: sqlFile,
               logfile: logFile]
-    def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
-    def sqlplus = """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
-    sqlplus.consumeProcessOutput(sout, serr)
-    sqlplus.waitFor()
+    def sOut = new StringBuilderWrapper(), sErr = new StringBuilderWrapper()
+    def sqlPlus = """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
+    sqlPlus.consumeProcessOutput(sOut, sErr)
+    sqlPlus.waitFor()
 
     // Finish action checkpoint
     def timeFinish = System.currentTimeMillis()
 
-    // Write compact SQLPlus's spool log
-    File lf = new File(logFile);
+    /**
+     * Write to console.
+     * Write compact SQLPlus's spool log
+     */
+    File lf = new File(logFile)
     if (lf.exists())
         System.out.println(StringBuilderWrapper.readFromFile(lf))
 
     // Write to log file
     File f = new File(streamLogFile)
-    f.write(sout.toString())
+    f.write(sOut.toString())
 
     // Write to error file
     f = new File(streamErrorFile)
-    f.write(serr.toString())
+    f.write(sErr.toString())
 
     /* Check for errors */
-    if (project.properties['stop.on.error'].toBoolean() && (sqlplus.exitValue() != 0 || (serr != null && serr.toString().length() > 0))) {
-        throw new GradleException(String.format(project.properties['error.message.with.code'], sqlplus.exitValue(), name))
+    if (Boolean.valueOf(project.properties['stop.on.error'].toString()) && (sqlPlus.exitValue() != 0 || (sErr != null && sErr.toString().length() > 0))) {
+        throw new GradleException(String.format(project.properties['error.message.with.code'], sqlPlus.exitValue(), name))
     }
 
     // Measure time execution

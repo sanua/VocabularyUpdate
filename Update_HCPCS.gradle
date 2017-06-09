@@ -35,6 +35,11 @@ dependencies {
     compile 'org.apache.poi:poi-ooxml:3.9'
 }
 */
+/**
+ * JAVA-CODE SECTION.
+ *
+ * Temporary java code are located here. If future it's need to move it toi separate java-module.
+ */
 
 import groovy.io.FileType
 import org.apache.poi.ss.usermodel.Cell
@@ -43,7 +48,6 @@ import org.apache.poi.ss.usermodel.Workbook
 import org.apache.poi.ss.usermodel.WorkbookFactory
 import org.apache.poi.ss.usermodel.Sheet
 import org.apache.commons.io.FileUtils
-
 import java.nio.charset.StandardCharsets
 
 /*
@@ -108,6 +112,44 @@ public class StringBuilderWrapper implements java.lang.Appendable {
     }
 }
 
+class StringHelper {
+    public static final String CSV_FIELD_SEPARATOR = ";"
+
+    static String normalizeString(String value) {
+        String result = new String(value)
+        // If empty - just return
+        if (StringUtils.isBlank(value))
+            return result
+        boolean doubleQuiotesProcessed = false
+        // Replace all number of double quotes by twice double quotes
+        if (result.indexOf("\"") >= 0) {
+            result = result.replaceAll("(\"+)", "\"\"")
+            doubleQuiotesProcessed = true
+        }
+        // Replace all double quotes by
+        if (result.indexOf(CSV_FIELD_SEPARATOR) >= 0 || doubleQuiotesProcessed) {
+            result = String.format("\"%s\"", result)
+        }
+        // Replace all carriage return to space
+        if (result.indexOf("\n") >= 0) {
+            result = result.replaceAll("\n", " ")
+        }
+        // Replace all carriage return to space
+        if (result.indexOf("\r") >= 0) {
+            result = result.replaceAll("\r", " ")
+        }
+        // Replace x8093 hex chars after hyphens
+        if (result.indexOf("\u2013") >= 0) {
+            result = result.replaceAll("\u2013", "\u002D")
+        }
+        return result
+    }
+}
+
+/**
+ * JAVA-CODE SECTION
+ */
+
 // Load HCPCS properties
 Properties props = new Properties()
 props.load(new FileInputStream("${project.getBuildFile().toString().replace('.gradle', '.properties')}"))
@@ -141,34 +183,33 @@ task fastRecreateSchema(description: project.properties['fastRecreate.descriptio
               tns: project.properties['db.tnsName'],
               sqlfile: sqlFile,
               logfile: logFile]
-    def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
-    def sqlplus = """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
-    sqlplus.consumeProcessOutput(sout, serr)
-    sqlplus.waitFor()
+    def sOut = new StringBuilderWrapper(), sErr = new StringBuilderWrapper()
+    def sqlPlus = """sqlplus -L ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
+    sqlPlus.consumeProcessOutput(sOut, sErr)
+    sqlPlus.waitFor()
 
     // Finish action checkpoint
     def timeFinish = System.currentTimeMillis()
 
-    // Write to console
-    try {
-        // Write compact SQLPlus's spool log
-        System.out.println(StringBuilderWrapper.readFromFile(new File(logFile)))
-    } catch (IOException ioe) {
-        // Write whole SQLPlus's log
-        System.out.println(sout.toString())
-    }
+    /**
+     * Write to console.
+     * Write compact SQLPlus's spool log
+     */
+    File lf = new File(logFile)
+    if (lf.exists())
+        System.out.println(StringBuilderWrapper.readFromFile(lf))
 
     // Write to logfile
     File f = new File(streamLogFile)
-    f.write(sout.toString())
+    f.write(sOut.toString())
 
     // Write to error file
     f = new File(streamErrorFile)
-    f.write(serr.toString())
+    f.write(sErr.toString())
 
     /* Check for errors */
-    if (project.properties['stop.on.error'].toBoolean() && (sqlplus.exitValue() != 0 || (serr != null && serr.toString().length() > 0))) {
-        throw new GradleException(String.format(project.properties['error.message.with.code'], sqlplus.exitValue(), name))
+    if (Boolean.valueOf(project.properties['stop.on.error'].toString()) && (sqlPlus.exitValue() != 0 || (sErr != null && sErr.toString().length() > 0))) {
+        throw new GradleException(String.format(project.properties['error.message.with.code'], sqlPlus.exitValue(), name))
     }
 
     // Measure time execution
@@ -202,34 +243,33 @@ task createSourceTable(dependsOn: fastRecreateSchema, description: project.prope
               tns: project.properties['db.tnsName'],
               sqlfile: sqlFile,
               logfile: logFile]
-    def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
-    def sqlplus = """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
-    sqlplus.consumeProcessOutput(sout, serr)
-    sqlplus.waitFor()
+    def sOut = new StringBuilderWrapper(), sErr = new StringBuilderWrapper()
+    def sqlPlus = """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
+    sqlPlus.consumeProcessOutput(sOut, sErr)
+    sqlPlus.waitFor()
 
     // Finish action checkpoint
     def timeFinish = System.currentTimeMillis()
 
-    // Write to console
-    try {
-        // Write compact SQLPlus's spool log
-        System.out.println(StringBuilderWrapper.readFromFile(new File(logFile)))
-    } catch (IOException ioe) {
-        // Write whole SQLPlus's log
-        System.out.println(sout.toString())
-    }
+    /**
+     * Write to console.
+     * Write compact SQLPlus's spool log
+     */
+    File lf = new File(logFile)
+    if (lf.exists())
+        System.out.println(StringBuilderWrapper.readFromFile(lf))
 
     // Write to logfile
     File f = new File(streamLogFile)
-    f.write(sout.toString())
+    f.write(sOut.toString())
 
     // Write to error file
     f = new File(streamErrorFile)
-    f.write(serr.toString())
+    f.write(sErr.toString())
 
     /* Check for errors */
-    if (project.properties['stop.on.error'].toBoolean() && (sqlplus.exitValue() != 0 || (serr != null && serr.toString().length() > 0))) {
-        throw new GradleException(String.format(project.properties['error.message.with.code'], sqlplus.exitValue(), name))
+    if (Boolean.valueOf(project.properties['stop.on.error'].toString()) && (sqlPlus.exitValue() != 0 || (sErr != null && sErr.toString().length() > 0))) {
+        throw new GradleException(String.format(project.properties['error.message.with.code'], sqlPlus.exitValue(), name))
     }
 
     // Measure time execution
@@ -283,8 +323,9 @@ task extractFiles(dependsOn: downloadUpdatePack, description: project.properties
     dir.eachFile(FileType.FILES) { file ->
         fileList << file
         if (file.getPath().endsWith('zip')) {
+            print new StringBuilderWrapper("Extracting ${file} ...")
             ant.unzip(src: file.getPath(), dest: tempDir, overwrite: false)
-            println new StringBuilderWrapper('data exctracted...')
+            println ' done'
         }
     }
 
@@ -313,7 +354,6 @@ task xls2Csv(dependsOn: extractFiles, description: project.properties['xls2Csv.d
 
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()
-    def timeFinish = timeStart
 
     // For storing data into CSV files
     StringBuffer data = new StringBuffer()
@@ -324,8 +364,6 @@ task xls2Csv(dependsOn: extractFiles, description: project.properties['xls2Csv.d
         Workbook workbook = WorkbookFactory.create(new FileInputStream(inputFile))
         // Get first sheet from the workbook
         Sheet sheet = workbook.getSheetAt(0)
-//        Cell cell
-//        Row row
 
         for (int i = 0; i <= sheet.getLastRowNum(); i++) {
             Row row = sheet.getRow(i)
@@ -337,93 +375,31 @@ task xls2Csv(dependsOn: extractFiles, description: project.properties['xls2Csv.d
                         data.append(";")
                     } else {
                         cell.setCellType(Cell.CELL_TYPE_STRING)
-                        data.append(cell.toString().trim().replaceAll("[\\n\\r]", " "))
+                        String cellText = cell.toString().trim()
+
+                        data.append(normalizeString(cellText))
                         if (j < row.getLastCellNum()) {
                             data.append(";");
                         }
-//                        switch (cell.getCellType()) {
-//                            case Cell.CELL_TYPE_BOOLEAN:
-//                                data.append("\"" + cell.getBooleanCellValue() + "\"" + ";")
-//                                break
-//
-//                            case Cell.CELL_TYPE_NUMERIC:
-//                                data.append("\"" + cell.getNumericCellValue() + "\"" + ";")
-//                                break
-//
-//                            case Cell.CELL_TYPE_STRING:
-////                                if (!cell.getStringCellValue().contains("\"")){
-//                                println cell.toString()
-//                                    data.append("\"" + cell.getStringCellValue().trim().replaceAll("\"", "'") + "\"" + ";")
-////                                } else {
-////                                    data.append(";")
-////                                }
-//                                break
-//
-//                            case Cell.CELL_TYPE_BLANK:
-//                                data.append("" + ";")
-//                                break
-//
-//                            default:
-//                                data.append(cell + ";")
-//                        }
-
-
-
                     }
                 }
                 data.append('\n')
-            } else {
-
             }
         }
-
-        // Iterate through each rows from first sheet
-//        Iterator<Row> rowIterator = sheet.iterator()
-//        while (rowIterator.hasNext()) {
-//            row = rowIterator.next()
-//            // For each row, iterate through each columns
-//            Iterator<Cell> cellIterator = row.cellIterator()
-//            while (cellIterator.hasNext()) {
-//                cell = cellIterator.next()
-//
-//                switch (cell.getCellType()) {
-//                    case Cell.CELL_TYPE_BOOLEAN:
-//                        data.append("\"" + cell.getBooleanCellValue() + "\"" + ";")
-//                        break
-//
-//                    case Cell.CELL_TYPE_NUMERIC:
-//                        data.append("\"" + cell.getNumericCellValue() + "\"" + ";")
-//                        break
-//
-//                    case Cell.CELL_TYPE_STRING:
-//                        data.append("\"" + cell.getStringCellValue().trim() + "\"" + ";")
-//                        break
-//
-//                    case Cell.CELL_TYPE_BLANK:
-//                        data.append("" + ";")
-//                        break
-//
-//                    default:
-//                        data.append(cell + ";")
-//                }
-//
-//            }
-//
-//        }
-        println new StringBuilderWrapper('files converted...')
+        println new StringBuilderWrapper('file converted...')
         fos.write(data.toString().getBytes(StandardCharsets.UTF_8))
-        fos.close()
-
-        // Finish action checkpoint
-        timeFinish = System.currentTimeMillis()
+        fos.flush()
 
     }
     catch (FileNotFoundException e) {
         e.printStackTrace()
+    } finally {
+        if (fos != null)
+            fos.close()
     }
-    catch (IOException e) {
-        e.printStackTrace()
-    }
+
+    // Finish action checkpoint
+    def timeFinish = System.currentTimeMillis()
 
     // Measure time execution
     def timeElapsed = (timeFinish - timeStart) / 1000
@@ -453,40 +429,44 @@ task importData(dependsOn: xls2Csv, description: project.properties['import.desc
     def streamErrorFile = "${project.properties['logPath']}/${project.properties['importData.streamErrFileName']}"
 
     def bosOut = new ByteArrayOutputStream(), bosErr = new ByteArrayOutputStream()
-    def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
+    def sOut = new StringBuilderWrapper(), sErr = new StringBuilderWrapper()
     exec {
         executable "sqlldr"
         args "USERID=${project.properties['db.userName']}/${project.properties['db.password']}@${project.properties['db.tnsName']} " +
-                "CONTROL=${project.properties['basePath']}/${project.properties['import.controlFileName']} DATA=$dataFile LOG=$logFile DISCARD=$discardFile BAD=$badFile"
+             "CONTROL=${project.properties['basePath']}/${project.properties['import.controlFileName']} " +
+             "DATA=${dataFile} " +
+             "LOG=${logFile} " +
+             "DISCARD=${discardFile} " +
+             "BAD=${badFile}"
         standardOutput = bosOut
         errorOutput = bosErr
     }
     def bisOut = new ByteArrayInputStream(bosOut.toByteArray())
     bisOut.withReader { out->
         out.eachLine {
-            sout.append(it).append('\n')
+            sOut.append(it).append('\n')
         }
     }
     def bisErr = new ByteArrayInputStream(bosErr.toByteArray())
     bisErr.withReader { out ->
         out.eachLine {
-            serr.append(it).append('\n')
+            sErr.append(it).append('\n')
         }
     }
 
-    // Write to console
-    /*
-     *  When import prefer to write stream log to console (it's shorter)
-     * */
-    System.out.println(sout.toString())
+    /**
+     *  Write to console.
+     *  When import prefer to write stream log to console (it's shorter).
+     */
+    System.out.println(sOut.toString())
 
     // Write to logfile
     File f = new File(streamLogFile)
-    f.write(sout.toString())
+    f.write(sOut.toString())
 
     // Write to error file
     f = new File(streamErrorFile)
-    f.write(serr.toString())
+    f.write(sErr.toString())
 
     // Finish action checkpoint
     def timeFinish = System.currentTimeMillis()
@@ -527,35 +507,39 @@ task loadStage(dependsOn: importData, description: project.properties['loadStage
               contextPath: "${project.properties['basePath']}",
               logfileProcedureDrug: logFileProcedureDrug,
               logfileMapDrugVocabulary: logFileMapDrugVocabulary]
-    def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
-    def sqlplus = """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile} ${db.contextPath} ${db.logfileProcedureDrug} ${db.logfileMapDrugVocabulary}""".execute()
-    sqlplus.consumeProcessOutput(sout, serr)
-    sqlplus.waitFor()
+    def sOut = new StringBuilderWrapper(), sErr = new StringBuilderWrapper()
+    def sqlPlus = """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile} ${db.contextPath} ${db.logfileProcedureDrug} ${db.logfileMapDrugVocabulary}""".execute()
+    sqlPlus.consumeProcessOutput(sOut, sErr)
+    sqlPlus.waitFor()
 
     // Finish action checkpoint
     def timeFinish = System.currentTimeMillis()
 
-    // Write to console
-    try {
-        System.out.println(StringBuilderWrapper.readFromFile(new File(logFile)))
-        System.out.println(StringBuilderWrapper.readFromFile(new File(logFileProcedureDrug)))
-        System.out.println(StringBuilderWrapper.readFromFile(new File(logFileMapDrugVocabulary)))
-    } catch (IOException ioe) {
-        // Write whole SQLPlus's log
-        System.out.println(sout.toString())
-    }
+    /**
+     * Write to console.
+     * Write compact SQLPlus's spool log
+     */
+    File lf = new File(logFile)
+    if (lf.exists())
+        System.out.println(StringBuilderWrapper.readFromFile(lf))
+    lf = new File(logFileProcedureDrug)
+    if (lf.exists())
+        System.out.println(StringBuilderWrapper.readFromFile(lf))
+    lf = new File(logFileMapDrugVocabulary)
+    if (lf.exists())
+        System.out.println(StringBuilderWrapper.readFromFile(lf))
 
     // Write to logfile
     File f = new File(streamLogFile)
-    f.write(sout.toString())
+    f.write(sOut.toString())
 
     // Write to error file
     f = new File(streamErrorFile)
-    f.write(serr.toString())
+    f.write(sErr.toString())
 
     /* Check for errors */
-    if (project.properties['stop.on.error'].toBoolean() && (sqlplus.exitValue() != 0 || (serr != null && serr.toString().length() > 0))) {
-        throw new GradleException(String.format(project.properties['error.message.with.code'], sqlplus.exitValue(), name))
+    if (Boolean.valueof(project.properties['stop.on.error'].toString()) && (sqlPlus.exitValue() != 0 || (sErr != null && sErr.toString().length() > 0))) {
+        throw new GradleException(String.format(project.properties['error.message.with.code'], sqlPlus.exitValue(), name))
     }
 
     // Measure time execution
@@ -589,34 +573,33 @@ task genericUpdate(dependsOn: loadStage, description: project.properties['generi
               tns: project.properties['db.tnsName'],
               sqlfile: sqlFile,
               logfile: logFile]
-    def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
-    def sqlplus = """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
-    sqlplus.consumeProcessOutput(sout, serr)
-    sqlplus.waitFor()
+    def sOut = new StringBuilderWrapper(), sErr = new StringBuilderWrapper()
+    def sqlPlus = """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
+    sqlPlus.consumeProcessOutput(sOut, sErr)
+    sqlPlus.waitFor()
 
     // Finish action checkpoint
     def timeFinish = System.currentTimeMillis()
 
-    // Write to console
-    try {
-        // Write compact SQLPlus's spool log
-        System.out.println(StringBuilderWrapper.readFromFile(new File(logFile)))
-    } catch (IOException ioe) {
-        // Write whole SQLPlus's log
-        System.out.println(sout.toString())
-    }
+    /**
+     * Write to console.
+     * Write compact SQLPlus's spool log
+     */
+    File lf = new File(logFile)
+    if (lf.exists())
+        System.out.println(StringBuilderWrapper.readFromFile(lf))
 
     // Write to logfile
     File f = new File(streamLogFile)
-    f.write(sout.toString())
+    f.write(sOut.toString())
 
     // Write to error file
     f = new File(streamErrorFile)
-    f.write(serr.toString())
+    f.write(sErr.toString())
 
     /* Check for errors */
-    if (project.properties['stop.on.error'].toBoolean() && (sqlplus.exitValue() != 0 || (serr != null && serr.toString().length() > 0))) {
-        throw new GradleException(String.format(project.properties['error.message.with.code'], sqlplus.exitValue(), name))
+    if (Boolean.valueOf(project.properties['stop.on.error'].toString()) && (sqlPlus.exitValue() != 0 || (sErr != null && sErr.toString().length() > 0))) {
+        throw new GradleException(String.format(project.properties['error.message.with.code'], sqlPlus.exitValue(), name))
     }
 
     // Measure time execution
@@ -649,34 +632,33 @@ task checkUpdateResults(dependsOn: genericUpdate, description: project.propertie
               tns: project.properties['db.tnsName'],
               sqlfile: sqlFile,
               logfile: logFile]
-    def sout = new StringBuilderWrapper(), serr = new StringBuilderWrapper()
-    def sqlplus = """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
-    sqlplus.consumeProcessOutput(sout, serr)
-    sqlplus.waitFor()
+    def sOut = new StringBuilderWrapper(), sErr = new StringBuilderWrapper()
+    def sqlPlus = """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
+    sqlPlus.consumeProcessOutput(sOut, sErr)
+    sqlPlus.waitFor()
 
     // Finish action checkpoint
     def timeFinish = System.currentTimeMillis()
 
-    // Write to console
-    try {
-        // Write compact SQLPlus's spool log
-        System.out.println(StringBuilderWrapper.readFromFile(new File(logFile)))
-    } catch (IOException ioe) {
-        // Write whole SQLPlus's log
-        System.out.println(sout.toString())
-    }
+    /**
+     * Write to console.
+     * Write compact SQLPlus's spool log
+     */
+    File lf = new File(logFile)
+    if (lf.exists())
+        System.out.println(StringBuilderWrapper.readFromFile(lf))
 
     // Write to log file
     File f = new File(streamLogFile)
-    f.write(sout.toString())
+    f.write(sOut.toString())
 
     // Write to error file
     f = new File(streamErrorFile)
-    f.write(serr.toString())
+    f.write(sErr.toString())
 
     /* Check for errors */
-    if (project.properties['stop.on.error'].toBoolean() && (sqlplus.exitValue() != 0 || (serr != null && serr.toString().length() > 0))) {
-        throw new GradleException(String.format(project.properties['error.message.with.code'], sqlplus.exitValue(), name))
+    if (Boolean.valueOf(project.properties['stop.on.error'].toString()) && (sqlPlus.exitValue() != 0 || (sErr != null && sErr.toString().length() > 0))) {
+        throw new GradleException(String.format(project.properties['error.message.with.code'], sqlPlus.exitValue(), name))
     }
 
     // Measure time execution
