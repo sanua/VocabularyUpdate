@@ -66,8 +66,8 @@ PROMPT Remove leading and trailing spaces...
 UPDATE concept_stage
    SET concept_name = TRIM (concept_name)
  WHERE concept_name <> TRIM (concept_name);
- 
- --remove long dashes
+
+ --remove long dashes (NOT WORKING)
 PROMPT Remove long dashes...
 UPDATE concept_stage
    SET concept_name = REPLACE (concept_name, '–', '-')

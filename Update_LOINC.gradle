@@ -734,7 +734,7 @@ public class Xls2CsvHelper {
         boolean doubleQuiotesProcessed = false
         // Replace all number of double quotes by twice double quotes
         if (result.indexOf("\"") >= 0) {
-            result = result.replaceAll("(\"+)", "\"\"");
+            result = result.replaceAll("(\"{1,1})", "\"\"");
             doubleQuiotesProcessed = true;
         }
         // Replace all double quotes by
