@@ -116,33 +116,33 @@ class StringHelper {
     public static final String CSV_FIELD_SEPARATOR = ";"
 
     static String normalizeString(String value) {
-        String result = new String(value)
+        String result = new String(value);
         // If empty - just return
         if (StringUtils.isBlank(value))
-            return result
-        boolean doubleQuiotesProcessed = false
+            return result;
+        boolean doubleQuotesProcessed = false
         // Replace all number of double quotes by twice double quotes
         if (result.indexOf("\"") >= 0) {
-            result = result.replaceAll("(\"+)", "\"\"")
-            doubleQuiotesProcessed = true
+            result = result.replaceAll("(\"{1,1})", "\"\"");
+            doubleQuotesProcessed = true;
         }
         // Replace all double quotes by
-        if (result.indexOf(CSV_FIELD_SEPARATOR) >= 0 || doubleQuiotesProcessed) {
-            result = String.format("\"%s\"", result)
+        if (result.indexOf(CSV_FIELD_SEPARATOR) >= 0 || doubleQuotesProcessed) {
+            result = String.format("\"%s\"", result);
         }
         // Replace all carriage return to space
         if (result.indexOf("\n") >= 0) {
-            result = result.replaceAll("\n", " ")
+            result = result.replaceAll("\n", " ");
         }
         // Replace all carriage return to space
         if (result.indexOf("\r") >= 0) {
-            result = result.replaceAll("\r", " ")
+            result = result.replaceAll("\r", " ");
         }
-        // Replace x8093 hex chars after hyphens
+        // Replace the 'EN DASH' (U+2013) by the 'HYPHEN-MINUS' (U+002D)
         if (result.indexOf("\u2013") >= 0) {
-            result = result.replaceAll("\u2013", "\u002D")
+            result = result.replaceAll("\u2013", "\u002D");
         }
-        return result
+        return result;
     }
 }
 

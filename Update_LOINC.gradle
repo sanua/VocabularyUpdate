@@ -731,14 +731,14 @@ public class Xls2CsvHelper {
         // If empty - just return
         if (StringUtils.isBlank(value))
             return result;
-        boolean doubleQuiotesProcessed = false
+        boolean doubleQuotesProcessed = false
         // Replace all number of double quotes by twice double quotes
         if (result.indexOf("\"") >= 0) {
             result = result.replaceAll("(\"{1,1})", "\"\"");
-            doubleQuiotesProcessed = true;
+            doubleQuotesProcessed = true;
         }
         // Replace all double quotes by
-        if (result.indexOf(CSV_FIELD_SEPARATOR) >= 0 || doubleQuiotesProcessed) {
+        if (result.indexOf(CSV_FIELD_SEPARATOR) >= 0 || doubleQuotesProcessed) {
             result = String.format("\"%s\"", result);
         }
         // Replace all carriage return to space
