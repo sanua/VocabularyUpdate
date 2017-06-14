@@ -129,6 +129,18 @@ import java.util.stream.Collectors;
  * Created by Sanders on 5/23/2017.
  */
 
+public class IllegalUpdateStateException extends Exception {
+    public IllegalUpdateStateException(String message) {
+        super(message);
+    }
+    public IllegalUpdateStateException(Throwable cause) {
+        super(cause);
+    }
+    public IllegalUpdateStateException(String message, Throwable cause) {
+        super(message, cause);
+    }
+}
+
 public class DownloadResourceHelper {
     /**
      * Names of using cookies.
@@ -140,6 +152,7 @@ public class DownloadResourceHelper {
     public static final String COOKIE_JSESSIONID = "JSESSIONID";
     public static final String COOKIE_CASTGC = "CASTGC";
     public static final String COOKIE_MOD_AUTH_CAS = "MOD_AUTH_CAS";
+    public static final int NUMBER_OF_ATTEMPTS = 3;
 
     private CloseableHttpClient httpClient;
     private File downloadPath;
@@ -168,46 +181,46 @@ public class DownloadResourceHelper {
     /**
      * Contructor
      */
-        private DownloadResourceHelper() {
-            this(null);
-        }
+    private DownloadResourceHelper() {
+        this(null);
+    }
 
-        private DownloadResourceHelper(File downloadPath) {
-            if (downloadPath == null || !downloadPath.exists()) {
-                // Prepare temporary storage for content
-                this.downloadPath = Files.createTempDir();
-                this.tempDir.deleteOnExit();
-            } else
-                this.downloadPath = downloadPath;
+    private DownloadResourceHelper(File downloadPath) {
+        if (downloadPath == null || !downloadPath.exists()) {
+            // Prepare temporary storage for content
+            this.downloadPath = Files.createTempDir();
+            this.tempDir.deleteOnExit();
+        } else
+            this.downloadPath = downloadPath;
 
-            this.localCookieStore = new ArrayList<Cookie>();
+        this.localCookieStore = new ArrayList<Cookie>();
 
-            // Create HttpClient
-            this.httpClient = HttpClients.custom()
-                    .disableCookieManagement()
-                    .disableRedirectHandling()
-                    .addInterceptorLast(new HttpRequestInterceptor() {
-                public void process(HttpRequest httpRequest, HttpContext httpContext) throws HttpException, IOException {
-                    /**
-                     * Add common request headers
-                     */
-                    httpRequest.addHeader("Connection", "keep-alive");
-                    httpRequest.addHeader("Upgrade-Insecure-Requests", "1");
-                    httpRequest.addHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36");
-                    httpRequest.addHeader("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8");
-                    httpRequest.addHeader("Accept-Encoding", "gzip, deflate, sdch, br");
-                    httpRequest.addHeader("Accept-Language", "en-US,en;q=0.8,ru;q=0.6,uk;q=0.4");
-                    httpRequest.addHeader("Cache-Control", "no-cache");
-                    httpRequest.addHeader("Pragma", "no-cache");
-                }
-            }).addInterceptorLast(new HttpResponseInterceptor() {
-                public void process(HttpResponse httpResponse, HttpContext httpContext) throws HttpException, IOException {
-                    /**
-                     * Adding of cookie from response to class-level local storage.
-                     */
-                    saveClientCookie(httpResponse);
-                }
-            }).build();
+        // Create HttpClient
+        this.httpClient = HttpClients.custom()
+                .disableCookieManagement()
+                .disableRedirectHandling()
+                .addInterceptorLast(new HttpRequestInterceptor() {
+            public void process(HttpRequest httpRequest, HttpContext httpContext) throws HttpException, IOException {
+                /**
+                 * Add common request headers
+                 */
+                httpRequest.addHeader("Connection", "keep-alive");
+                httpRequest.addHeader("Upgrade-Insecure-Requests", "1");
+                httpRequest.addHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36");
+                httpRequest.addHeader("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8");
+                httpRequest.addHeader("Accept-Encoding", "gzip, deflate, sdch, br");
+                httpRequest.addHeader("Accept-Language", "en-US,en;q=0.8,ru;q=0.6,uk;q=0.4");
+                httpRequest.addHeader("Cache-Control", "no-cache");
+                httpRequest.addHeader("Pragma", "no-cache");
+            }
+        }).addInterceptorLast(new HttpResponseInterceptor() {
+            public void process(HttpResponse httpResponse, HttpContext httpContext) throws HttpException, IOException {
+                /**
+                 * Adding of cookie from response to class-level local storage.
+                 */
+                saveClientCookie(httpResponse);
+            }
+        }).build();
     }
 
     /**
@@ -431,100 +444,44 @@ public class DownloadResourceHelper {
         return singleIntance;
     }
 
-    // Login and download resource
-    public String downloadResourceUmls(String loginUrl, String userName, String password, String fileUrl, String fileName) throws IOException {
+    public String repeatableDownloadResourceUmls(String loginUrl, String userName, String password, String fileUrl, String fileName, String packageDescription) throws IllegalUpdateStateException {
+        /**
+         * Try three times redownload if error occurs
+         */
+        return downloadResourceUmls(loginUrl, userName, password, fileUrl, fileName, packageDescription, true, NUMBER_OF_ATTEMPTS);
+    }
+
+    public String downloadResourceUmls(String loginUrl, String userName, String password, String fileUrl, String fileName, String packageDescription) throws IllegalUpdateStateException {
+        return downloadResourceUmls(loginUrl, userName, password, fileUrl, fileName, packageDescription, false, 0);
+    }
+
+    // Just download UMLS routine
+    private String downloadUmls(String fileUrl, String fileName, packageDescription, boolean isTryRedownload, int numberOfTries) throws IllegalUpdateStateException {
         CloseableHttpResponse response = null;
-        // REQUEST 1
-        // Just to get first JSESSION cookie
-        try {
-            HttpGet request = prepareGet(loginUrl);
-            response = httpClient.execute(request);
-
-            // Remember dynamically generated presumably "Login Ticket" form parameter
-            String responseBody = EntityUtils.toString(response.getEntity()).trim();
-            Pattern ltPattern = Pattern.compile("name=\"lt\" value=\"(\\w+)\"");
-            Matcher m = ltPattern.matcher(responseBody);
-            while (m.find()) {
-                this.ltParam = m.group(1);
-            }
-        } catch (Exception e) {
-            System.out.println("Error occurs: " + e.getMessage());
-            e.printStackTrace();
-        } finally {
-            if (response != null) {
-                response.close();
-            }
-        }
-
-        // REQUEST 2
-        // Login
-        try {
-            Map<String, String> params = new HashMap<String, String>();
-            params.put("username", userName);
-            params.put("password", password);
-            params.put("lt", this.ltParam);
-            params.put("_eventId", "submit");
-            params.put("submit", "Sign In");
-            List<Cookie> cookies = new ArrayList<>();
-            cookies.add(getClientCookie(COOKIE_JSESSIONID));
-            HttpPost request = preparePost(loginUrl, params, cookies);
-            request.addHeader("Content-Type", "application/x-www-form-urlencoded");
-            response = httpClient.execute(request);
-
-        } catch (Exception e) {
-            System.out.println("Exception occurs: " + e.getMessage());
-            e.printStackTrace();
-        } finally {
-            if (response != null)
-                response.close();
-        }
-
-        // REQUEST 3
-        // Get ticket for requested resource
-        try {
-            List<Cookie> cookies = new ArrayList<>();
-            cookies.add(getClientCookie(COOKIE_JSESSIONID));
-            cookies.add(getClientCookie(COOKIE_CASTGC));
-            HttpGet request = prepareGet(fileUrl, cookies);
-            response = httpClient.execute(request);
-
-            /**
-             * Get URL for further processing
-             */
-            fileUrl = getResponseHeaderValue(response, "Location");
-        } catch (Exception e) {
-            System.out.println("Error occurs: " + e.getMessage());
-            e.printStackTrace();
-        } finally {
-            if (response != null)
-                response.close();
-        }
-
-        // REQUEST 4
-        // Authorize on download service
-        try {
-            HttpGet request = prepareGet(fileUrl);
-            response = httpClient.execute(request);
-
-            /**
-             * Get URL for further processing
-             */
-            fileUrl = getResponseHeaderValue(response,"Location");
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            if (response != null)
-                response.close();
-        }
-
-        // REQUEST 5
-        // Download resource
         OutputStream outputStream = null;
         try {
             List<Cookie> cookies = new ArrayList<>();
             cookies.add(getClientCookie(COOKIE_MOD_AUTH_CAS));
             HttpGet request = prepareGet(fileUrl, cookies);
             response = httpClient.execute(request);
+
+            int responseCode = response.getStatusLine().getStatusCode();
+            if (responseCode != HttpStatus.SC_OK) {
+                numberOfTries--;
+                if (isTryRedownload && numberOfTries >= 0) {
+                    try {
+                        if (response != null) {
+                            response.close();
+                        }
+                    } catch (IOException ioe) {}
+                    System.out.println(String.format("Attention!\nThere is some problem of content downloading: %s.\nTry again, attempt %d of %d....", response.getStatusLine(), NUMBER_OF_ATTEMPTS - numberOfTries, NUMBER_OF_ATTEMPTS));
+                    return downloadUmls(fileUrl, fileName, packageDescription, isTryRedownload, numberOfTries);
+                } else {
+                    throw new IllegalUpdateStateException(new HttpException(String.format("Unable to download %s\n%s", packageDescription, response.getStatusLine())));
+                }
+            } else if (getResponseHeaderValue(response, "Content-Type").indexOf("zip") < 0) {
+                throw new IllegalUpdateStateException(new HttpException(String.format("%s is not a ZIP archive", packageDescription)));
+            }
 
             // Buffer response content
             BufferedHttpEntity bufEntity = new BufferedHttpEntity(response.getEntity());
@@ -544,23 +501,107 @@ public class DownloadResourceHelper {
             outputStream = new FileOutputStream(new File(filePath));
             IOUtils.copy(bufEntity.getContent(), outputStream);
             outputStream.flush();
-            
-            return fileName;
-        } catch (Exception e) {
-            System.out.println("Error occurs: " + e.getMessage());
-            e.printStackTrace();
-        } finally {
-            if (response != null) {
-                response.close();
-            }
 
-            if (outputStream != null) {
+        } catch (Exception e) {
+            throw new IllegalUpdateStateException(e);
+        } finally {
+            if (response != null)
+                response.close();
+            if (outputStream != null)
                 outputStream.close();
-            }
         }
+        return fileName;
     }
 
-    public boolean loginLoinc(String loginUrl, String userName, String password) throws IOException {
+    // Login and download resource
+    public String downloadResourceUmls(String loginUrl, String userName, String password, String fileUrl, String fileName, String packageDescription, boolean isTryRedownload, int numberOfTries) throws IllegalUpdateStateException {
+        CloseableHttpResponse response = null;
+        // REQUEST 1
+        // Just to get first JSESSION cookie
+        try {
+            HttpGet request = prepareGet(loginUrl);
+            response = httpClient.execute(request);
+
+            // Remember dynamically generated presumably "Login Ticket" form parameter
+            String responseBody = EntityUtils.toString(response.getEntity()).trim();
+            Pattern ltPattern = Pattern.compile("name=\"lt\" value=\"(\\w+)\"");
+            Matcher m = ltPattern.matcher(responseBody);
+            while (m.find()) {
+                this.ltParam = m.group(1);
+            }
+        } catch (Exception e) {
+            throw new IllegalUpdateStateException(e);
+        } finally {
+            if (response != null)
+                response.close();
+        }
+
+        // REQUEST 2
+        // Login
+        System.out.println "${new StringBuilderWrapper("Login UMLS service...")}"
+        try {
+            Map<String, String> params = new HashMap<String, String>();
+            params.put("username", userName);
+            params.put("password", password);
+            params.put("lt", this.ltParam);
+            params.put("_eventId", "submit");
+            params.put("submit", "Sign In");
+            List<Cookie> cookies = new ArrayList<>();
+            cookies.add(getClientCookie(COOKIE_JSESSIONID));
+            HttpPost request = preparePost(loginUrl, params, cookies);
+            request.addHeader("Content-Type", "application/x-www-form-urlencoded");
+            response = httpClient.execute(request);
+
+        } catch (Exception e) {
+            throw new IllegalUpdateStateException(e);
+        } finally {
+            if (response != null)
+                response.close();
+        }
+
+        // REQUEST 3
+        // Get ticket for requested resource
+        try {
+            List<Cookie> cookies = new ArrayList<>();
+            cookies.add(getClientCookie(COOKIE_JSESSIONID));
+            cookies.add(getClientCookie(COOKIE_CASTGC));
+            HttpGet request = prepareGet(fileUrl, cookies);
+            response = httpClient.execute(request);
+
+            /**
+             * Get URL for further processing
+             */
+            fileUrl = getResponseHeaderValue(response, "Location");
+        } catch (Exception e) {
+            throw new IllegalUpdateStateException(e);
+        } finally {
+            if (response != null)
+                response.close();
+        }
+
+        // REQUEST 4
+        // Authorize on download service
+        try {
+            HttpGet request = prepareGet(fileUrl);
+            response = httpClient.execute(request);
+
+            /**
+             * Get URL for further processing
+             */
+            fileUrl = getResponseHeaderValue(response,"Location");
+        } catch (Exception e) {
+            throw new IllegalUpdateStateException(e);
+        } finally {
+            if (response != null)
+                response.close();
+        }
+
+        // REQUEST 5
+        // Download resource
+        return downloadUmls(fileUrl, fileName, packageDescription, isTryRedownload, numberOfTries);
+    }
+
+    public boolean loginLoinc(String loginUrl, String userName, String password) throws IllegalUpdateStateException {
         CloseableHttpResponse response = null;
         // Login LOINC services
         try {
@@ -571,19 +612,27 @@ public class DownloadResourceHelper {
             HttpPost request = preparePost(loginUrl, params);
             response = httpClient.execute(request);
 
-            return true;
+            return (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK);
         } catch (Exception e) {
-            System.out.println("Error occurs: " + e.getMessage());
-            e.printStackTrace();
-            return false;
+            throw new IllegalUpdateStateException(e);
         } finally {
-            if (response != null) {
+            if (response != null)
                 response.close();
-            }
         }
     }
 
-    public String downloadResourceLoinc(String fileUrl, String fileName, String packageDescription) throws IOException {
+    public String downloadResourceLoinc(String fileUrl, String fileName, String packageDescription) throws IllegalUpdateStateException {
+        return downloadResourceLoinc(fileUrl, fileName, packageDescription, false, 0);
+    }
+
+    public String repeatableDownloadResourceLoinc(String fileUrl, String fileName, String packageDescription) throws IllegalUpdateStateException {
+        /**
+         * Try three times redownload if error occurs
+         */
+        return downloadResourceLoinc(fileUrl, fileName, packageDescription, true, NUMBER_OF_ATTEMPTS);
+    }
+
+    public String downloadResourceLoinc(String fileUrl, String fileName, String packageDescription, boolean isTryRedownload, int numberOfTries) throws IllegalUpdateStateException {
         OutputStream outputStream = null;
         CloseableHttpResponse response = null;
         try {
@@ -596,9 +645,20 @@ public class DownloadResourceHelper {
 
             int responseCode = response.getStatusLine().getStatusCode();
             if (responseCode != HttpStatus.SC_OK) {
-                throw new HttpException(String.format("Unable to download %s", packageDescription));
+                numberOfTries--;
+                if (isTryRedownload && numberOfTries > 0) {
+                    try {
+                        if (response != null) {
+                            response.close();
+                        }
+                    } catch (IOException ioe) {}
+                    System.out.println(String.format("Attention!\nThere is some problem of content downloading: %s.\nTry again, attempt %d of %d....", response.getStatusLine(), NUMBER_OF_ATTEMPTS - numberOfTries, NUMBER_OF_ATTEMPTS));
+                    return downloadResourceLoinc(fileUrl, fileName, packageDescription, isTryRedownload, numberOfTries);
+                } else {
+                    throw new IllegalUpdateStateException(new HttpException(String.format("Unable to download %s\n%s", packageDescription, response.getStatusLine())));
+                }
             } else if (getResponseHeaderValue(response, "Content-Type").indexOf("zip") < 0) {
-                throw new HttpException(String.format("%ы is not a ZIP archive", packageDescription));
+                throw new IllegalUpdateStateException(new HttpException(String.format("%s is not a ZIP archive", packageDescription)));
             }
 
             // Buffer response content
@@ -615,261 +675,28 @@ public class DownloadResourceHelper {
             String filePath = String.format("%s%s%s", this.downloadPath.getPath(), File.separator, fileName);
 
             String contentLength = getResponseHeaderValue(response,"Content-Length");
-            System.out.println(String.format("Downloaded '%s' file with %s bytes", fileName, contentLength));
+            System.out.println(new StringBuilderWrapper(String.format("Downloaded '%s' file with %s bytes", fileName, contentLength)));
 
             // Save file to stream
             outputStream = new FileOutputStream(new File(filePath));
             IOUtils.copy(bufEntity.getContent(), outputStream);
             outputStream.flush();
-            
-            return fileName;
+
         } catch (Exception e) {
-            System.out.println("Error occurs: " + e.getMessage());
-            e.printStackTrace();
+            throw new IllegalUpdateStateException(e);
         } finally {
-            if (response != null) {
+            if (response != null)
                 response.close();
-            }
-            if (outputStream != null) {
+            if (outputStream != null)
                 outputStream.close();
-            }
         }
+        return fileName;
     }
 }
 
 /**
  * Created by Sanders on 5/26/2017.
  */
-public class Xls2CsvHelper {
-    
-    private File convertPath;
-    private static Xls2CsvHelper singleInstance;
-
-    private Xls2CsvHelper() {
-        this(null);
-    }
-
-    private Xls2CsvHelper(File convertPath) {
-        if (convertPath == null || !convertPath.exists()) {
-            this.convertPath = Files.createTempDir()
-        } else
-            this.convertPath = convertPath;
-    }
-
-    public static Xls2CsvHelper getXls2CsvHelper(File convertPath) {
-        if (singleInstance == null) {
-            singleInstance = new Xls2CsvHelper(convertPath);
-        }
-        return singleInstance;
-    }
-
-    private String convertSheetByName(Workbook workbook) {
-        return convertSheetByName(workbook, null, null);
-    }
-
-    private String normalizeString(String value) {
-        String result = new String(value);
-        // If empty - just return
-        if (StringUtils.isBlank(value))
-            return result;
-        boolean doubleQuotesProcessed = false
-        // Replace all number of double quotes by twice double quotes
-        if (result.indexOf("\"") >= 0) {
-            result = result.replaceAll("(\"{1,1})", "\"\"");
-            doubleQuotesProcessed = true;
-        }
-        // Replace all double quotes by
-        if (result.indexOf(CSV_FIELD_SEPARATOR) >= 0 || doubleQuotesProcessed) {
-            result = String.format("\"%s\"", result);
-        }
-        // Replace all carriage return to space
-        if (result.indexOf("\n") >= 0) {
-            result = result.replaceAll("\n", " ");
-        }
-        // Replace all carriage return to space
-        if (result.indexOf("\r") >= 0) {
-            result = result.replaceAll("\r", " ");
-        }
-        // Replace the 'EN DASH' (U+2013) by the 'HYPHEN-MINUS' (U+002D)
-        if (result.indexOf("\u2013") >= 0) {
-            result = result.replaceAll("\u2013", "\u002D");
-        }
-        return result;
-    }
-
-    private String convertSheetByName(Workbook workbook, String name, String skipColumnsAfterName) {
-        /**
-         * Get Sheet by name of first sheet is name is not specified.
-         */
-        Sheet sheet = null;
-        if (StringUtils.isNotBlank(name)) {
-            for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
-                sheet = workbook.getSheetAt(i);
-                if (sheet.getSheetName().equalsIgnoreCase(name)) {
-                    break;
-                }
-            }
-            if (sheet == null)
-                throw new IllegalArgumentException(String.format("No Excel Sheet found for name: %s", name));
-        } else
-            sheet = workbook.getSheetAt(0);
-        /**
-         * Read data from cells
-         */
-        int skipColumnNumber = Integer.MAX_VALUE;
-        StringBuffer data = new StringBuffer();
-        for (int i = 0; i <= sheet.getLastRowNum(); i++) {
-            Row row = sheet.getRow(i);
-            boolean isCheckColumnsSkip = (i ==0 && StringUtils.isNotBlank(skipColumnsAfterName));
-            if (row != null) {
-                cell_loop:
-                for (int j = 0; j < row.getLastCellNum(); j++) {
-                    Cell cell = row.getCell(j);
-                    if (cell == null) {
-                        data.append(";");
-                    } else {
-                        cell.setCellType(Cell.CELL_TYPE_STRING);
-                        String cellText = cell.toString().trim();
-                        if (isCheckColumnsSkip  && cellText.equalsIgnoreCase(skipColumnsAfterName)) {
-                            skipColumnNumber = j;
-                        }
-                        if (j <= skipColumnNumber) {
-                            data.append(normalizeString(cellText));
-                            if (j < skipColumnNumber && (j < row.getLastCellNum())) {
-                                data.append(";");
-                            }
-                        } else
-                            break cell_loop;
-                    }
-                }
-                data.append('\n');
-            }
-        }
-        return data.toString();
-    }
-
-    public void convertHcpcs(String inputFile, String outputFile) throws IOException {
-        System.out.println("\n\tConversion of HCPCS data started");
-        File f = new File(outputFile.substring(0, outputFile.lastIndexOf(File.separator) + 1));
-        if (!f.exists()) {
-            f.mkdir();
-        } else {
-            FileUtils.cleanDirectory(f);
-        }
-        /**
-         * For storing data into CSV files
-         */
-        String data;
-        FileOutputStream fos = null;
-        try {
-            fos = new FileOutputStream(outputFile);
-            /**
-             * Get the workbook object for XLS file
-             */
-            Workbook workbook = WorkbookFactory.create(new FileInputStream(inputFile));
-            /**
-             * Get data from default (first) sheet and save to file
-             */
-            data = convertSheetByName(workbook);
-            fos.write(data.getBytes(StandardCharsets.UTF_8));
-            fos.flush();
-            System.out.println("\tConversion of HCPCS data done");
-        } catch (Exception e) {
-            System.out.println("Error occurs: " + e.getMessage());
-            e.printStackTrace();
-        } finally {
-            if (fos != null) {
-                fos.close();
-            }
-        }
-    }
-
-    public void convertLoinc(String inputFile, String destFolder, Map<String, String> sheetNameFilePathMap, Map<String, String> sheetNameSkiptColumnsAfterNameMap) throws IOException {
-        System.out.println("\n\tConversion of LOINC data started");
-        /**
-         * Check if input Except file exists
-         */
-        File inputFileFullPath = new File(this.convertPath, inputFile);
-        if (!inputFileFullPath.exists()) {
-            throw new IOException(String.format("No input excel file found by name: %s", inputFileFullPath));
-        }
-        /**
-         * Check output folder exists, if not - create it, otherwise - clean it
-         */
-        File outPath = new File(this.convertPath, destFolder);
-        if (!outPath.exists()) {
-            outPath.mkdir();
-        } else {
-            FileUtils.cleanDirectory(outPath);
-        }
-
-        String data;
-        FileOutputStream fos = null;
-        try {
-            /**
-             * Get the workbook object for XLS file
-             */
-            Workbook workbook = WorkbookFactory.create(new FileInputStream(inputFileFullPath));
-
-            Iterator<Map.Entry<String, String>> it = sheetNameFilePathMap.entrySet().iterator();
-            while (it.hasNext()) {
-                Map.Entry<String, String> sheetPathEntry = it.next();
-                String sheetName = sheetPathEntry.getKey();
-                String fileName = sheetPathEntry.getValue();
-                String skipColumnsAfterName = sheetNameSkiptColumnsAfterNameMap.get(sheetName);
-                /**
-                 * Get data from first sheet "ANSWERS" and save to file
-                 */
-                data = convertSheetByName(workbook, sheetName, skipColumnsAfterName);
-                
-                File savedFilePath = new File(outPath, fileName);
-                sheetPathEntry.setValue(savedFilePath);
-                System.out.println(String.format("\tConversion of Sheet '%s' done. Saved to: '%s'.", sheetName, savedFilePath.getPath()));
-                fos = new FileOutputStream(savedFilePath);
-                fos.write(data.getBytes(StandardCharsets.UTF_8));
-                fos.flush();
-            }
-            System.out.println("\tConversion of LOINC data done");
-        } catch (Exception e) {
-            System.out.println("Error occurs: " + e.getMessage());
-            e.printStackTrace();
-        } finally {
-            if (fos != null) {
-                fos.close();
-            }
-        }
-    }
-
-    public static List<File> getFilesByName(File folder, String nameTemplate, boolean strictSearch) {
-        return getFilesByName(folder, nameTemplate, null, strictSearch);
-    }
-
-    public static List<File> getFilesByName(File folder, String nameTemplate, String excludeExtension, boolean strictSearch) {
-        File[] matchedFiles = folder.listFiles(new FilenameFilter() {
-            @Override
-            boolean accept(File dir, String name) {
-                return name.toLowerCase().indexOf(nameTemplate.trim().toLowerCase()) >= 0 &&
-                        (StringUtils.isBlank(excludeExtension) || !name.endsWith("." + excludeExtension));
-            }
-        })
-        List<File> foundFiles = Arrays.asList(matchedFiles);
-
-        if (strictSearch) {
-            if (foundFiles.empty)
-                throw new GradleException("No file found by name: ${nameTemplate}");
-            else if (foundFiles.size() > 1)
-                throw new GradleException("More than one files found by name: '${nameTemplate}'");
-        }
-        return foundFiles;
-    }
-
-    public static String copy(String from, String to) {
-        Path copyFrom = Paths.get(from);
-        Path copyTo = Paths.get(to);
-        Path targetFile = Files.copy(copyFrom, copyTo, StandardCopyOption.REPLACE_EXISTING);
-        return targetFile.normalize().toString();
-    }
-}
 /**
  * Auxiliary classes. TODO: Further should be used java-defined and compiled only
  */
@@ -1082,9 +909,8 @@ task downloadUpdatePack(dependsOn: createSourceTable, description: project.prope
 
     String fileUrl = project.properties['downloadUpdatePack.umlsFull.fileUrl']
     String defaultFileName = project.properties['downloadUpdatePack.umlsFull.fileName']
-    String downloadedFileName = downloadHelper.downloadResourceUmls(loginUrl, userName, password, fileUrl,defaultFileName)
+    String downloadedFileName = downloadHelper.repeatableDownloadResourceUmls(loginUrl, userName, password, fileUrl, defaultFileName, packageDescription)
     project.ext.set('downloadUpdatePack.umlsFull.fileName', downloadedFileName);
-
     println new StringBuilderWrapper("Downloaded complete.\nUpdate packages are saved to the: ${tempDir.getPath()}")
 
     // Finish action checkpoint
@@ -1095,7 +921,10 @@ task downloadUpdatePack(dependsOn: createSourceTable, description: project.prope
     println "*** '${description}' action done ***"
 }
 
-task extractFiles(dependsOn: downloadUpdatePack, description: project.properties['extractFiles.description']) << {
+/**
+ * This task will extract files and prepare it for import
+ */
+task extractAndPrepareFiles(dependsOn: downloadUpdatePack, description: project.properties['extractFiles.description']) << {
     println '\n\n***********************************************'
     println '*                                             *'
     println "*        '${description}' action started...          *"
@@ -1105,57 +934,21 @@ task extractFiles(dependsOn: downloadUpdatePack, description: project.properties
     // Start action checkpoint
     def timeStart = System.currentTimeMillis()
 
-    /* Extracting file */
-    def fileList = []
-    def dir = tempDir
-    dir.eachFile(FileType.FILES) { file ->
-        fileList << file
-        print new StringBuilderWrapper("Extracting ${file} ...")
-        if (file.getPath().endsWith('zip')) {
-            ant.unzip(src: file.getPath(), dest: tempDir, overwrite: false)
-        }
-        println ' done'
-    }
-
-    // Finish action checkpoint
-    def timeFinish = System.currentTimeMillis()
-
-    // Measure time execution
-    def timeElapsed = (timeFinish - timeStart) / 1000
-    println "Time elapsed: ${timeElapsed} seconds."
-
-    println "*** '${description}' action done ***"
-}
-
-/**
- * This task will com.odysseusinc.convert a XLS data file to CSV format.
- */
-task convertData(dependsOn: extractFiles, description: project.properties['convertData.description']) << {
-    println '\n\n*************************************************'
-    println '*                                               *'
-    println "*  '${description}' action started...  *"
-    println '*                                               *'
-    println '*************************************************'
-
-    // Start action checkpoint
-    def timeStart = System.currentTimeMillis()
-    Xls2CsvHelper convertHelper = Xls2CsvHelper.getXls2CsvHelper(tempDir)
-
     try {
-        Map<String, String> sheetNameFilePathMap = new HashMap<String, String>()
-        sheetNameFilePathMap.put("ANSWERS", project.properties['convertData.panelsForms.answers.destFileName'])
-        sheetNameFilePathMap.put("FORMS", project.properties['convertData.panelsForms.forms.destFileName'])
 
-        Map<String, String> sheetNameSkiptColumnsAfterNameMap = new HashMap<String, String>()
-        sheetNameSkiptColumnsAfterNameMap.put("ANSWERS", "DisplayText")
-        sheetNameSkiptColumnsAfterNameMap.put("FORMS", "Loinc")
+        /* Extracting file */
+        def fileList = []
+        def dir = tempDir
+        dir.eachFile(FileType.FILES) { file ->
+            fileList << file
+            print new StringBuilderWrapper("Extracting ${file} ...")
+            if (file.getPath().endsWith('zip')) {
+                ant.unzip(src: file.getPath(), dest: tempDir, overwrite: false)
+            }
+            println ' done'
+        }
 
-        String fileNameTemplate = "panelsandforms"
-        List<File> fileList = convertHelper.getFilesByName(tempDir, fileNameTemplate, "zip", true)
-        String inputFile = fileList.get(0).getName()
-        String importReadyFolder = "ready_for_import"
-        convertHelper.convertLoinc(inputFile, importReadyFolder, sheetNameFilePathMap, sheetNameSkiptColumnsAfterNameMap)
-
+/////////////////////////////////////////////////////
         /**
          * Prepare all other files for import
          */
@@ -1217,9 +1010,12 @@ task convertData(dependsOn: extractFiles, description: project.properties['conve
         )
         project.ext.set("importData.cptMappings.dataFileName", cptMappingsCsvFile)
 
+/////////////////////////////////////////////////////
+
     } catch (Exception e) {
         throw new GradleException(String.format(project.properties['error.message'], e.getMessage(), name))
     }
+
 
     // Finish action checkpoint
     def timeFinish = System.currentTimeMillis()
@@ -1234,7 +1030,7 @@ task convertData(dependsOn: extractFiles, description: project.properties['conve
 /**
  * Task performed import CSV data to database
  */
-task importData(dependsOn: convertData, description: project.properties['importData.description']) << {
+task importData(dependsOn: extractAndPrepareFiles, description: project.properties['importData.description']) << {
     println '\n\n***********************************************'
     println '*                                             *'
     println "*         '${description}' action started...          *"
@@ -1326,128 +1122,9 @@ task importData(dependsOn: convertData, description: project.properties['importD
 }
 
 /**
- * This task will run 'Load stage' script.
- * Seems it's is specific for each vocabulary.
- */
-task loadStage(dependsOn: importData, description: project.properties['loadStage.description']) << {
-    println '\n\n***********************************************'
-    println '*                                             *'
-    println "*        '${description}' action started...       *"
-    println '*                                             *'
-    println '***********************************************'
-
-    // Start action checkpoint
-    def timeStart = System.currentTimeMillis()
-
-    def sqlFile = "${project.properties['basePath']}/${project.properties['loadStage.sqlFileName']}"
-    def logFile = "${project.properties['logPath']}/${project.properties['loadStage.logFileName']}"
-    def streamLogFile = "${project.properties['logPath']}/${project.properties['loadStage.streamLogFileName']}"
-    def streamErrorFile = "${project.properties['logPath']}/${project.properties['loadStage.streamErrFileName']}"
-    def db = [un     : project.properties['db.userName'],
-              pw     : project.properties['db.password'],
-              tns    : project.properties['db.tnsName'],
-              sqlfile: sqlFile,
-              logfile: logFile]
-    def sOut = new StringBuilderWrapper(), sErr = new StringBuilderWrapper()
-    def sqlPlus = """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
-    sqlPlus.consumeProcessOutput(sOut, sErr)
-    sqlPlus.waitFor()
-
-    // Finish action checkpoint
-    def timeFinish = System.currentTimeMillis()
-
-    /**
-     * Write to console.
-     * Write compact SQLPlus's spool log
-     */
-    File lf = new File(logFile)
-    if (lf.exists())
-        System.out.println(StringBuilderWrapper.readFromFile(lf))
-
-    // Write to logfile
-    File f = new File(streamLogFile)
-    f.write(sOut.toString())
-
-    // Write to error file
-    f = new File(streamErrorFile)
-    f.write(sErr.toString())
-
-    /* Check for errors */
-    if (Boolean.valueOf(project.properties['stop.on.error'].toString()) && (sqlPlus.exitValue() != 0 || (sErr != null && sErr.toString().length() > 0))) {
-        throw new GradleException(String.format(project.properties['error.message.with.code'], sqlPlus.exitValue(), name))
-    }
-
-    // Measure time execution
-    def timeElapsed = (timeFinish - timeStart) / 1000
-    println "Time elapsed: ${timeElapsed} seconds."
-
-    println "*** '${description}' action done ***"
-}
-
-/**
- * This task will run 'Genetic update' script.
- * It's common for all updated vocabularies and located in '\Vocabulary-v5.0\working\generic_update.sql' file.
- */
-task genericUpdate(dependsOn: loadStage, description: project.properties['genericUpdate.description']) << {
-    println '\n\n***********************************************'
-    println '*                                             *'
-    println "*     '${description}' action started...      *"
-    println '*                                             *'
-    println '***********************************************'
-
-    // Start action checkpoint
-    def timeStart = System.currentTimeMillis()
-
-    def sqlFile = "${project.properties['basePath']}/${project.properties['genericUpdate.sqlFileName']}"
-    def logFile = "${project.properties['logPath']}/${project.properties['genericUpdate.logFileName']}"
-    def streamLogFile = "${project.properties['logPath']}/${project.properties['genericUpdate.streamLogFileName']}"
-    def streamErrorFile = "${project.properties['logPath']}/${project.properties['genericUpdate.streamErrFileName']}"
-
-    def db = [un     : project.properties['db.userName'],
-              pw     : project.properties['db.password'],
-              tns    : project.properties['db.tnsName'],
-              sqlfile: sqlFile,
-              logfile: logFile]
-    def sOut = new StringBuilderWrapper(), sErr = new StringBuilderWrapper()
-    def sqlPlus = """sqlplus ${db.un}/${db.pw}@${db.tns} @${db.sqlfile} ${db.logfile}""".execute()
-    sqlPlus.consumeProcessOutput(sOut, sErr)
-    sqlPlus.waitFor()
-
-    // Finish action checkpoint
-    def timeFinish = System.currentTimeMillis()
-
-    /**
-     * Write to console.
-     * Write compact SQLPlus's spool log
-     */
-    File lf = new File(logFile)
-    if (lf.exists())
-        System.out.println(StringBuilderWrapper.readFromFile(lf))
-
-    // Write to logfile
-    File f = new File(streamLogFile)
-    f.write(sOut.toString())
-
-    // Write to error file
-    f = new File(streamErrorFile)
-    f.write(sErr.toString())
-
-    /* Check for errors */
-    if (Boolean.valueOf(project.properties['stop.on.error'].toString()) && (sqlPlus.exitValue() != 0 || (sErr != null && sErr.toString().length() > 0))) {
-        throw new GradleException(String.format(project.properties['error.message.with.code'], sqlPlus.exitValue(), name))
-    }
-
-    // Measure time execution
-    def timeElapsed = (timeFinish - timeStart) / 1000
-    println "Time elapsed: ${timeElapsed} seconds."
-
-    println "*** '${description}' action done ***"
-}
-
-/**
  * This task will run scripts which allows to see the vocabulary update results
  */
-task checkUpdateResults(dependsOn: genericUpdate, description: project.properties['checkUpdateResults.description']) << {
+task checkUpdateResults(dependsOn: importData, description: project.properties['checkUpdateResults.description']) << {
     println '\n\n***********************************************'
     println '*                                             *'
     println "*  '${description}' action started...   *"

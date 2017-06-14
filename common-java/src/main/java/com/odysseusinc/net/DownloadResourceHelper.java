@@ -1,8 +1,6 @@
 package com.odysseusinc.net;
 
-import com.google.common.base.Joiner;
 import com.google.common.io.Files;
-import com.odysseusinc.util.StringBuilderWrapper;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.*;
@@ -18,10 +16,10 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.cookie.BasicClientCookie;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.protocol.HttpContext;
-import org.apache.http.util.EntityUtils;
 
 import java.io.*;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -40,6 +38,7 @@ public class DownloadResourceHelper {
      */
     public static final String COOKIE_JSESSIONID = "JSESSIONID";
     public static final String COOKIE_CASTGC = "CASTGC";
+    public static final String COOKIE_CASPRIVACY = "CASPRIVACY";
     public static final String COOKIE_MOD_AUTH_CAS = "MOD_AUTH_CAS";
     public static final int NUMBER_OF_ATTEMPTS = 3;
 
@@ -84,7 +83,7 @@ public class DownloadResourceHelper {
         } else
             this.downloadPath = downloadPath;
 
-        this.localCookieStore = new ArrayList<Cookie>();
+        this.localCookieStore = new ArrayList<>();
 
         // Load resource properties
         this.resourceProperties = new Properties();
@@ -98,19 +97,37 @@ public class DownloadResourceHelper {
         this.httpClient = HttpClients.custom()
                 .disableCookieManagement()
                 .disableRedirectHandling()
+                .setProxy(new HttpHost("127.0.0.1", 8888))
                 .addInterceptorLast(new HttpRequestInterceptor() {
                     public void process(HttpRequest httpRequest, HttpContext httpContext) throws HttpException, IOException {
                         /**
+                         * Remove default headers
+                         */
+                        httpRequest.removeHeaders("Accept");
+                        httpRequest.removeHeaders("Accept-Encoding");
+                        httpRequest.removeHeaders("Accept-Language");
+                        httpRequest.removeHeaders("Connection");
+                        httpRequest.removeHeaders("Cache-Control");
+                        httpRequest.removeHeaders("Pragma");
+                        httpRequest.removeHeaders("User-Agent");
+                        httpRequest.removeHeaders("Referer");
+                        /**
                          * Add common request headers
                          */
-                        httpRequest.addHeader("Connection", "keep-alive");
-                        httpRequest.addHeader("Upgrade-Insecure-Requests", "1");
-                        httpRequest.addHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36");
                         httpRequest.addHeader("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8");
                         httpRequest.addHeader("Accept-Encoding", "gzip, deflate, sdch, br");
                         httpRequest.addHeader("Accept-Language", "en-US,en;q=0.8,ru;q=0.6,uk;q=0.4");
                         httpRequest.addHeader("Cache-Control", "no-cache");
+                        httpRequest.addHeader("Connection", "keep-alive");
                         httpRequest.addHeader("Pragma", "no-cache");
+                        httpRequest.addHeader("Upgrade-Insecure-Requests", "1");
+                        httpRequest.addHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36");
+
+                        System.out.println("##########");
+                        for (Header h: httpRequest.getAllHeaders()) {
+                            System.out.println(String.format("\t%s: %s", h.getName(), h.getValue()));
+                        }
+                        System.out.println("##########");
                     }
                 }).addInterceptorLast(new HttpResponseInterceptor() {
                     public void process(HttpResponse httpResponse, HttpContext httpContext) throws HttpException, IOException {
@@ -160,7 +177,7 @@ public class DownloadResourceHelper {
      * @return
      */
     private List<Cookie> getAllStoredCookies() {
-        List<Cookie> ckList = new ArrayList<Cookie>();
+        List<Cookie> ckList = new ArrayList<>();
         Iterator<Cookie> it = this.localCookieStore.iterator();
         while (it.hasNext()) {
             ckList.add(it.next());
@@ -190,22 +207,30 @@ public class DownloadResourceHelper {
     /**
      * Class-level Cookie Storage.
      *
-     * @param request
+     * @param response
      */
-    private void saveClientCookie(HttpResponse request) {
-        Header cookieHeader = request.getLastHeader("Set-Cookie");
-        if (cookieHeader == null)
+    private void saveClientCookie(HttpResponse response) {
+        Header[] chArray = response.getHeaders("Set-Cookie");
+        if (chArray == null)
             return;
-        String nameValue = cookieHeader.getValue().substring(0, cookieHeader.getValue().indexOf(";"));
-        Cookie newCookie = new BasicClientCookie(nameValue.split("=")[0], nameValue.split("=")[1]);
 
-        Iterator<Cookie> it = this.localCookieStore.iterator();
-        while (it.hasNext()) {
-            Cookie c = it.next();
-            if (c.getName().equalsIgnoreCase(newCookie.getName()))
-                return;
+        List<Header> chList = Arrays.asList(chArray);
+        for (Header header: chList) {
+            boolean skipCookie = false;
+            String nameValue = header.getValue().substring(0, header.getValue().indexOf(";"));
+            Cookie newCookie = new BasicClientCookie(nameValue.split("=")[0], nameValue.split("=")[1]);
+
+            Iterator<Cookie> it = this.localCookieStore.iterator();
+            while (it.hasNext()) {
+                Cookie c = it.next();
+                if (c.getName().equalsIgnoreCase(newCookie.getName())) {
+                    skipCookie = true;
+                    continue;
+                }
+            }
+            if (!skipCookie)
+                this.localCookieStore.add(newCookie);
         }
-        this.localCookieStore.add(newCookie);
     }
 
     /**
@@ -239,7 +264,7 @@ public class DownloadResourceHelper {
      * @return
      */
     private List<NameValuePair> toMapNameValuePairs(Map<String, String> params) {
-        List<NameValuePair> nvpList = new ArrayList<NameValuePair>();
+        List<NameValuePair> nvpList = new ArrayList<>();
         Iterator<Map.Entry<String, String>> it = params.entrySet().iterator();
         while (it.hasNext()) {
             Map.Entry<String, String> entry = it.next();
@@ -375,6 +400,13 @@ public class DownloadResourceHelper {
         return downloadResourceUmls(loginUrl, userName, password, fileUrl, fileName, packageDescription, false, 0);
     }
 
+    public String repeatableDownloadResourceUmlsFull(String fileUrl, String userName, String password, String fileName, String packageDescription) throws IOException {
+        /**
+         * Try three times redownload if error occurs
+         */
+        return downloadResourceUmlsFull(fileUrl, userName, password, fileName, packageDescription,true, NUMBER_OF_ATTEMPTS);
+    }
+
     // Just login UMLS
     private boolean loginUmls(String loginUrl, String userName, String password) throws IOException {
         CloseableHttpResponse response = null;
@@ -407,15 +439,36 @@ public class DownloadResourceHelper {
         CloseableHttpResponse response = null;
         OutputStream outputStream = null;
         try {
-            List<Cookie> cookies = new ArrayList<Cookie>();
+            List<Cookie> cookies = new ArrayList<>();
+//            cookies.addAll(getAllStoredCookies());
+//            cookies.add(getClientCookie(COOKIE_CASPRIVACY));
             cookies.add(getClientCookie(COOKIE_MOD_AUTH_CAS));
+            System.out.println("\nStep 4. Get url: " + fileUrl);
             HttpGet request = prepareGet(fileUrl, cookies);
+
+            System.out.println("!!!!! Request headers:");
+            List<Header> lHeader = Arrays.asList(request.getAllHeaders());
+            for (Header h: lHeader) {
+                System.out.println(String.format("\t%s: %s", h.getName(), h.getValue()));
+            }
+
             response = httpClient.execute(request);
+
+            System.out.println("\n!!!!! Response:");
+            System.out.println("\tresponse.getStatusLine():" + response.getStatusLine());
+            System.out.println("\tcontent-type:" + getResponseHeaderValue(response, "Content-Type"));
+            System.out.println("\tlocation:" + getResponseHeaderValue(response, "Location"));
+            System.out.println("\tset-cookie:");
+            List<Header> listHeaders = Arrays.asList(response.getHeaders("Set-Cookie"));
+            for (Header h: listHeaders) {
+                System.out.println("\t\t" + h.getValue());
+            }
+            System.out.println("\tcontent-disposition:" + getResponseHeaderValue(response, "Content-Disposition"));
 
             int responseCode = response.getStatusLine().getStatusCode();
             if (responseCode != HttpStatus.SC_OK) {
                 numberOfTries--;
-                if (isTryRedownload && numberOfTries > 0) {
+                if (isTryRedownload && numberOfTries >= 0) {
                     try {
                         if (response != null) {
                             response.close();
@@ -430,11 +483,6 @@ public class DownloadResourceHelper {
                 throw new HttpException(String.format("%s is not a ZIP archive", packageDescription));
             }
 
-            // Buffer response content
-            BufferedHttpEntity bufEntity = new BufferedHttpEntity(response.getEntity());
-            StringWriter writer = new StringWriter();
-            IOUtils.copy(bufEntity.getContent(), writer, Consts.UTF_8);
-
             // Eval downloaded file name
             String contentDisposition = getResponseHeaderValue(response, "Content-Disposition");
             if (contentDisposition.length() > 0)
@@ -445,8 +493,9 @@ public class DownloadResourceHelper {
             System.out.println(String.format("Downloaded '%s' file with %s bytes", fileName, contentLength));
 
             // Save file to stream
+            BufferedHttpEntity bufEntity = new BufferedHttpEntity(response.getEntity());
             outputStream = new FileOutputStream(new File(filePath));
-            IOUtils.copy(bufEntity.getContent(), outputStream);
+            IOUtils.copyLarge(bufEntity.getContent(), outputStream);
             outputStream.flush();
 
         } catch (Exception e) {
@@ -465,16 +514,202 @@ public class DownloadResourceHelper {
     }
 
     // Login and download resource
+    public String downloadResourceUmlsFull(String fileUrl,String userName, String password, String fileName, String packageDescription, boolean isTryRedownload, int numberOfTries) throws IOException {
+        this.localCookieStore.clear();
+        CloseableHttpResponse response = null;
+        // REQUEST 1
+        // Just get JSESSION cookie
+        try {
+            System.out.println("\nStep 1. Get url: " + fileUrl);
+            HttpGet request = prepareGet(fileUrl);
+
+            System.out.println("!!!!! Request headers:");
+            List<Header> lHeader = Arrays.asList(request.getAllHeaders());
+            for (Header h: lHeader) {
+                System.out.println(String.format("\t%s: %s", h.getName(), h.getValue()));
+            }
+
+            response = httpClient.execute(request);
+
+            // Buffer response content
+            BufferedHttpEntity bufEntity = new BufferedHttpEntity(response.getEntity());
+            StringWriter writer = new StringWriter();
+            IOUtils.copy(bufEntity.getContent(), writer, StandardCharsets.UTF_8);
+            String responseBody = writer.toString().trim();
+
+            System.out.println("\n!!!!! Response:");
+            System.out.println("\tresponse.getStatusLine():" + response.getStatusLine());
+            System.out.println("\tcontent-type:" + getResponseHeaderValue(response, "Content-Type"));
+            System.out.println("\tlocation:" + getResponseHeaderValue(response, "Location"));
+            System.out.println("\tset-cookie:");
+            List<Header> listHeaders = Arrays.asList(response.getHeaders("Set-Cookie"));
+            for (Header h: listHeaders) {
+                System.out.println("\t\t" + h.getValue());
+            }
+            System.out.println("\tcontent-disposition:" + getResponseHeaderValue(response, "Content-Disposition"));
+            System.out.println("\tresponseBody:" + responseBody);
+
+            // Remember dynamically generated presumably "Login Ticket" form parameter
+            Pattern ltPattern = Pattern.compile("name=\"lt\" value=\"(\\w+)\"");
+            Matcher m = ltPattern.matcher(responseBody);
+            while (m.find()) {
+                this.ltParam = m.group(1);
+            }
+        } catch (Exception e) {
+            System.out.println("Error occurs: " + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            if (response != null) {
+                response.close();
+            }
+        }
+
+        // REQUEST 2
+        // Login to UMLS
+        System.out.println("Login UMLS service...");
+        try {
+            Map<String, String> params = new HashMap<String, String>();
+            params.put("username", userName);
+            params.put("password", password);
+            params.put("lt", this.ltParam);
+            params.put("_eventId", "submit");
+            params.put("submit", "Sign In");
+            List<Cookie> cookies = new ArrayList<>();
+//            cookies.addAll(getAllStoredCookies());
+            cookies.add(getClientCookie(COOKIE_JSESSIONID));
+            System.out.println("\nStep 2. Get url: " + fileUrl);
+            HttpPost request = preparePost(fileUrl, params, cookies);
+            request.addHeader("Content-Type", "application/x-www-form-urlencoded");
+
+            System.out.println("!!!!! Request headers:");
+            List<Header> lHeader = Arrays.asList(request.getAllHeaders());
+            for (Header h: lHeader) {
+                System.out.println(String.format("\t%s: %s", h.getName(), h.getValue()));
+            }
+
+            response = httpClient.execute(request);
+
+            // Buffer response content
+            BufferedHttpEntity bufEntity = new BufferedHttpEntity(response.getEntity());
+            StringWriter writer = new StringWriter();
+            IOUtils.copy(bufEntity.getContent(), writer, StandardCharsets.UTF_8);
+            String responseBody = writer.toString().trim();
+
+            System.out.println("\n!!!!! Response:");
+            System.out.println("\tresponse.getStatusLine():" + response.getStatusLine());
+            System.out.println("\tcontent-type:" + getResponseHeaderValue(response, "Content-Type"));
+            System.out.println("\tlocation:" + getResponseHeaderValue(response, "Location"));
+            System.out.println("\tset-cookie:");
+            List<Header> listHeaders = Arrays.asList(response.getHeaders("Set-Cookie"));
+            for (Header h: listHeaders) {
+                System.out.println("\t\t" + h.getValue());
+            }
+            System.out.println("\tcontent-disposition:" + getResponseHeaderValue(response, "Content-Disposition"));
+            System.out.println("\tresponseBody:" + responseBody);
+
+            /**
+             * Get URL for further processing
+             */
+            String locationHeaderValue = getResponseHeaderValue(response, "Location");
+            if (StringUtils.isNotBlank(locationHeaderValue))
+                fileUrl = locationHeaderValue;
+        } catch (Exception e) {
+            System.out.println("Exception occurs: " + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            if (response != null)
+                response.close();
+        }
+
+        // REQUEST 3
+        // Authorize on download service with ticket
+        try {
+//            List<Cookie> cookies = new ArrayList<>();
+//            cookies.addAll(getAllStoredCookies());
+            System.out.println("\nStep 3. Get url: " + fileUrl);
+            HttpGet request = prepareGet(fileUrl);
+
+            System.out.println("!!!!! Request headers:");
+            List<Header> lHeader = Arrays.asList(request.getAllHeaders());
+            for (Header h: lHeader) {
+                System.out.println(String.format("\t%s: %s", h.getName(), h.getValue()));
+            }
+
+            response = httpClient.execute(request);
+
+            // Buffer response content
+            BufferedHttpEntity bufEntity = new BufferedHttpEntity(response.getEntity());
+            StringWriter writer = new StringWriter();
+            IOUtils.copy(bufEntity.getContent(), writer, StandardCharsets.UTF_8);
+            String responseBody = writer.toString().trim();
+
+            System.out.println("\n!!!!! Response:");
+            System.out.println("\tresponse.getStatusLine():" + response.getStatusLine());
+            System.out.println("\tcontent-type:" + getResponseHeaderValue(response, "Content-Type"));
+            System.out.println("\tlocation:" + getResponseHeaderValue(response, "Location"));
+            System.out.println("\tset-cookie:");
+            List<Header> listHeaders = Arrays.asList(response.getHeaders("Set-Cookie"));
+            for (Header h: listHeaders) {
+                System.out.println("\t\t" + h.getValue());
+            }
+            System.out.println("\tcontent-disposition:" + getResponseHeaderValue(response, "Content-Disposition"));
+            System.out.println("\tresponseBody:" + responseBody);
+
+            /**
+             * Get URL for further processing
+             */
+            String locationHeaderValue = getResponseHeaderValue(response, "Location");
+            if (StringUtils.isNotBlank(locationHeaderValue))
+                fileUrl = locationHeaderValue;
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            if (response != null)
+                response.close();
+        }
+
+        // REQUEST 4
+        // Download resource
+        return downloadUmls(fileUrl, fileName, packageDescription, isTryRedownload, numberOfTries);
+    }
+
+    // Login and download resource
     public String downloadResourceUmls(String loginUrl, String userName, String password, String fileUrl, String fileName, String packageDescription, boolean isTryRedownload, int numberOfTries) throws IOException {
+        this.localCookieStore.clear();
         CloseableHttpResponse response = null;
         // REQUEST 1
         // Just to get first JSESSION cookie
         try {
+            System.out.println("\nStep 1. Get url: " + loginUrl);
             HttpGet request = prepareGet(loginUrl);
+
+            System.out.println("!!!!! Request headers:");
+            List<Header> lHeader = Arrays.asList(request.getAllHeaders());
+            for (Header h: lHeader) {
+                System.out.println(String.format("\t%s: %s", h.getName(), h.getValue()));
+            }
+
             response = httpClient.execute(request);
 
+            // Buffer response content
+            BufferedHttpEntity bufEntity = new BufferedHttpEntity(response.getEntity());
+            StringWriter writer = new StringWriter();
+            IOUtils.copy(bufEntity.getContent(), writer, StandardCharsets.UTF_8);
+            String responseBody = writer.toString().trim();
+
+            System.out.println("\n!!!!! Response:");
+            System.out.println("\tresponse.getStatusLine():" + response.getStatusLine());
+            System.out.println("\tcontent-type:" + getResponseHeaderValue(response, "Content-Type"));
+            System.out.println("\tlocation:" + getResponseHeaderValue(response, "Location"));
+            System.out.println("\tset-cookie:");
+            List<Header> listHeaders = Arrays.asList(response.getHeaders("Set-Cookie"));
+            for (Header h: listHeaders) {
+                System.out.println("\t\t" + h.getValue());
+            }
+            System.out.println("\tcontent-disposition:" + getResponseHeaderValue(response, "Content-Disposition"));
+            System.out.println("\tresponseBody:" + responseBody);
+
             // Remember dynamically generated presumably "Login Ticket" form parameter
-            String responseBody = EntityUtils.toString(response.getEntity()).trim();
             Pattern ltPattern = Pattern.compile("name=\"lt\" value=\"(\\w+)\"");
             Matcher m = ltPattern.matcher(responseBody);
             while (m.find()) {
@@ -499,12 +734,45 @@ public class DownloadResourceHelper {
             params.put("lt", this.ltParam);
             params.put("_eventId", "submit");
             params.put("submit", "Sign In");
-            List<Cookie> cookies = new ArrayList<Cookie>();
+            List<Cookie> cookies = new ArrayList<>();
+//            cookies.addAll(getAllStoredCookies());
             cookies.add(getClientCookie(COOKIE_JSESSIONID));
-            HttpPost request = preparePost(loginUrl, params, cookies);
+            System.out.println("\nStep 2. Get url: " + fileUrl);
+            HttpPost request = preparePost(fileUrl, params, cookies);
             request.addHeader("Content-Type", "application/x-www-form-urlencoded");
+
+            System.out.println("!!!!! Request headers:");
+            List<Header> lHeader = Arrays.asList(request.getAllHeaders());
+            for (Header h: lHeader) {
+                System.out.println(String.format("\t%s: %s", h.getName(), h.getValue()));
+            }
+
             response = httpClient.execute(request);
 
+            // Buffer response content
+            BufferedHttpEntity bufEntity = new BufferedHttpEntity(response.getEntity());
+            StringWriter writer = new StringWriter();
+            IOUtils.copy(bufEntity.getContent(), writer, StandardCharsets.UTF_8);
+            String responseBody = writer.toString().trim();
+
+            System.out.println("\n!!!!! Response:");
+            System.out.println("\tresponse.getStatusLine():" + response.getStatusLine());
+            System.out.println("\tcontent-type:" + getResponseHeaderValue(response, "Content-Type"));
+            System.out.println("\tlocation:" + getResponseHeaderValue(response, "Location"));
+            System.out.println("\tset-cookie:");
+            List<Header> listHeaders = Arrays.asList(response.getHeaders("Set-Cookie"));
+            for (Header h: listHeaders) {
+                System.out.println("\t\t" + h.getValue());
+            }
+            System.out.println("\tcontent-disposition:" + getResponseHeaderValue(response, "Content-Disposition"));
+            System.out.println("\tresponseBody:" + responseBody);
+
+            /**
+             * Get URL for further processing
+             */
+            String locationHeaderValue = getResponseHeaderValue(response, "Location");
+            if (StringUtils.isNotBlank(locationHeaderValue))
+                fileUrl = locationHeaderValue;
         } catch (Exception e) {
             System.out.println("Exception occurs: " + e.getMessage());
             e.printStackTrace();
@@ -513,19 +781,49 @@ public class DownloadResourceHelper {
                 response.close();
         }
 
+        // Skip this step if ticket login is available after login
         // REQUEST 3
         // Get ticket for requested resource
         try {
-            List<Cookie> cookies = new ArrayList<Cookie>();
+            List<Cookie> cookies = new ArrayList<>();
+//            cookies.addAll(getAllStoredCookies());
             cookies.add(getClientCookie(COOKIE_JSESSIONID));
             cookies.add(getClientCookie(COOKIE_CASTGC));
+            System.out.println("\nStep 3. Get url: " + fileUrl);
             HttpGet request = prepareGet(fileUrl, cookies);
+
+            System.out.println("!!!!! Request headers:");
+            List<Header> lHeader = Arrays.asList(request.getAllHeaders());
+            for (Header h: lHeader) {
+                System.out.println(String.format("\t%s: %s", h.getName(), h.getValue()));
+            }
+
             response = httpClient.execute(request);
+
+            // Buffer response content
+            BufferedHttpEntity bufEntity = new BufferedHttpEntity(response.getEntity());
+            StringWriter writer = new StringWriter();
+            IOUtils.copy(bufEntity.getContent(), writer, StandardCharsets.UTF_8);
+            String responseBody = writer.toString().trim();
+
+            System.out.println("\n!!!!! Response:");
+            System.out.println("\tresponse.getStatusLine():" + response.getStatusLine());
+            System.out.println("\tcontent-type:" + getResponseHeaderValue(response, "Content-Type"));
+            System.out.println("\tlocation:" + getResponseHeaderValue(response, "Location"));
+            System.out.println("\tset-cookie:");
+            List<Header> listHeaders = Arrays.asList(response.getHeaders("Set-Cookie"));
+            for (Header h: listHeaders) {
+                System.out.println("\t\t" + h.getValue());
+            }
+            System.out.println("\tcontent-disposition:" + getResponseHeaderValue(response, "Content-Disposition"));
+            System.out.println("\tresponseBody:" + responseBody);
 
             /**
              * Get URL for further processing
              */
-            fileUrl = getResponseHeaderValue(response, "Location");
+            String locationHeaderValue = getResponseHeaderValue(response, "Location");
+            if (StringUtils.isNotBlank(locationHeaderValue))
+                fileUrl = locationHeaderValue;
         } catch (Exception e) {
             System.out.println("Error occurs: " + e.getMessage());
             e.printStackTrace();
@@ -533,17 +831,46 @@ public class DownloadResourceHelper {
             if (response != null)
                 response.close();
         }
-
         // REQUEST 4
         // Authorize on download service
         try {
+//            List<Cookie> cookies = new ArrayList<>();
+//            cookies.addAll(getAllStoredCookies());
+            System.out.println("\nStep 4. Get url: " + fileUrl);
             HttpGet request = prepareGet(fileUrl);
+
+            System.out.println("!!!!! Request headers:");
+            List<Header> lHeader = Arrays.asList(request.getAllHeaders());
+            for (Header h: lHeader) {
+                System.out.println(String.format("\t%s: %s", h.getName(), h.getValue()));
+            }
+
             response = httpClient.execute(request);
+
+            // Buffer response content
+            BufferedHttpEntity bufEntity = new BufferedHttpEntity(response.getEntity());
+            StringWriter writer = new StringWriter();
+            IOUtils.copy(bufEntity.getContent(), writer, StandardCharsets.UTF_8);
+            String responseBody = writer.toString().trim();
+
+            System.out.println("\n!!!!! Response:");
+            System.out.println("\tresponse.getStatusLine():" + response.getStatusLine());
+            System.out.println("\tcontent-type:" + getResponseHeaderValue(response, "Content-Type"));
+            System.out.println("\tlocation:" + getResponseHeaderValue(response, "Location"));
+            System.out.println("\tset-cookie:");
+            List<Header> listHeaders = Arrays.asList(response.getHeaders("Set-Cookie"));
+            for (Header h: listHeaders) {
+                System.out.println("\t\t" + h.getValue());
+            }
+            System.out.println("\tcontent-disposition:" + getResponseHeaderValue(response, "Content-Disposition"));
+            System.out.println("\tresponseBody:" + responseBody);
 
             /**
              * Get URL for further processing
              */
-            fileUrl = getResponseHeaderValue(response,"Location");
+            String locationHeaderValue = getResponseHeaderValue(response, "Location");
+            if (StringUtils.isNotBlank(locationHeaderValue))
+                fileUrl = locationHeaderValue;
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
@@ -555,6 +882,7 @@ public class DownloadResourceHelper {
         // Download resource
         return downloadUmls(fileUrl, fileName, packageDescription, isTryRedownload, numberOfTries);
     }
+
 
     public boolean loginLoinc(String loginUrl, String userName, String password) throws IOException {
         CloseableHttpResponse response = null;
@@ -622,7 +950,7 @@ public class DownloadResourceHelper {
             // Buffer response content
             BufferedHttpEntity bufEntity = new BufferedHttpEntity(response.getEntity());
             StringWriter writer = new StringWriter();
-            IOUtils.copy(bufEntity.getContent(), writer, Consts.UTF_8);
+            IOUtils.copy(bufEntity.getContent(), writer, StandardCharsets.UTF_8);
             String responseBody = writer.toString().trim();
 
             // Eval downloaded file name
@@ -709,19 +1037,46 @@ public class DownloadResourceHelper {
         /****************************************************
          * Login 'UMLS' service
          * **************************************************/
-        String loginUrl = getPropertyByName("downloadUpdatePack.umls.loginUrl");
-        String userName = getPropertyByName("downloadUpdatePack.umls.username");
-        String password = getPropertyByName("downloadUpdatePack.umls.password");
-        boolean loginSuccessfull = downloadHelper.loginUmls(loginUrl, userName, password);
-
         /****************************************************
          * Download 'UMLS' package
          * **************************************************/
+
+        String loginUrl = getPropertyByName("downloadUpdatePack.umls.loginUrl");
+        String userName = getPropertyByName("downloadUpdatePack.umls.username");
+        String password = getPropertyByName("downloadUpdatePack.umls.password");
         String packageDescription = getPropertyByName("downloadUpdatePack.umlsFull.description");
         System.out.println("Downloading " + packageDescription);
         String fileUrl = getPropertyByName("downloadUpdatePack.umlsFull.fileUrl");
         String defaultFileName = getPropertyByName("downloadUpdatePack.umlsFull.fileName");
-        String downloadedFileName = downloadHelper.repeatableDownloadUmls(fileUrl, defaultFileName, packageDescription);
+        String downloadedFileName = downloadHelper.repeatableDownloadResourceUmls(loginUrl, userName, password, fileUrl, defaultFileName, packageDescription);
+        System.out.println("Downloaded file: " + downloadedFileName);
+
+        System.out.println("Downloaded complete.\nUpdate packages are saved to the: " + downloadHelper.getDownloadPath());
+
+        // Finish action checkpoint
+        long timeFinish = System.currentTimeMillis();
+        long timeElapsed = (timeFinish - timeStart) / 1000;
+        System.out.println("Time elapsed: " + timeElapsed + " seconds.");
+
+        System.out.println("*** " + packageDescription + " action done ***");
+    }
+
+    public static void testDownloadUMLSFull(DownloadResourceHelper downloadHelper) throws IOException {
+        /* Downloading file */
+        // Start action checkpoint
+        long timeStart = System.currentTimeMillis();
+
+        /****************************************************
+         * Login  and download 'Full UMLS' package
+         * **************************************************/
+
+        String fileUrl = getPropertyByName("downloadUpdatePack.umlsFull.fileUrl");
+        String userName = getPropertyByName("downloadUpdatePack.umls.username");
+        String password = getPropertyByName("downloadUpdatePack.umls.password");
+        String packageDescription = getPropertyByName("downloadUpdatePack.umlsFull.description");
+        System.out.println("Downloading " + packageDescription);
+        String defaultFileName = getPropertyByName("downloadUpdatePack.umlsFull.fileName");
+        String downloadedFileName = downloadHelper.repeatableDownloadResourceUmlsFull(fileUrl, userName, password, defaultFileName, packageDescription);
         System.out.println("Downloaded file: " + downloadedFileName);
 
         System.out.println("Downloaded complete.\nUpdate packages are saved to the: " + downloadHelper.getDownloadPath());
@@ -738,7 +1093,9 @@ public class DownloadResourceHelper {
         DownloadResourceHelper downloadHelper = DownloadResourceHelper.getDownloadResourceHelper();
         //testDownloadLOINC (downloadHelper);
 
-        testDownloadUMLS(downloadHelper);
+        //testDownloadUMLS(downloadHelper);
+
+        testDownloadUMLSFull(downloadHelper);
     }
 
 }
