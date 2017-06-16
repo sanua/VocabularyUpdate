@@ -36,6 +36,7 @@ buildscript {
         classpath 'com.google.guava:guava:21.0'
 
         classpath group: 'commons-io', name: 'commons-io', version: '2.5'
+        compile group: 'org.apache.commons', name: 'commons-compress', version: '1.14'
     }
 }
 /*
@@ -98,6 +99,7 @@ import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.protocol.HttpContext;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.http.util.EntityUtils;
+import org.apache.compress.*;
 
 import java.io.*;
 import java.net.URISyntaxException
@@ -921,10 +923,21 @@ task downloadUpdatePack(dependsOn: createSourceTable, description: project.prope
     println "*** '${description}' action done ***"
 }
 
+private boolean unZip(File inFile, File destPath) {
+    if (inFile == null || !inFile.exists() || !destPath.exists()) 
+        return false;
+    
+    ZipArchiveIput
+}
+
+private void unTar() {
+
+}
+
 /**
  * This task will extract files and prepare it for import
  */
-task extractAndPrepareFiles(dependsOn: downloadUpdatePack, description: project.properties['extractFiles.description']) << {
+task extractAndPrepareFiles(dependsOn: createSourceTable, description: project.properties['extractAndPrepareFiles.description']) << {
     println '\n\n***********************************************'
     println '*                                             *'
     println "*        '${description}' action started...          *"
@@ -938,78 +951,85 @@ task extractAndPrepareFiles(dependsOn: downloadUpdatePack, description: project.
 
         /* Extracting file */
         def fileList = []
-        def dir = tempDir
+//        def dir = tempDir
+        def dir = new File(project.properties['basePath'], "data");
+        if (!dir.exists()) {
+            throw new GradleException(String.format("No folder with UMLS archives found: %s", dir.getPath()));
+        }
+        
         dir.eachFile(FileType.FILES) { file ->
             fileList << file
-            print new StringBuilderWrapper("Extracting ${file} ...")
+            print new StringBuilderWrapper("Extracting ${file} to the ${dir.getPath()} ...")
             if (file.getPath().endsWith('zip')) {
                 ant.unzip(src: file.getPath(), dest: tempDir, overwrite: false)
+            } else if (file.getPath().endsWith('gz')) {
+                ant.untar(src: file.getPath(), dest: tempDir, overwrite: false, compression: "gzip")
             }
             println ' done'
         }
 
 /////////////////////////////////////////////////////
-        /**
-         * Prepare all other files for import
-         */
-        String answersCsvFile = sheetNameFilePathMap.get("ANSWERS")
-        project.ext.set("importData.panelsForms.answers.dataFileName", answersCsvFile)
-
-        String formsCsvFile = sheetNameFilePathMap.get("FORMS")
-        project.ext.set("importData.panelsForms.forms.dataFileName", formsCsvFile)
-
-        String targetPath = new File(tempDir, importReadyFolder).getPath()
-
-        String fileToCopy = "loinc.csv"
-        String loincCsvFile = convertHelper.copy(
-                new File(tempDir, fileToCopy).getPath(),
-                new File(targetPath, fileToCopy).getPath()
-        )
-        project.ext.set("importData.fullSet.loinc.dataFileName", loincCsvFile)
-
-        fileToCopy = "map_to.csv"
-        String mapToCsvFile = convertHelper.copy(
-                new File(tempDir, fileToCopy).getPath(),
-                new File(targetPath, fileToCopy).getPath()
-        )
-        project.ext.set("importData.fullSet.mapTo.dataFileName", mapToCsvFile)
-
-        fileToCopy = "source_organization.csv"
-        String sourceOrganizationCsvFile = convertHelper.copy(
-                new File(tempDir, fileToCopy).getPath(),
-                new File(targetPath, fileToCopy).getPath()
-        )
-        project.ext.set("importData.fullSet.sourceOrganization.dataFileName", sourceOrganizationCsvFile)
-
-        fileToCopy = project.properties['downloadUpdatePack.multiaxialHierarchy.fileName'].replaceAll(".zip", ".csv")
-        String multiaxialHierarchyCsvFile = convertHelper.copy(
-                new File(tempDir, fileToCopy).getPath(),
-                new File(targetPath, fileToCopy).getPath()
-        )
-        project.ext.set("importData.multiaxialHierarchy.dataFileName", multiaxialHierarchyCsvFile)
-
-        File filePath = new File(project.properties['downloadUpdatePack.expressionAssociation.fileName'].replaceAll(".zip", "")
-                ,"Full/Refset/Content")
-        filePath = new File(tempDir, filePath.getPath())
-
-        fileNameTemplate = "xder2_sscccRefset_LOINCExpressionAssociationFull_INT"
-        fileList = convertHelper.getFilesByName(filePath, fileNameTemplate, true)
-        fileToCopy = fileList.get(0).getName()
-        String expressionAssociationCsvFile = convertHelper.copy(
-                new File(filePath, fileToCopy).getPath(),
-                new File(targetPath, fileToCopy).getPath()
-        )
-        project.ext.set("importData.expressionAssociation.dataFileName", expressionAssociationCsvFile)
-
-        fileNameTemplate = "MRSMAP"
-        fileList = convertHelper.getFilesByName(tempDir, fileNameTemplate, true)
-        fileToCopy = fileList.get(0).getName()
-        String cptMappingsCsvFile = convertHelper.copy(
-                new File(tempDir, fileToCopy).getPath(),
-                new File(targetPath, fileToCopy).getPath()
-        )
-        project.ext.set("importData.cptMappings.dataFileName", cptMappingsCsvFile)
-
+//        /**
+//         * Prepare all other files for import
+//         */
+//        String answersCsvFile = sheetNameFilePathMap.get("ANSWERS")
+//        project.ext.set("importData.panelsForms.answers.dataFileName", answersCsvFile)
+//
+//        String formsCsvFile = sheetNameFilePathMap.get("FORMS")
+//        project.ext.set("importData.panelsForms.forms.dataFileName", formsCsvFile)
+//
+//        String targetPath = new File(tempDir, importReadyFolder).getPath()
+//
+//        String fileToCopy = "loinc.csv"
+//        String loincCsvFile = convertHelper.copy(
+//                new File(tempDir, fileToCopy).getPath(),
+//                new File(targetPath, fileToCopy).getPath()
+//        )
+//        project.ext.set("importData.fullSet.loinc.dataFileName", loincCsvFile)
+//
+//        fileToCopy = "map_to.csv"
+//        String mapToCsvFile = convertHelper.copy(
+//                new File(tempDir, fileToCopy).getPath(),
+//                new File(targetPath, fileToCopy).getPath()
+//        )
+//        project.ext.set("importData.fullSet.mapTo.dataFileName", mapToCsvFile)
+//
+//        fileToCopy = "source_organization.csv"
+//        String sourceOrganizationCsvFile = convertHelper.copy(
+//                new File(tempDir, fileToCopy).getPath(),
+//                new File(targetPath, fileToCopy).getPath()
+//        )
+//        project.ext.set("importData.fullSet.sourceOrganization.dataFileName", sourceOrganizationCsvFile)
+//
+//        fileToCopy = project.properties['downloadUpdatePack.multiaxialHierarchy.fileName'].replaceAll(".zip", ".csv")
+//        String multiaxialHierarchyCsvFile = convertHelper.copy(
+//                new File(tempDir, fileToCopy).getPath(),
+//                new File(targetPath, fileToCopy).getPath()
+//        )
+//        project.ext.set("importData.multiaxialHierarchy.dataFileName", multiaxialHierarchyCsvFile)
+//
+//        File filePath = new File(project.properties['downloadUpdatePack.expressionAssociation.fileName'].replaceAll(".zip", "")
+//                ,"Full/Refset/Content")
+//        filePath = new File(tempDir, filePath.getPath())
+//
+//        fileNameTemplate = "xder2_sscccRefset_LOINCExpressionAssociationFull_INT"
+//        fileList = convertHelper.getFilesByName(filePath, fileNameTemplate, true)
+//        fileToCopy = fileList.get(0).getName()
+//        String expressionAssociationCsvFile = convertHelper.copy(
+//                new File(filePath, fileToCopy).getPath(),
+//                new File(targetPath, fileToCopy).getPath()
+//        )
+//        project.ext.set("importData.expressionAssociation.dataFileName", expressionAssociationCsvFile)
+//
+//        fileNameTemplate = "MRSMAP"
+//        fileList = convertHelper.getFilesByName(tempDir, fileNameTemplate, true)
+//        fileToCopy = fileList.get(0).getName()
+//        String cptMappingsCsvFile = convertHelper.copy(
+//                new File(tempDir, fileToCopy).getPath(),
+//                new File(targetPath, fileToCopy).getPath()
+//        )
+//        project.ext.set("importData.cptMappings.dataFileName", cptMappingsCsvFile)
+//
 /////////////////////////////////////////////////////
 
     } catch (Exception e) {
