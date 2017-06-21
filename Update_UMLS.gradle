@@ -1306,7 +1306,7 @@ task downloadUpdatePack(dependsOn: createSourceTable, description: project.prope
 /**
  * This task will extract files and prepare it for import
  */
-task prepareFiles(dependsOn: createSourceTable, description: project.properties['prepareFiles.description']) << {
+task prepareFiles(dependsOn: downloadUpdatePack, description: project.properties['prepareFiles.description']) << {
     println '\n\n***********************************************'
     println '*                                             *'
     println "*     '${description}' action started...       *"
@@ -1317,7 +1317,6 @@ task prepareFiles(dependsOn: createSourceTable, description: project.properties[
     def timeStart = System.currentTimeMillis()
     
     try {
-        tempDir = Paths.get("E:\\temp\\data").toFile();
         // Extract files
         DataProcessor.extract(tempDir);
         // Concatenate part of files
