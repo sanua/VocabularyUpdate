@@ -206,39 +206,48 @@ public class DownloadResourceHelper {
 
         // Create HttpClient
         this.httpClient = HttpClients.custom()
-                .setProxy(new HttpHost("127.0.0.1", 8888))
+                //.setProxy(new HttpHost("127.0.0.1", 8888))
                 .setRedirectStrategy(new LaxRedirectStrategy()) // adds HTTP REDIRECT support to GET and POST methods
-                .addInterceptorLast(new HttpRequestInterceptor() {
-            public void process(HttpRequest httpRequest, HttpContext httpContext) throws HttpException, IOException {
-                /**
-                 * Add common request headers
-                 */
-                httpRequest.addHeader("Connection", "keep-alive");
-                httpRequest.addHeader("Upgrade-Insecure-Requests", "1");
-                httpRequest.addHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36");
-                httpRequest.addHeader("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8");
-                httpRequest.addHeader("Accept-Encoding", "gzip, deflate, sdch, br");
-                httpRequest.addHeader("Accept-Language", "en-US,en;q=0.8,ru;q=0.6,uk;q=0.4");
-                httpRequest.addHeader("Cache-Control", "no-cache");
-                httpRequest.addHeader("Pragma", "no-cache");
-            }
-        }).addInterceptorLast(new HttpRequestInterceptor() {
-            public void process(HttpRequest httpRequest, HttpContext httpContext) throws HttpException, IOException {
-                System.out.println(" ### Request headers: ");
-                for (Header h : httpRequest.getAllHeaders()) {
-                    System.out.println(String.format("\t%s: %s", h.getName(), h.getValue()));
-                }
-                System.out.println("###");
-            }
-        }).addInterceptorLast(new HttpRequestInterceptor() {
-            public void process(HttpRequest httpResponse, HttpContext httpContext) throws HttpException, IOException {
-                System.out.println("### Response headers: ");
-                for (Header h : httpResponse.getAllHeaders()) {
-                    System.out.println(String.format("\t%s: %s", h.getName(), h.getValue()));
-                }
-                System.out.println("###");
-            }
-        }).build();
+//                .addInterceptorLast(
+//                    new HttpRequestInterceptor() {
+//                        public void process(HttpRequest httpRequest, HttpContext httpContext) throws HttpException, IOException {
+//                            /**
+//                             * Add common request headers
+//                             */
+//                            httpRequest.addHeader("Connection", "keep-alive");
+//                            httpRequest.addHeader("Upgrade-Insecure-Requests", "1");
+//                            httpRequest.addHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36");
+//                            httpRequest.addHeader("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8");
+//                            httpRequest.addHeader("Accept-Encoding", "gzip, deflate, sdch, br");
+//                            httpRequest.addHeader("Accept-Language", "en-US,en;q=0.8,ru;q=0.6,uk;q=0.4");
+//                            httpRequest.addHeader("Cache-Control", "no-cache");
+//                            httpRequest.addHeader("Pragma", "no-cache");
+//                        }
+//                    }
+//                )
+                .addInterceptorLast(
+                    new HttpRequestInterceptor() {
+                        public void process(HttpRequest httpRequest, HttpContext httpContext) throws HttpException, IOException {
+                            System.out.println(" ### Request headers: ");
+                            for (Header h : httpRequest.getAllHeaders()) {
+                                System.out.println(String.format("\t%s: %s", h.getName(), h.getValue()));
+                            }
+                            System.out.println("###");
+                        }
+                    }
+                )
+                .addInterceptorLast(
+                    new HttpRequestInterceptor() {
+                        public void process(HttpRequest httpResponse, HttpContext httpContext) throws HttpException, IOException {
+                            System.out.println("### Response headers: ");
+                            for (Header h : httpResponse.getAllHeaders()) {
+                                System.out.println(String.format("\t%s: %s", h.getName(), h.getValue()));
+                            }
+                            System.out.println("###");
+                        }
+                    }
+                )
+                .build();
     }
 
     /**
