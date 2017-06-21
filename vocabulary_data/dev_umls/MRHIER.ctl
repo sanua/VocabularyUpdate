@@ -1,5 +1,6 @@
 options (direct=true, errors=0)
 load data
+CHARACTERSET UTF8
 infile 'MRHIER.RRF' 
 badfile 'MRHIER.bad'
 discardfile 'MRHIER.dsc'

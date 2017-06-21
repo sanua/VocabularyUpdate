@@ -1,5 +1,6 @@
 options (direct=true, errors=0)
 load data
+CHARACTERSET UTF8
 infile 'MRSAT.RRF' 
 badfile 'MRSAT.bad'
 discardfile 'MRSAT.dsc'

@@ -1,12 +1,15 @@
 package com.odysseusinc.net;
 
 import com.google.common.io.Files;
+import com.sun.javafx.scene.shape.PathUtils;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.ArchiveInputStream;
 import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipUtils;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.filefilter.FileFileFilter;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.*;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
@@ -26,6 +29,8 @@ import org.apache.http.protocol.HttpContext;
 import java.io.*;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -530,21 +535,21 @@ public class DownloadResourceHelper {
      */
     private static void writeToFile(InputStream is, File extractFile, long inputFileSize) throws IOException {
         System.out.print(String.format("\tprocessing file: %s ", extractFile.getName()));
-        long onePercentFileSize = Double.valueOf((double)inputFileSize / 100).longValue();
         byte[] buffer = new byte[8192];
         int count;
         OutputStream outputStream = null;
         long progress = 0, totalProgress = 0;
+        byte percentProgress;
+        byte decimalCount = 0;
         try {
             outputStream = new BufferedOutputStream(new FileOutputStream(extractFile));
             while ((count = is.read(buffer, 0, buffer.length)) != -1) {
                 outputStream.write(buffer, 0, count);
                 progress += count;
                 totalProgress += count;
-                double percentProgress = (double) progress / inputFileSize;
-                if ((Math.round(percentProgress) / 10) >0)
-                System.out.print(String.format("### %f ###", percentProgress));
-                if (progress >= (onePercentFileSize * 10)) {
+                percentProgress = Long.valueOf(Math.round(((double) progress / inputFileSize) * 100)).byteValue();
+                if (percentProgress / 10 > decimalCount) {
+                    decimalCount ++;
                     System.out.print(".");
                 }
             }
@@ -555,7 +560,10 @@ public class DownloadResourceHelper {
         }
         float displaySize;
         String sizeUnit;
-        if ((totalProgress / 1024) < 1024) {
+        if (totalProgress < 1024) {
+            sizeUnit = "B";
+            displaySize = Double.valueOf(totalProgress).floatValue();
+        } else if ((totalProgress / 1024) < 1024) {
             sizeUnit = "KB";
             displaySize = Double.valueOf((double)(totalProgress / 1024)).floatValue();
         } else if ((totalProgress / 1024 / 1024) < 1024) {
@@ -793,24 +801,22 @@ public class DownloadResourceHelper {
         return downloadUmls(fileUrl, fileName, packageDescription, isTryRedownload, numberOfTries);
     }
 
-    public String downloadResourceUmlsFullRedirects(String fileUrl,String userName, String password, String fileName, String packageDescription, boolean isTryRedownload, int numberOfTries) throws IOException {
+    public String downloadResourceUmlsFullRedirects(String fileUrl, String userName, String password, String fileName, String packageDescription, boolean isTryRedownload, int numberOfTries) throws IOException {
         CloseableHttpResponse response = null;
         OutputStream outputStream = null;
-        //this.localCookieStore.clear();
-        //CloseableHttpResponse response = null;
-        // REQUEST 1
-        // Just get JSESSION cookie
+        // Get JSESSION cookie
+        HttpGet getRequest = null;
         try {
             System.out.println("\nStep 1. Get url: " + fileUrl);
-            HttpGet request = prepareGet(fileUrl);
+            getRequest = prepareGet(fileUrl);
 
             System.out.println("!!!!! Request headers:");
-            List<Header> lHeader = Arrays.asList(request.getAllHeaders());
+            List<Header> lHeader = Arrays.asList(getRequest.getAllHeaders());
             for (Header h: lHeader) {
                 System.out.println(String.format("\t%s: %s", h.getName(), h.getValue()));
             }
 
-            response = httpClient.execute(request);
+            response = httpClient.execute(getRequest);
 
             // Buffer response content
             BufferedHttpEntity bufEntity = new BufferedHttpEntity(response.getEntity());
@@ -837,6 +843,7 @@ public class DownloadResourceHelper {
                 this.ltParam = m.group(1);
             }
         } catch (Exception e) {
+            getRequest.abort();
             System.out.println("Error occurs: " + e.getMessage());
             e.printStackTrace();
         } finally {
@@ -844,8 +851,8 @@ public class DownloadResourceHelper {
                 response.close();
         }
 
-        // REQUEST 2
-        // Login to UMLS
+        // Login to UMLS and download package
+        HttpPost postRequest = null;
         System.out.println("Login UMLS service...");
         try {
             Map<String, String> params = new HashMap<String, String>();
@@ -858,16 +865,16 @@ public class DownloadResourceHelper {
 //            cookies.addAll(getAllStoredCookies());
             //cookies.add(getClientCookie(COOKIE_JSESSIONID));
             System.out.println("\nStep 2. Get url: " + fileUrl);
-            HttpPost request = preparePost(fileUrl, params);
-            request.addHeader("Content-Type", "application/x-www-form-urlencoded");
+            postRequest = preparePost(fileUrl, params);
+            postRequest.addHeader("Content-Type", "application/x-www-form-urlencoded");
 
             System.out.println("!!!!! Request headers:");
-            List<Header> lHeader = Arrays.asList(request.getAllHeaders());
+            List<Header> lHeader = Arrays.asList(postRequest.getAllHeaders());
             for (Header h: lHeader) {
                 System.out.println(String.format("\t%s: %s", h.getName(), h.getValue()));
             }
 
-            response = httpClient.execute(request);
+            response = httpClient.execute(postRequest);
 
             // Buffer response content
             BufferedHttpEntity bufEntity = new BufferedHttpEntity(response.getEntity());
@@ -887,13 +894,40 @@ public class DownloadResourceHelper {
             System.out.println("\tcontent-disposition:" + getResponseHeaderValue(response, "Content-Disposition"));
             System.out.println("\tresponseBody:" + responseBody);
 
-            /**
-             * Get URL for further processing
-             */
-            String locationHeaderValue = getResponseHeaderValue(response, "Location");
-            if (StringUtils.isNotBlank(locationHeaderValue))
-                fileUrl = locationHeaderValue;
+            int responseCode = response.getStatusLine().getStatusCode();
+            if (responseCode != HttpStatus.SC_OK) {
+                numberOfTries--;
+                if (isTryRedownload && numberOfTries >= 0) {
+                    if (response != null)
+                        try {
+                            response.close();
+                        } catch (IOException ioe) {}
+                    System.out.println(String.format("Attention!\nThere is some problem of content downloading: %s.\nTry again, attempt %d of %d....", response.getStatusLine(), NUMBER_OF_ATTEMPTS - numberOfTries, NUMBER_OF_ATTEMPTS));
+                    return downloadResourceUmlsFullRedirects(fileUrl, userName, password, fileName, packageDescription, isTryRedownload, numberOfTries);
+                } else {
+                    throw new HttpException(String.format("Unable to download %s\n%s", packageDescription, response.getStatusLine()));
+                }
+            } else if (getResponseHeaderValue(response, "Content-Type").indexOf("zip") < 0) {
+                throw new HttpException(String.format("%s is not a ZIP archive", packageDescription));
+            }
+
+            // Eval downloaded file name
+            String contentDisposition = getResponseHeaderValue(response, "Content-Disposition");
+            if (contentDisposition.length() > 0)
+                fileName = contentDisposition.substring(contentDisposition.lastIndexOf("filename") + 9).replace("\"", "").replace(";", "");
+            String filePath = String.format("%s%s%s", this.downloadPath.getPath(), File.separator, fileName);
+
+            String contentLength = getResponseHeaderValue(response,"Content-Length");
+            System.out.println(String.format("Downloaded '%s' file with %s bytes", fileName, contentLength));
+
+            outputStream = new FileOutputStream(new File(filePath));
+            IOUtils.copyLarge(bufEntity.getContent(), outputStream);
+            outputStream.flush();
+
+        } catch (RuntimeException rte) {
+            postRequest.abort();
         } catch (Exception e) {
+            postRequest.abort();
             System.out.println("Exception occurs: " + e.getMessage());
             e.printStackTrace();
         } finally {
@@ -901,13 +935,17 @@ public class DownloadResourceHelper {
                 response.close();
         }
 
-
-        /**
+/*
+        */
+/**
          * Download
-         */
+         *//*
+
+        if (getRequest != null)
+            getRequest.reset();
         try {
-            HttpGet request = prepareGet(fileUrl);
-            response = httpClient.execute(request);
+            getRequest = prepareGet(fileUrl);
+            response = httpClient.execute(getRequest);
 
             System.out.println("\n!!!!! Response:");
             System.out.println("\tresponse.getStatusLine():" + response.getStatusLine());
@@ -953,6 +991,7 @@ public class DownloadResourceHelper {
             outputStream.flush();
 
         } catch (Exception e) {
+            getRequest.abort();
             System.out.println("Error occurs: " + e.getMessage());
             e.printStackTrace();
         } finally {
@@ -961,7 +1000,8 @@ public class DownloadResourceHelper {
             if (outputStream != null)
                 outputStream.close();
         }
-        return "";
+*/
+        return fileName;
 
 /*
         // REQUEST 3
@@ -1343,22 +1383,49 @@ public class DownloadResourceHelper {
             e.printStackTrace();
         }
 
-        // Create HttpClient
-        this.httpClient = HttpClients.custom()
-                .setProxy(new HttpHost("127.0.0.1", 8888))
-                .setRedirectStrategy(new LaxRedirectStrategy()) // adds HTTP REDIRECT support to GET and POST methods
-                .addInterceptorLast(
-                        new HttpRequestInterceptor() {
-                            public void process(HttpRequest httpRequest, HttpContext httpContext) throws HttpException, IOException {
+        if (withRedirects) {
+            // Create HttpClient
+            this.httpClient = HttpClients.custom()
+                    .setProxy(new HttpHost("127.0.0.1", 8888))
+                    .setRedirectStrategy(new LaxRedirectStrategy()) // adds HTTP REDIRECT support to GET and POST methods
+                    .addInterceptorLast(
+                            (HttpRequestInterceptor) (httpRequest, httpContext) -> {
 
-                                System.out.println("##########");
+                                System.out.println(" ### Request headers: ");
                                 for (Header h : httpRequest.getAllHeaders()) {
                                     System.out.println(String.format("\t%s: %s", h.getName(), h.getValue()));
                                 }
-                                System.out.println("##########");
-                            }
-                        })
-                .build();
+                                System.out.println("###");
+                            })
+                    .addInterceptorLast(
+                            (HttpResponseInterceptor) (httpResponse, httpContext) -> {
+
+                                System.out.println("### Response headers: ");
+                                for (Header h : httpResponse.getAllHeaders()) {
+                                    System.out.println(String.format("\t%s: %s", h.getName(), h.getValue()));
+                                }
+                                System.out.println("###");
+                            })
+                    .build();
+        } else {
+            // Create HttpClient
+            this.httpClient = HttpClients.custom()
+                    .disableCookieManagement()
+                    .disableRedirectHandling()
+                    .setProxy(new HttpHost("127.0.0.1", 8888))
+                    .addInterceptorLast(
+                            new HttpRequestInterceptor() {
+                                public void process(HttpRequest httpRequest, HttpContext httpContext) throws HttpException, IOException {
+
+                                    System.out.println("##########");
+                                    for (Header h : httpRequest.getAllHeaders()) {
+                                        System.out.println(String.format("\t%s: %s", h.getName(), h.getValue()));
+                                    }
+                                    System.out.println("##########");
+                                }
+                            })
+                    .build();
+        }
     }
 
     /************/
@@ -1498,13 +1565,13 @@ public class DownloadResourceHelper {
         System.out.println("*** " + packageDescription + " action done ***");
     }
 
-    public static void testExtract() {
+    public static String testExtract() {
         File temp = Files.createTempDir();
         temp.deleteOnExit();
 
-        File src = new File("D:\\Projects\\VocabularyUpdate_Odysseus\\vocabulary_data\\dev_umls\\data");
+        File src = new File("E:\\temp\\data");
 
-        for (File f: src.listFiles(new FileFilter() {
+        for (File f : src.listFiles(new FileFilter() {
             @Override
             public boolean accept(File pathname) {
                 return pathname.getName().toLowerCase().endsWith("zip")
@@ -1515,9 +1582,61 @@ public class DownloadResourceHelper {
                 System.out.println(String.format("!!! Cannot extract file: %s", f.getPath()));
             }
         }
+        return temp.getPath();
     }
 
-    public static void main(String[] args) {
+    public static void testConcatenate(String filesPath) throws IOException {
+        File fPath = new File(filesPath);
+
+        List<String> fileMaskList = Arrays.asList("MRCONSO", "MRHIER", "MRSAT");
+        LinkedHashMap<String, TreeSet<File>> orderedFilesParts = new LinkedHashMap<>();
+        for (String fileMask: fileMaskList) {
+            TreeSet<File> orderedFiles = new TreeSet<>();
+            for (File f : fPath.listFiles(new FileFilter() {
+                @Override
+                public boolean accept(File pathname) {
+                    return pathname.getName().toLowerCase().indexOf(fileMask.toLowerCase()) >= 0;
+                }
+            })) {
+                orderedFiles.add(f);
+            }
+            String fileName = orderedFiles.first().getName();
+            fileName = fileName.substring(0, fileName.lastIndexOf("."));
+            orderedFilesParts.put(fileName, orderedFiles);
+        }
+
+        Iterator<Map.Entry<String, TreeSet<File>>> it = orderedFilesParts.entrySet().iterator();
+        while(it.hasNext()) {
+            Map.Entry<String, TreeSet<File>> e = it.next();
+            String targetFile = new File(fPath, e.getKey()).getPath();
+            System.out.print(String.format("Concatenating all parts of the %s file ... ", targetFile));
+            FileOutputStream fos = new FileOutputStream(targetFile);
+            try {
+                Iterator<File> fit = e.getValue().iterator();
+                while (fit.hasNext()) {
+                    File partFile = fit.next();
+                    FileInputStream fis = new FileInputStream(partFile);
+                    try {
+                        byte[] buff = new byte[8192];
+                        int bytesRead;
+                        while((bytesRead = fis.read(buff, 0, buff.length)) != -1) {
+                            fos.write(buff, 0, bytesRead);
+                        }
+                    } finally {
+                        if (fis != null)
+                            fis.close();
+                    }
+                    fos.flush();
+                }
+            } finally {
+                if (fos != null)
+                    fos.close();
+            }
+            System.out.println(" done");
+        }
+    }
+
+    public static void main(String[] args) throws IOException {
         DownloadResourceHelper downloadHelper = new DownloadResourceHelper(null, true);
         //testDownloadLOINC (downloadHelper);
 
@@ -1525,9 +1644,11 @@ public class DownloadResourceHelper {
 
         //testDownloadUMLSFull(downloadHelper);
 
-        //testDownloadUMLSFullRedirects(downloadHelper); ***
+        testDownloadUMLSFullRedirects(downloadHelper); //***
 
-        testExtract();
+//        String targetPath = testExtract();
+
+//        testConcatenate(targetPath);
     }
 
 }
