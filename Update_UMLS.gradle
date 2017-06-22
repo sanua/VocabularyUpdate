@@ -510,24 +510,27 @@ public class DownloadResourceHelper {
                 throw new IllegalUpdateStateException(new HttpException(String.format("%s is not a ZIP archive", packageDescription)));
             }
 
-            // Buffer response content
-            BufferedHttpEntity bufEntity = new BufferedHttpEntity(response.getEntity());
-            StringWriter writer = new StringWriter();
-            IOUtils.copy(bufEntity.getContent(), writer, StandardCharsets.UTF_8);
-
             // Eval downloaded file name
             String contentDisposition = getResponseHeaderValue(response, "Content-Disposition");
             if (contentDisposition.length() > 0)
                 fileName = contentDisposition.substring(contentDisposition.lastIndexOf("filename") + 9).replace("\"", "").replace(";", "");
             String filePath = String.format("%s%s%s", this.downloadPath.getPath(), File.separator, fileName);
 
+            // Start action checkpoint
+            long timeStart = System.currentTimeMillis()
             String contentLength = getResponseHeaderValue(response,"Content-Length");
-            System.out.println(new StringBuilderWrapper(String.format("Downloaded '%s' file with %s bytes", fileName, contentLength)));
+            System.out.println(new StringBuilderWrapper(String.format("Downloading of '%s' file with %,d bytes ...", fileName, contentLength)));
 
             // Save file to stream
             outputStream = new FileOutputStream(new File(filePath));
-            IOUtils.copy(bufEntity.getContent(), outputStream);
+            IOUtils.copyLarge(response.getEntity().getContent(), outputStream);
             outputStream.flush();
+
+            // Finish action checkpoint
+            long timeFinish = System.currentTimeMillis()
+            // Measure time execution
+            long timeElapsed = (timeFinish - timeStart) / 1000
+            System.out.println(new StringBuilderWrapper(String.format("Download completted in %,d seconds.", timeElapsed)));
 
         } catch (Exception e) {
             throw new IllegalUpdateStateException(e);
@@ -681,6 +684,7 @@ public class DownloadResourceHelper {
                 System.out.println(String.format("\t%s: %s", h.getName(), h.getValue()));
             }
             response = httpClient.execute(getRequest);
+            
             // Buffer response content
             BufferedHttpEntity bufEntity = new BufferedHttpEntity(response.getEntity());
             StringWriter writer = new StringWriter();
@@ -748,7 +752,6 @@ public class DownloadResourceHelper {
                 System.out.println("\t\t" + h.getValue());
             }
             System.out.println("\tcontent-disposition:" + getResponseHeaderValue(response, "Content-Disposition"));
-            System.out.println("\tresponseBody:" + responseBody);
 
             int responseCode = response.getStatusLine().getStatusCode();
             if (responseCode != HttpStatus.SC_OK) {
@@ -773,12 +776,20 @@ public class DownloadResourceHelper {
                 fileName = contentDisposition.substring(contentDisposition.lastIndexOf("filename") + 9).replace("\"", "").replace(";", "");
             String filePath = String.format("%s%s%s", this.downloadPath.getPath(), File.separator, fileName);
 
+            // Start action checkpoint
+            long timeStart = System.currentTimeMillis()
             String contentLength = getResponseHeaderValue(response,"Content-Length");
-            System.out.println(String.format("Downloaded '%s' file with %s bytes", fileName, contentLength));
+            System.out.println(new StringBuilderWrapper(String.format("Downloading of '%s' file with %,d bytes ...", fileName, contentLength)));
 
             outputStream = new FileOutputStream(new File(filePath));
             IOUtils.copyLarge(response.getEntity().getContent(), outputStream);
             outputStream.flush();
+
+            // Finish action checkpoint
+            long timeFinish = System.currentTimeMillis()
+            // Measure time execution
+            long timeElapsed = (timeFinish - timeStart) / 1000
+            System.out.println(new StringBuilderWrapper(String.format("Download completted in %,d seconds.", timeElapsed)));
 
         } catch (Exception e) {
             postRequest.abort();
@@ -820,12 +831,6 @@ public class DownloadResourceHelper {
                 throw new IllegalUpdateStateException(new HttpException(String.format("%s is not a ZIP archive", packageDescription)));
             }
 
-            // Buffer response content
-            BufferedHttpEntity bufEntity = new BufferedHttpEntity(response.getEntity());
-            StringWriter writer = new StringWriter();
-            IOUtils.copy(bufEntity.getContent(), writer, StandardCharsets.UTF_8);
-            String responseBody = writer.toString().trim();
-
             // Eval downloaded file name
             String contentDisposition = getResponseHeaderValue(response, "Content-Disposition");
             if (contentDisposition.length() > 0) {
@@ -833,13 +838,21 @@ public class DownloadResourceHelper {
             }
             String filePath = String.format("%s%s%s", this.downloadPath.getPath(), File.separator, fileName);
 
+            // Start action checkpoint
+            long timeStart = System.currentTimeMillis()
             String contentLength = getResponseHeaderValue(response,"Content-Length");
-            System.out.println(new StringBuilderWrapper(String.format("Downloaded '%s' file with %s bytes", fileName, contentLength)));
+            System.out.println(new StringBuilderWrapper(String.format("Downloading of '%s' file with %,d bytes ...", fileName, contentLength)));
 
             // Save file to stream
             outputStream = new FileOutputStream(new File(filePath));
-            IOUtils.copy(bufEntity.getContent(), outputStream);
+            IOUtils.copyLarge(response.getEntity().getContent(), outputStream);
             outputStream.flush();
+
+            // Finish action checkpoint
+            long timeFinish = System.currentTimeMillis()
+            // Measure time execution
+            long timeElapsed = (timeFinish - timeStart) / 1000
+            System.out.println(new StringBuilderWrapper(String.format("Download completted in %,d seconds.", timeElapsed)));
 
         } catch (Exception e) {
             throw new IllegalUpdateStateException(e);
