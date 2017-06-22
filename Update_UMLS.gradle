@@ -659,14 +659,14 @@ public class DownloadResourceHelper {
         return downloadResourceLoinc(fileUrl, fileName, packageDescription, true, NUMBER_OF_ATTEMPTS);
     }
 
-    public String repeatableDownloadResourceUmlsFullRedirects(String fileUrl, String userName, String password, String fileName, String packageDescription) throws IOException {
+    public String repeatableDownloadResourceUmlsFullRedirects(String fileUrl, String userName, String password, String fileName, String packageDescription) throws IllegalUpdateStateException {
         /**
          * Try three times redownload if error occurs
          */
         return downloadResourceUmlsFullRedirects(fileUrl, userName, password, fileName, packageDescription,true, NUMBER_OF_ATTEMPTS);
     }
 
-    public String downloadResourceUmlsFullRedirects(String fileUrl,String userName, String password, String fileName, String packageDescription, boolean isTryRedownload, int numberOfTries) throws IOException {
+    public String downloadResourceUmlsFullRedirects(String fileUrl,String userName, String password, String fileName, String packageDescription, boolean isTryRedownload, int numberOfTries) throws IllegalUpdateStateException {
         CloseableHttpResponse response = null;
         OutputStream outputStream = null;
         // Get JSESSION cookie
@@ -707,8 +707,8 @@ public class DownloadResourceHelper {
             }
         } catch (Exception e) {
             getRequest.abort();
-            System.out.println("Error occurs: " + e.getMessage());
-            e.printStackTrace();
+            throw new IllegalUpdateStateException(e);
+
         } finally {
             if (response != null)
                 response.close();
@@ -780,12 +780,10 @@ public class DownloadResourceHelper {
             IOUtils.copyLarge(response.getEntity().getContent(), outputStream);
             outputStream.flush();
 
-        } catch (RuntimeException rte) {
-            postRequest.abort();
         } catch (Exception e) {
             postRequest.abort();
-            System.out.println("Exception occurs: " + e.getMessage());
-            e.printStackTrace();
+            throw new IllegalUpdateStateException(e);
+
         } finally {
             if (response != null)
                 response.close();
