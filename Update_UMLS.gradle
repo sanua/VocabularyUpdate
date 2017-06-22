@@ -737,11 +737,6 @@ public class DownloadResourceHelper {
                 System.out.println(String.format("\t%s: %s", h.getName(), h.getValue()));
             }
             response = httpClient.execute(postRequest);
-            // Buffer response content
-            BufferedHttpEntity bufEntity = new BufferedHttpEntity(response.getEntity());
-            StringWriter writer = new StringWriter();
-            IOUtils.copy(bufEntity.getContent(), writer, StandardCharsets.UTF_8);
-            String responseBody = writer.toString().trim();
 
             System.out.println("\n!!!!! Response:");
             System.out.println("\tresponse.getStatusLine():" + response.getStatusLine());
@@ -782,7 +777,7 @@ public class DownloadResourceHelper {
             System.out.println(String.format("Downloaded '%s' file with %s bytes", fileName, contentLength));
 
             outputStream = new FileOutputStream(new File(filePath));
-            IOUtils.copyLarge(bufEntity.getContent(), outputStream);
+            IOUtils.copyLarge(response.getEntity().getContent(), outputStream);
             outputStream.flush();
 
         } catch (RuntimeException rte) {
