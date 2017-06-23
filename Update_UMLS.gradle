@@ -112,6 +112,7 @@ import java.net.URISyntaxException
 import java.nio.charset.StandardCharsets
 import java.nio.file.StandardCopyOption
 import java.nio.file.StandardOpenOption
+import java.nio.file.DirectoryStream
 import java.util.*
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
@@ -228,22 +229,20 @@ public class DownloadResourceHelper {
                 .addInterceptorLast(
                     new HttpRequestInterceptor() {
                         public void process(HttpRequest httpRequest, HttpContext httpContext) throws HttpException, IOException {
-                            System.out.println(" ### Request headers: ");
+                            System.out.println("\tREQUEST headers:");
                             for (Header h : httpRequest.getAllHeaders()) {
-                                System.out.println(String.format("\t%s: %s", h.getName(), h.getValue()));
+                                System.out.println(String.format("\t\t%s: %s", h.getName(), h.getValue()));
                             }
-                            System.out.println("###");
                         }
                     }
                 )
                 .addInterceptorLast(
-                    new HttpRequestInterceptor() {
-                        public void process(HttpRequest httpResponse, HttpContext httpContext) throws HttpException, IOException {
-                            System.out.println("### Response headers: ");
+                    new HttpResponseInterceptor() {
+                        public void process(HttpResponse httpResponse, HttpContext httpContext) throws HttpException, IOException {
+                            System.out.println("\tRESPONSE headers:");
                             for (Header h : httpResponse.getAllHeaders()) {
-                                System.out.println(String.format("\t%s: %s", h.getName(), h.getValue()));
+                                System.out.println(String.format("\t\t%s: %s", h.getName(), h.getValue()));
                             }
-                            System.out.println("###");
                         }
                     }
                 )
@@ -1045,6 +1044,7 @@ public class DataProcessor {
         InputStream archiveInputStream = null;
         try {
             switch (archiveFile.getName().substring(archiveFile.getName().lastIndexOf(".")+ 1)) {
+                case "nlm":
                 case "zip":
                     archiveInputStream = new ZipArchiveInputStream(
                             new BufferedInputStream(new FileInputStream(archiveFile))
@@ -1075,17 +1075,56 @@ public class DataProcessor {
      * @return
      */
     public static void extract(File workDir) {
-        for (File f: workDir.listFiles(new FileFilter() {
-                @Override
-                public boolean accept(File pathname) {
-                    return pathname.getName().toLowerCase().endsWith("zip") ||
-                            pathname.getName().toLowerCase().endsWith("gz");
+        extract(workDir, null);
+    }
+
+    public static void extract(File workDir, List<String> fileNames) {
+        System.out.println(String.format("*** Extract executed, workDir: %s, fileNames: %s", workDir.getPath(), fileNames));
+
+        if (fileNames == null)
+            fileNames = new ArrayList<>();
+
+        DirectoryStream<Path> stream = null;
+        try {
+            stream = Files.newDirectoryStream(Paths.get(workDir.getPath()));
+            for (Path path: stream) {
+                if (path.toFile().isDirectory())
+                    extract(path.toFile(), fileNames);
+                else {
+                    String fName = path.getFileName().toString().toLowerCase();
+                    if (fName.endsWith("zip") || fName.endsWith("gz") || fName.endsWith("nlm"))
+                        fileNames.add(path.toAbsolutePath().toString());
                 }
-            })) {
-            if (!extractArchive(f, workDir)) {
-                System.out.println(String.format("Cannot extract file: %s", f.getPath()));
+            }
+        } finally {
+            if (stream != null)
+                stream.close();
+        }
+
+        System.out.println("\t!!! Found files to extract:");
+        for (String filename: fileNames) {
+            System.out.println(String.format("\t%s", filename));
+            if (!extractArchive(Paths.get(filename).toFile(), workDir)) {
+                System.out.println(String.format("Cannot extract file: %s", filename.getPath()));
             }
         }
+        System.out.println("***");
+
+//        for (File f: workDir.listFiles(
+//                new FileFilter() {
+//                    @Override
+//                    public boolean accept(File pathname) {
+//                        return pathname.getName().toLowerCase().endsWith("zip") ||
+//                                pathname.getName().toLowerCase().endsWith("gz") ||
+//                                pathname.getName().toLowerCase().endsWith("nlm");
+//                    }
+//                }))
+//        {
+//
+//            if (!extractArchive(f, workDir)) {
+//                System.out.println(String.format("Cannot extract file: %s", f.getPath()));
+//            }
+//        }
     }
     
     public static void concatenate(File workDir) {
@@ -1157,8 +1196,9 @@ props.each {prop ->
     project.ext.set(prop.key, prop.value)
 }
 
-def tempDir = File.createTempDir()
-tempDir.deleteOnExit()
+//def tempDir = File.createTempDir()
+//tempDir.deleteOnExit()
+def tempDir = new File("C:\\Users\\Sanders\\AppData\\Local\\Temp\\groovy-generated-5406289380510812740-tmpdir");
 
 /**
  * Just renew user schema and prepare it for further vocabulary update
@@ -1290,22 +1330,24 @@ task downloadUpdatePack(dependsOn: createSourceTable, description: project.prope
     println '*                                                     *'
     println '*******************************************************'
 
-    /* Downloading file */
-    // Start action checkpoint
+//    /* Downloading file */
+//    // Start action checkpoint
     def timeStart = System.currentTimeMillis()
-    DownloadResourceHelper downloadHelper = DownloadResourceHelper.getDownloadResourceHelper(tempDir);
+//    DownloadResourceHelper downloadHelper = DownloadResourceHelper.getDownloadResourceHelper(tempDir);
+//
+//    /****************************************************
+//     * Download 'UMLS' package
+//     * **************************************************/
+//    String packageDescription = project.properties['downloadUpdatePack.umlsFull.description']
+//    String fileUrl = project.properties['downloadUpdatePack.umlsFull.fileUrl']
+//    String userName = project.properties['downloadUpdatePack.umls.username']
+//    String password = project.properties['downloadUpdatePack.umls.password']
+//    String defaultFileName = project.properties['downloadUpdatePack.umlsFull.fileName']
+//    println new StringBuilderWrapper("Downloading ${packageDescription}...")
+//
+//    String downloadedFileName = downloadHelper.repeatableDownloadResourceUmlsFullRedirects(fileUrl, userName, password, defaultFileName, packageDescription);
 
-    /****************************************************
-     * Download 'UMLS' package
-     * **************************************************/
-    String packageDescription = project.properties['downloadUpdatePack.umlsFull.description']
-    String fileUrl = project.properties['downloadUpdatePack.umlsFull.fileUrl']
-    String userName = project.properties['downloadUpdatePack.umls.username']
-    String password = project.properties['downloadUpdatePack.umls.password']
-    String defaultFileName = project.properties['downloadUpdatePack.umlsFull.fileName']
-    println new StringBuilderWrapper("Downloading ${packageDescription}...")
-
-    String downloadedFileName = downloadHelper.repeatableDownloadResourceUmlsFullRedirects(fileUrl, userName, password, defaultFileName, packageDescription);
+    String downloadedFileName = "umls-2017AA-full.zip";
     
     project.ext.set('downloadUpdatePack.umlsFull.fileName', downloadedFileName);
     println new StringBuilderWrapper("Downloaded complete.\nUpdate packages are saved to the: ${tempDir.getPath()}")
@@ -1334,6 +1376,10 @@ task prepareFiles(dependsOn: downloadUpdatePack, description: project.properties
     try {
         // Extract files
         DataProcessor.extract(tempDir);
+
+        // Extract files again
+        DataProcessor.extract(tempDir);
+
         // Concatenate part of files
         DataProcessor.concatenate(tempDir);
 

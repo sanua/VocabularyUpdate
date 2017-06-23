@@ -1,5 +1,6 @@
 OPTIONS (errors=0, direct=true)
 LOAD DATA 
+CHARACTERSET UTF8
 INFILE 'icd10cm.txt'
 TRUNCATE
 INTO TABLE icd10cm_table

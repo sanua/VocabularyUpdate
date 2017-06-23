@@ -1,15 +1,11 @@
 package com.odysseusinc.net;
 
 import com.google.common.io.Files;
-import com.sun.javafx.scene.shape.PathUtils;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.ArchiveInputStream;
 import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream;
-import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipUtils;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.io.filefilter.FileFileFilter;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.*;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
@@ -29,6 +25,7 @@ import org.apache.http.protocol.HttpContext;
 import java.io.*;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -576,8 +573,22 @@ public class DownloadResourceHelper {
         System.out.println(String.format(" %.0f %s is done", displaySize, sizeUnit));
     }
 
-    public static <I extends InputStream> boolean extractAction(I archiveInputStream, File archiveFile, File destPath) {
-        System.out.println(String.format("\nExtracting file: %s is extracted to the: %s", archiveFile.getPath(), destPath.getPath()));
+    private static void proxyWriteToFile(InputStream is, File extractFile, long inputFileSize, List<String> checkedFileNames) throws IOException {
+        if (checkedFileNames == null || checkedFileNames.isEmpty()) {
+            writeToFile(is, extractFile, inputFileSize);
+        } else {
+            String fileName = extractFile.getName();
+            String[] truncatedFileName = fileName.split("\\.");
+            if (truncatedFileName.length > 0)
+                fileName = truncatedFileName[0];
+            if (fileNameInList(fileName, checkedFileNames)) {
+                writeToFile(is, extractFile, inputFileSize);
+            }
+        }
+    }
+
+    public static <I extends InputStream> boolean extractAction(I archiveInputStream, File archiveFile, File destPath, List<String> checkedFileNames) {
+        System.out.println(String.format("\tExtracting file: %s is extracted to the: %s", archiveFile.getPath(), destPath.getPath()));
         try {
             File fileDir;
             if (archiveInputStream instanceof  ArchiveInputStream) {
@@ -589,14 +600,14 @@ public class DownloadResourceHelper {
                         fileDir.mkdirs();
                     } else {
                         fileDir = new File(destPath, entry.getName());
-                        writeToFile(archiveInputStream, fileDir, entry.getSize());
+                        proxyWriteToFile(archiveInputStream, fileDir, entry.getSize(), checkedFileNames);
                     }
                     entry = ais.getNextEntry();
                 }
             } else {
                 String fileName = GzipUtils.getUncompressedFilename(archiveFile.getName());
                 fileDir = new File(destPath, fileName);
-                writeToFile(archiveInputStream, fileDir, archiveFile.length());
+                proxyWriteToFile(archiveInputStream, fileDir, archiveFile.length(), checkedFileNames);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -610,7 +621,7 @@ public class DownloadResourceHelper {
         return true;
     }
 
-    public static boolean extractArchive(File archiveFile, File destPath) {
+    public static boolean extractArchive(File archiveFile, File destPath, List<String> checkedFileNames) {
         if (archiveFile == null || !archiveFile.exists() || !destPath.exists())
             return false;
 
@@ -618,16 +629,17 @@ public class DownloadResourceHelper {
         InputStream archiveInputStream = null;
         try {
             switch (archiveFile.getName().substring(archiveFile.getName().lastIndexOf(".")+ 1)) {
+                case "nlm":
                 case "zip":
                     archiveInputStream = new ZipArchiveInputStream(
                             new BufferedInputStream(new FileInputStream(archiveFile))
                     );
-                    result = extractAction(archiveInputStream, archiveFile, destPath);
+                    result = extractAction(archiveInputStream, archiveFile, destPath, checkedFileNames);
                     break;
                 case "gz":
                     if (true) {
                         archiveInputStream = new GZIPInputStream(new BufferedInputStream(new FileInputStream(archiveFile)));
-                        result = extractAction(archiveInputStream, archiveFile, destPath);
+                        result = extractAction(archiveInputStream, archiveFile, destPath, checkedFileNames);
                     }
                     break;
             }
@@ -640,6 +652,77 @@ public class DownloadResourceHelper {
                 } catch (IOException e) {}
         }
         return result;
+    }
+
+    private static boolean fileNameInList(String fileName, List<String> fileNames) {
+        if (fileNames == null)
+            return false;
+        for (String f: fileNames) {
+            if (f.toLowerCase().indexOf(fileName.toLowerCase()) >= 0)
+                return true;
+        }
+        return false;
+    }
+
+    public static void extract(File targetDir, List<String> checkedFileNames) throws IOException {
+        extract(targetDir, targetDir, checkedFileNames, null);
+    }
+
+    public static void extract(File targetDir, File workDir, List<String> checkedFileNames, List<String> processedFileNames) throws IOException {
+        System.out.println(String.format("\nExtract started,\n\tworkDir: %s,\n\tprocessedFileNames: %s,\n\tcheckedFileNames: %s", workDir.getPath(), processedFileNames, checkedFileNames));
+
+        List<String> newProcessedFileNames = new ArrayList<>();
+        DirectoryStream<Path> stream = null;
+        try {
+            stream = java.nio.file.Files.newDirectoryStream(Paths.get(workDir.getPath()));
+            for (Path path: stream) {
+                if (path.toFile().isDirectory())
+                    extract(targetDir, path.toFile(), checkedFileNames, processedFileNames);
+                else {
+                    String fName = path.getFileName().toString().toLowerCase();
+                    if ((fName.endsWith(".zip") || fName.endsWith(".gz") || fName.endsWith(".nlm"))
+                            && !fileNameInList(fName, processedFileNames)) {
+                        newProcessedFileNames.add(path.toAbsolutePath().toString());
+                    }
+                }
+            }
+        } finally {
+            if (stream != null)
+                stream.close();
+        }
+
+        System.out.println("\t*** Found files to extract:");
+        for (String filename: newProcessedFileNames) {
+            System.out.println(String.format("\t\t%s", filename));
+            List<String> evaluatedCheckedFileNames = Collections.emptyList();
+            if (processedFileNames != null && !processedFileNames.isEmpty()) {
+                evaluatedCheckedFileNames = checkedFileNames;
+            }
+            if (!extractArchive(Paths.get(filename).toFile(), targetDir, evaluatedCheckedFileNames)) {
+                System.out.println(String.format("\t\tCannot extract file: %s", filename));
+            }
+        }
+        System.out.println("Extract done");
+
+        if (!newProcessedFileNames.isEmpty())
+            extract(targetDir, targetDir, checkedFileNames, newProcessedFileNames);
+
+
+//        for (File f: workDir.listFiles(
+//                new FileFilter() {
+//                    @Override
+//                    public boolean accept(File pathname) {
+//                        return pathname.getName().toLowerCase().endsWith("zip") ||
+//                                pathname.getName().toLowerCase().endsWith("gz") ||
+//                                pathname.getName().toLowerCase().endsWith("nlm");
+//                    }
+//                }))
+//        {
+//
+//            if (!extractArchive(f, workDir)) {
+//                System.out.println(String.format("Cannot extract file: %s", f.getPath()));
+//            }
+//        }
     }
 
     // Login and download resource
@@ -1569,6 +1652,12 @@ public class DownloadResourceHelper {
         File temp = Files.createTempDir();
         temp.deleteOnExit();
 
+        List<String> checkedFileNameList = new ArrayList<>();
+        Properties props = loadProps();
+        String checkedFilesString = props.getProperty("prepareFiles.files");
+        if (StringUtils.isNotBlank(checkedFilesString))
+            checkedFileNameList = Arrays.asList(checkedFilesString.split(","));
+
         File src = new File("E:\\temp\\data");
 
         for (File f : src.listFiles(new FileFilter() {
@@ -1578,11 +1667,33 @@ public class DownloadResourceHelper {
                         || pathname.getName().toLowerCase().endsWith("gz");
             }
         })) {
-            if (!extractArchive(f, temp)) {
+            if (!extractArchive(f, temp, checkedFileNameList)) {
                 System.out.println(String.format("!!! Cannot extract file: %s", f.getPath()));
             }
         }
         return temp.getPath();
+    }
+
+
+    public static void testExtractUMLS() throws IOException {
+        // Start action checkpoint
+        long timeStart = System.currentTimeMillis();
+
+        List<String> checkedFileNameList = new ArrayList<>();
+        Properties props = loadProps();
+        String checkedFilesString = props.getProperty("prepareFiles.files");
+        if (StringUtils.isNotBlank(checkedFilesString))
+            checkedFileNameList = Arrays.asList(checkedFilesString.split(","));
+
+        File workDir = new File("C:\\Users\\Sanders\\AppData\\Local\\Temp\\groovy-generated-5406289380510812740-tmpdir");
+        extract(workDir, checkedFileNameList);
+
+        // Finish action checkpoint
+        long timeFinish = System.currentTimeMillis();
+
+        // Measure time execution
+        long timeElapsed = (timeFinish - timeStart) / 1000;
+        System.out.println(String.format("Time elapsed: %,d seconds.", timeElapsed));
     }
 
     public static void testConcatenate(String filesPath) throws IOException {
@@ -1636,6 +1747,19 @@ public class DownloadResourceHelper {
         }
     }
 
+    /**
+     * Load resource properties
+     */
+    public static Properties loadProps() {
+        Properties  resourceProperties = new Properties();
+        try {
+            resourceProperties.load(new FileInputStream("./Update_UMLS.properties"));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return resourceProperties;
+    }
+
     public static void main(String[] args) throws IOException {
         DownloadResourceHelper downloadHelper = new DownloadResourceHelper(null, true);
         //testDownloadLOINC (downloadHelper);
@@ -1644,11 +1768,13 @@ public class DownloadResourceHelper {
 
         //testDownloadUMLSFull(downloadHelper);
 
-        testDownloadUMLSFullRedirects(downloadHelper); //***
+        //testDownloadUMLSFullRedirects(downloadHelper); //***
 
 //        String targetPath = testExtract();
 
 //        testConcatenate(targetPath);
+
+        testExtractUMLS();
     }
 
 }

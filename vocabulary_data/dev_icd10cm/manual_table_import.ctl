@@ -1,5 +1,6 @@
 OPTIONS (errors=0, direct=true, skip=1)
 LOAD DATA 
+CHARACTERSET UTF8
 INFILE 'manual_table_data.csv'
 APPEND
 INTO TABLE MANUAL_TABLE
