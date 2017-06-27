@@ -677,6 +677,7 @@ public class DownloadResourceHelper {
         /*
          * REQUEST 4
          * Authorize on download service
+         * Seems that this piece of code is redundant.
          */
 /*
         debugStepNumber(4, fileUrl);
