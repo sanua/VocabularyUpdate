@@ -238,7 +238,12 @@ public class Xls2CsvHelper {
             while ((stringLine = bufferedReader.readLine()) != null) {
                 List<String> normalizedStringLineList = new ArrayList<>();
                 List<String> stringLineList = Arrays.asList(stringLine.split(fieldSeparator));
+                boolean needWrapsDoubleQuotes = false;
                 for (String s: stringLineList) {
+                    needWrapsDoubleQuotes = s.substring(0, 1).equalsIgnoreCase("\"") && s.substring(s.length()-1, s.length()).equalsIgnoreCase("\"")
+                    s = StringUtils.stripEnd(StringUtils.stripStart(s, "\""), "\"");
+                    if (needWrapsDoubleQuotes)
+                        s = String.format("\"%s\"", s);
                     normalizedStringLineList.add(normalizeString(s));
                 }
 

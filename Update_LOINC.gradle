@@ -543,6 +543,7 @@ public class DownloadResourceHelper {
     }
 
     private <T extends  HttpRequest> void debugRequestHeaders(T request) {
+        return;
         System.out.println("!!!!! Request headers:");
         List<Header> lHeader = Arrays.asList(request.getAllHeaders());
         for (Header h: lHeader) {
@@ -555,6 +556,7 @@ public class DownloadResourceHelper {
     }
 
     private <T extends HttpResponse> void debugResponseHeaders(T response, String responseBody) {
+        return;
         System.out.println("\n!!!!! Response:");
         System.out.println("\tresponse.getStatusLine():" + response.getStatusLine());
         System.out.println("\tcontent-type:" + getResponseHeaderValue(response, "Content-Type"));
@@ -1257,7 +1259,7 @@ public class Xls2CsvHelper {
             } catch (IOException ioe) {}
         }
     }
-    
+
     public String getNormalizedCsvFile(String filePath, String fieldSeparator) {
         File srcFile = new File(filePath);
         if (!srcFile.exists())
@@ -1273,11 +1275,15 @@ public class Xls2CsvHelper {
                 List<String> normalizedStringLineList = new ArrayList<>();
                 List<String> stringLineList = Arrays.asList(stringLine.split(fieldSeparator));
                 for (String s: stringLineList) {
+                    boolean needWrapsDoubleQuotes = (s.startsWith("\"") && s.endsWith("\""));
+                    s = StringUtils.stripEnd(StringUtils.stripStart(s, "\""), "\"");
+                    if (needsWrapsDoubleQuotes)
+                        s = String.format("\"%s\"", s);
                     normalizedStringLineList.add(normalizeString(s));
                 }
 
                 String normalizedStringLine = String.join(fieldSeparator, normalizedStringLineList);
-                bufferedWriter.write(normalizedStringLine + "\r\n");
+                bufferedWriter.write (normalizedStringLine + "\r\n");
                 bufferedWriter.flush();
             }
             return tempFile.getPath();
